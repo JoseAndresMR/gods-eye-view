@@ -90,9 +90,23 @@ const PANEL_GROUPS = [
     label: msg('Utilities'),
     ids: ['directions', 'radio'],
   },
+  // Derived by the local intelligence layer; their rows live in the
+  // INTELLIGENCE panel (`hostId`), next to the cluster summaries.
+  {
+    label: msg('Intelligence layer'),
+    hostId: 'intel-toggles',
+    ids: [
+      'il-aircraft-clusters',
+      'il-military-clusters',
+      'il-vessel-clusters',
+      'il-satellite-clusters',
+      'il-fire-clusters',
+      'il-gnss-zones',
+    ],
+  },
 ];
-const PANEL_ORDER = PANEL_GROUPS.flatMap(({ label, ids }) =>
-  ids.map((id) => ({ id, label })),
+const PANEL_ORDER = PANEL_GROUPS.flatMap(({ label, ids, hostId }) =>
+  ids.map((id) => ({ id, label, hostId })),
 );
 const PANEL_POSITIONS = new Map(
   PANEL_ORDER.map(({ id }, index) => [id, index]),
@@ -289,12 +303,15 @@ export class LayerPanel {
           (PANEL_POSITIONS.get(a.id) ?? PANEL_ORDER.length) -
           (PANEL_POSITIONS.get(b.id) ?? PANEL_ORDER.length),
       );
+    for (const host of this._hosts()) host.innerHTML = '';
     let previousGroup = '';
     for (const layer of layers) {
       if (!layer.showInTogglePanel) continue;
-      const group =
-        PANEL_ORDER[PANEL_POSITIONS.get(layer.id)]?.label ??
-        msg('Other layers');
+      const placement = PANEL_ORDER[PANEL_POSITIONS.get(layer.id)];
+      const group = placement?.label ?? msg('Other layers');
+      // A hosted group's own panel names it; no heading inside.
+      const host = this._hostFor(placement);
+      if (host) previousGroup = group;
       if (group && group !== previousGroup) {
         const heading = document.createElement('h3');
         heading.className = 'data-layer-group-heading';
@@ -420,9 +437,33 @@ export class LayerPanel {
         }
       }
 
-      this._toggleContainer.appendChild(row);
+      (host || this._toggleContainer).appendChild(row);
     }
     this._refreshWeatherPanel();
+  }
+  /** The element a hosted group's rows go in, or null to use the Data Layers list. */
+  _hostFor(placement) {
+    if (!placement?.hostId) return null;
+    return (
+      this._toggleContainer?.ownerDocument?.getElementById?.(placement.hostId) ||
+      null
+    );
+  }
+  _hosts() {
+    const hosts = new Set();
+    for (const placement of PANEL_ORDER) {
+      const host = this._hostFor(placement);
+      if (host) hosts.add(host);
+    }
+    return hosts;
+  }
+  _rowFor(layerId) {
+    const selector = `[data-layer-id="${layerId}"]`;
+    const host = this._hostFor(PANEL_ORDER[PANEL_POSITIONS.get(layerId)]);
+    return (
+      host?.querySelector(selector) ||
+      this._toggleContainer.querySelector(selector)
+    );
   }
 
   _scheduleRowControlsRefresh() {
@@ -599,9 +640,7 @@ export class LayerPanel {
       return;
     }
     for (const layer of this.getAll()) {
-      const row = this._toggleContainer.querySelector(
-        `[data-layer-id="${layer.id}"]`,
-      );
+      const row = this._rowFor(layer.id);
       if (!row) continue;
 
       const btn = row.querySelector('.data-toggle-btn');

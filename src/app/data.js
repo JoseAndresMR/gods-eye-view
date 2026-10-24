@@ -1,6 +1,8 @@
 import { LayerLifecycle } from '../data/lifecycle.js';
 import { LayerPresentation } from './layerPresentation.js';
 import { createCyberSonarScene } from '../cyberSonarScene.js';
+import { mountIntelPanel } from '../ui/intelPanel.js';
+import { IL_LAYER_IDS } from '../layers/ilClusters/model.js';
 /** Register the application layer catalog before allowing state restoration. */
 export function createApplicationData({
   scene: { viewer, mapStackController },
@@ -56,6 +58,13 @@ export function createApplicationData({
     });
   }
   presentation.mount(document.getElementById('data-toggles'));
+  defer(
+    mountIntelPanel({
+      container: document.getElementById('intel-clusters'),
+      count: document.getElementById('intel-panel-count'),
+      layers: IL_LAYER_IDS.map((id) => catalog.get(id)).filter(Boolean),
+    }),
+  );
   styleManager.attachDataManager(dataManager);
   defer(createCyberSonarScene(viewer, dataManager));
 

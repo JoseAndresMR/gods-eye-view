@@ -1,7 +1,29 @@
-// Pure helpers for the intelligence-layer cluster overlays (aircraft, vessels).
+// Pure helpers for the intelligence-layer cluster overlays.
+import {
+  degreesLat,
+  degreesLong,
+  eciToGeodetic,
+  gstime,
+  propagate,
+  twoline2satrec,
+} from 'satellite.js';
 
 export const IL_AIRCRAFT_CLUSTERS_ID = 'il-aircraft-clusters';
 export const IL_VESSEL_CLUSTERS_ID = 'il-vessel-clusters';
+export const IL_MILITARY_CLUSTERS_ID = 'il-military-clusters';
+export const IL_SATELLITE_CLUSTERS_ID = 'il-satellite-clusters';
+export const IL_FIRE_CLUSTERS_ID = 'il-fire-clusters';
+export const IL_GNSS_ZONES_ID = 'il-gnss-zones';
+
+/** Every intelligence-layer overlay, in the order the Intelligence panel lists them. */
+export const IL_LAYER_IDS = Object.freeze([
+  IL_AIRCRAFT_CLUSTERS_ID,
+  IL_MILITARY_CLUSTERS_ID,
+  IL_VESSEL_CLUSTERS_ID,
+  IL_SATELLITE_CLUSTERS_ID,
+  IL_FIRE_CLUSTERS_ID,
+  IL_GNSS_ZONES_ID,
+]);
 
 const EARTH_RADIUS_M = 6371008.8;
 const KNOT_MPS = 0.514444;
@@ -22,12 +44,12 @@ export function distanceLabel(km) {
   return String(Number(km));
 }
 
-/** @param {'aircraft'|'vessels'} kind */
+/** @param {string} kind Intelligence layer feed: aircraft, vessels, military, satellites, fires, gnss. */
 export function clustersIndexUrl(kind) {
   return `/api/il/${kind}/index`;
 }
 
-/** @param {'aircraft'|'vessels'} kind */
+/** @param {string} kind */
 export function clustersUrl(kind, km) {
   return `/api/il/${kind}?km=${encodeURIComponent(distanceLabel(km))}`;
 }
@@ -124,4 +146,94 @@ export function predictPosition(m, nowSec, maxAheadS) {
     lon,
     altM: Math.max(alt + climb, 0),
   };
+}
+
+/**
+ * A military aircraft as the IL publishes it (adsb.lol row plus metric
+ * fields): geometric height, else barometric.
+ * @returns {Motion}
+ */
+export function militaryMotion(node) {
+  return {
+    lat: node?.lat,
+    lon: node?.lon,
+    altM: finite(node?.alt_m) ? node.alt_m : 0,
+    speedMps: finite(node?.speed_mps) ? node.speed_mps : null,
+    trackDeg: finite(node?.track) ? node.track : null,
+    climbMps: finite(node?.climb_mps) ? node.climb_mps : null,
+    reportedAt: finite(node?.position_epoch) ? node.position_epoch : null,
+  };
+}
+
+/**
+ * Where a satellite is at `nowSec`, propagated with SGP4 from the TLE the IL
+ * clustered it with (as GEV's satellites layer does). The satrec is cached on
+ * the node.
+ * @returns {{lat:number, lon:number, altM:number}|null}
+ */
+export function satellitePosition(node, nowSec) {
+  if (!node?.tle_line1 || !node?.tle_line2) return null;
+  try {
+    node._satrec ??= twoline2satrec(node.tle_line1, node.tle_line2);
+    const date = new Date(nowSec * 1000);
+    const pv = propagate(node._satrec, date);
+    if (!pv?.position || typeof pv.position === 'boolean') return null;
+    const geo = eciToGeodetic(pv.position, gstime(date));
+    return {
+      lat: degreesLat(geo.latitude),
+      lon: degreesLong(geo.longitude),
+      altM: geo.height * 1000,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * A closed footprint outline ([[lon, lat], ...]) with extra points along long
+ * edges, so straight segments between them follow the curved surface instead
+ * of cutting under it. Fewer than two points gives nothing.
+ * @param {Array<[number, number]>} hull
+ * @param {number} [stepKm=10]
+ * @returns {Array<[number, number]>}
+ */
+export function densifyRing(hull, stepKm = 10) {
+  const pts = (hull || []).filter(
+    (p) => Array.isArray(p) && finite(p[0]) && finite(p[1]),
+  );
+  if (pts.length < 2) return [];
+  const ring = pts.length === 2 ? pts : [...pts, pts[0]];
+  const out = [];
+  for (let i = 0; i < ring.length - 1; i++) {
+    const [lon1, lat1] = ring[i];
+    let [lon2, lat2] = ring[i + 1];
+    // Take the short way across the antimeridian.
+    if (lon2 - lon1 > 180) lon2 -= 360;
+    if (lon1 - lon2 > 180) lon2 += 360;
+    const km =
+      (Math.hypot(
+        (lon2 - lon1) * Math.cos((((lat1 + lat2) / 2) * Math.PI) / 180),
+        lat2 - lat1,
+      ) *
+        Math.PI *
+        EARTH_RADIUS_M) /
+      180 /
+      1000;
+    const steps = Math.max(1, Math.ceil(km / stepKm));
+    for (let k = 0; k < steps; k++) {
+      const f = k / steps;
+      let lon = lon1 + (lon2 - lon1) * f;
+      if (lon > 180) lon -= 360;
+      if (lon < -180) lon += 360;
+      out.push([lon, lat1 + (lat2 - lat1) * f]);
+    }
+  }
+  out.push(ring[ring.length - 1]);
+  return out;
+}
+
+/** The camera height that frames a cluster of this radius (metres above it). */
+export function framingHeightM(radiusKm) {
+  const r = finite(radiusKm) ? radiusKm : 0;
+  return Math.min(Math.max(r * 4000, 8000), 4_000_000);
 }

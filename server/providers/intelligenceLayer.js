@@ -6,7 +6,7 @@ const IL_API_BASE = (process.env.IL_API_BASE || 'http://127.0.0.1:8700').replace
 const IL_TIMEOUT_MS = 5000;
 // A link distance in km as the intelligence layer names its files: "5", "20", "0.25".
 const DISTANCE_KM = /^(?:[1-9]\d{0,3}(?:\.\d{1,3})?|0\.\d{0,2}[1-9])$/;
-const KINDS = new Set(['aircraft', 'vessels']);
+const KINDS = new Set(['aircraft', 'vessels', 'military', 'satellites', 'fires', 'gnss']);
 
 function sendJson(res, status, body) {
   res.statusCode = status;
@@ -29,7 +29,7 @@ export function intelligenceLayerFile(url) {
 }
 
 /**
- * Vite plugin, for kind = aircraft | vessels:
+ * Vite plugin, for kind = aircraft | vessels | military | satellites | fires | gnss:
  *   GET /api/il/<kind>/index     -> available link distances
  *   GET /api/il/<kind>?km=<km>   -> clusters at that distance
  */

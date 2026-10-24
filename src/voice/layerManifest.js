@@ -412,6 +412,10 @@ export const VOICE_OFF_LAYERS = Object.freeze({
   'bhote-koshi-locator': 'scene-driven event layer (control_scene)',
   'il-aircraft-clusters': 'local intelligence-layer overlay, not a voice data source',
   'il-vessel-clusters': 'local intelligence-layer overlay, not a voice data source',
+  'il-military-clusters': 'local intelligence-layer overlay, not a voice data source',
+  'il-satellite-clusters': 'local intelligence-layer overlay, not a voice data source',
+  'il-fire-clusters': 'local intelligence-layer overlay, not a voice data source',
+  'il-gnss-zones': 'local intelligence-layer overlay, not a voice data source',
 });
 
 const TYPE_NAMES = Object.freeze({

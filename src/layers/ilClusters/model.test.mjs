@@ -2,6 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   aircraftMotion,
+  densifyRing,
+  framingHeightM,
+  militaryMotion,
+  satellitePosition,
   clusterColorCss,
   clustersIndexUrl,
   clustersUrl,
@@ -75,4 +79,37 @@ test('cluster colours are stable and match the IL palette', () => {
   assert.equal(clusterColorCss('C1'), clusterColorCss('C13'));
   assert.notEqual(clusterColorCss('C1'), clusterColorCss('C2'));
   assert.equal(clusterColorCss(null), '#9a9a94');
+});
+
+test('military motion reads the IL metric fields', () => {
+  const m = militaryMotion({ lat: 1, lon: 2, alt_m: 3000, speed_mps: 100, track: 90, climb_mps: -2, position_epoch: 10 });
+  assert.deepEqual(m, { lat: 1, lon: 2, altM: 3000, speedMps: 100, trackDeg: 90, climbMps: -2, reportedAt: 10 });
+});
+
+test('satellites are propagated from their TLE', () => {
+  const node = {
+    tle_line1: '1 25544U 98067A   26293.50000000  .00016717  00000+0  30186-3 0  9991',
+    tle_line2: '2 25544  51.6400 120.0000 0005000  90.0000 270.0000 15.49000000400000',
+  };
+  const p = satellitePosition(node, Date.UTC(2026, 9, 20, 12) / 1000);
+  assert.ok(p.altM > 300_000 && p.altM < 500_000, String(p.altM));
+  assert.ok(Math.abs(p.lat) <= 51.7);
+  assert.equal(satellitePosition({}, 0), null);
+});
+
+test('footprint rings close and follow long edges', () => {
+  assert.deepEqual(densifyRing([]), []);
+  assert.deepEqual(densifyRing([[0, 0]]), []);
+  const ring = densifyRing([[0, 0], [1, 0], [1, 1]], 10);
+  assert.deepEqual(ring[0], [0, 0]);
+  assert.deepEqual(ring.at(-1), [0, 0]);
+  assert.ok(ring.length > 30, String(ring.length)); // ~111 km edges in 10 km steps
+  const across = densifyRing([[179.9, 0], [-179.9, 0]], 100);
+  assert.ok(across.every(([lon]) => Math.abs(lon) > 179), JSON.stringify(across));
+});
+
+test('framing height grows with the cluster and stays bounded', () => {
+  assert.equal(framingHeightM(0), 8000);
+  assert.equal(framingHeightM(10), 40000);
+  assert.equal(framingHeightM(1e6), 4_000_000);
 });

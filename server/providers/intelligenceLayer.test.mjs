@@ -10,6 +10,10 @@ test('the index and per-distance files are allowed for each kind', () => {
   assert.equal(intelligenceLayerFile('/vessels?km=0.25'), 'vessels-0.25km.json');
   assert.equal(intelligenceLayerFile('/vessels?km=0.5'), 'vessels-0.5km.json');
   assert.equal(intelligenceLayerFile('/vessels?km=5'), 'vessels-5km.json');
+  assert.equal(intelligenceLayerFile('/military?km=20'), 'military-20km.json');
+  assert.equal(intelligenceLayerFile('/satellites/index'), 'satellites-index.json');
+  assert.equal(intelligenceLayerFile('/fires?km=2'), 'fires-2km.json');
+  assert.equal(intelligenceLayerFile('/gnss?km=100'), 'gnss-100km.json');
 });
 
 test('anything else is refused', () => {

@@ -3012,5 +3012,73 @@
   "Gemini access was refused. Check the API key and model access.": "Доступ к Gemini запрещён. Проверьте ключ API и доступ к модели.",
   "Gemini Live is unavailable for the configured model.": "Gemini Live недоступен для выбранной модели.",
   "Token request is too large": "Запрос токена слишком велик",
-  "Use an empty JSON token request": "Используйте запрос токена с пустым объектом JSON"
+  "Use an empty JSON token request": "Используйте запрос токена с пустым объектом JSON",
+  "{count} aircraft": {
+    "one": "{count} воздушное судно",
+    "few": "{count} воздушных судна",
+    "many": "{count} воздушных судов",
+    "other": "{count} воздушных судна"
+  },
+  "Mostly registered in {value} ({count})": "В основном зарегистрированы в {value} ({count})",
+  "Mostly {value} ({count})": "В основном {value} ({count})",
+  "{count} military aircraft": {
+    "one": "{count} военное воздушное судно",
+    "few": "{count} военных воздушных судна",
+    "many": "{count} военных воздушных судов",
+    "other": "{count} военных воздушных судна"
+  },
+  "Mostly type {value} ({count})": "В основном тип {value} ({count})",
+  "Callsigns mostly {value} ({count})": "Позывные в основном {value} ({count})",
+  "{count} vessels": {
+    "one": "{count} судно",
+    "few": "{count} судна",
+    "many": "{count} судов",
+    "other": "{count} судна"
+  },
+  "Mostly bound for {value} ({count})": "В основном следуют в {value} ({count})",
+  "{count} satellites": {
+    "one": "{count} спутник",
+    "few": "{count} спутника",
+    "many": "{count} спутников",
+    "other": "{count} спутника"
+  },
+  "{count} fire detections": {
+    "one": "{count} обнаружение пожара",
+    "few": "{count} обнаружения пожара",
+    "many": "{count} обнаружений пожара",
+    "other": "{count} обнаружения пожара"
+  },
+  "{count} low-accuracy cells": {
+    "one": "{count} ячейка с низкой точностью",
+    "few": "{count} ячейки с низкой точностью",
+    "many": "{count} ячеек с низкой точностью",
+    "other": "{count} ячейки с низкой точностью"
+  },
+  "Members share one position": "Все участники в одной точке",
+  "Within {radius} km of its centre": "В пределах {radius} км от центра",
+  "Altitude {min}–{max} km": "Высота {min}–{max} км",
+  "Height {min}–{max} m": "Высота {min}–{max} м",
+  "Not moving": "Неподвижны",
+  "Moving together · heading {heading}° · {speed} km/h": "Движутся вместе · курс {heading}° · {speed} км/ч",
+  "Moving in different directions": "Движутся в разных направлениях",
+  "{total} MW radiative power · peak {peak} MW": "Радиационная мощность {total} МВт · пик {peak} МВт",
+  "Last detected {time} UTC": "Последнее обнаружение {time} UTC",
+  "{degraded} of {aircraft} aircraft reported low navigation accuracy": "{degraded} из {aircraft} воздушных судов сообщили о низкой точности навигации",
+  "Just formed": "Только что образовалась",
+  "Together for {minutes} min": "Вместе {minutes} мин",
+  "Together for {hours} h": "Вместе {hours} ч",
+  "Show this cluster on the map": "Показать эту группу на карте",
+  "{shown} of {total} clusters · largest first": "{shown} из {total} групп · сначала крупные",
+  "Turn on an intelligence layer overlay above to list its clusters": "Включите выше слой аналитики, чтобы увидеть его группы",
+  "Link military aircraft closer than {distance} km in a straight line, height included": "Связывать военные воздушные суда ближе {distance} км по прямой, с учётом высоты",
+  "Link satellites closer than {distance} km in a straight line": "Связывать спутники ближе {distance} км по прямой",
+  "Link fire detections closer than {distance} km along the surface": "Связывать обнаружения пожаров ближе {distance} км по поверхности",
+  "Join low-accuracy cells whose centres are closer than {distance} km": "Объединять ячейки с низкой точностью, центры которых ближе {distance} км",
+  "Military clusters (IL)": "Военные группы (IL)",
+  "Satellite clusters (IL)": "Группы спутников (IL)",
+  "Fire clusters (IL)": "Группы пожаров (IL)",
+  "GNSS zones (IL)": "Зоны GNSS (IL)",
+  "Intelligence layer": "Слой аналитики",
+  "INTELLIGENCE": "АНАЛИТИКА",
+  "Clusters listed": "Показано групп"
 }

@@ -24,6 +24,22 @@
         <div id="recent-imagery-panel-body" data-rail-scroller></div>
       </div>
     </div>
+    <!-- Intelligence layer overlays and the summary of each cluster they show. -->
+    <div id="intel-panel" class="panel-collapsible collapsed" data-panel-id="intel-panel">
+      <div class="panel-glow"></div>
+      <div class="intel-panel-inner" data-rail-scroller>
+        <div class="panel-header">
+          <span class="panel-title" data-i18n>INTELLIGENCE</span>
+          <span id="intel-panel-count" aria-label="Clusters listed" data-i18n-aria-label></span>
+          <span class="panel-divider"></span>
+          <button class="panel-collapse-btn" data-collapse-target="intel-panel" type="button" title="Collapse panel" data-i18n-title>▼</button>
+        </div>
+        <div id="intel-panel-body" data-rail-scroller>
+          <div id="intel-toggles" class="data-toggle-list"></div>
+          <div id="intel-clusters" class="intel-clusters" aria-live="polite"></div>
+        </div>
+      </div>
+    </div>
     <div id="global-context-panel" class="panel-collapsible collapsed" data-panel-id="global-context-panel">
       <div class="panel-glow"></div>
       <div class="global-context-panel-inner" data-rail-scroller>

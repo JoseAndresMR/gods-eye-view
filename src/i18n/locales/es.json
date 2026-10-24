@@ -2945,5 +2945,67 @@
   "Gemini access was refused. Check the API key and model access.": "Se denegó el acceso a Gemini. Comprueba la clave de API y el acceso al modelo.",
   "Gemini Live is unavailable for the configured model.": "Gemini Live no está disponible para el modelo configurado.",
   "Token request is too large": "La solicitud de credencial es demasiado grande",
-  "Use an empty JSON token request": "Usa una solicitud de credencial con un objeto JSON vacío"
+  "Use an empty JSON token request": "Usa una solicitud de credencial con un objeto JSON vacío",
+  "{count} aircraft": {
+    "one": "{count} aeronave",
+    "many": "{count} de aeronaves",
+    "other": "{count} aeronaves"
+  },
+  "Mostly registered in {value} ({count})": "Mayoría registrada en {value} ({count})",
+  "Mostly {value} ({count})": "Mayoría {value} ({count})",
+  "{count} military aircraft": {
+    "one": "{count} aeronave militar",
+    "many": "{count} de aeronaves militares",
+    "other": "{count} aeronaves militares"
+  },
+  "Mostly type {value} ({count})": "Mayoría del tipo {value} ({count})",
+  "Callsigns mostly {value} ({count})": "Indicativos mayoritarios {value} ({count})",
+  "{count} vessels": {
+    "one": "{count} buque",
+    "many": "{count} de buques",
+    "other": "{count} buques"
+  },
+  "Mostly bound for {value} ({count})": "Mayoría con destino {value} ({count})",
+  "{count} satellites": {
+    "one": "{count} satélite",
+    "many": "{count} de satélites",
+    "other": "{count} satélites"
+  },
+  "{count} fire detections": {
+    "one": "{count} detección de fuego",
+    "many": "{count} de detecciones de fuego",
+    "other": "{count} detecciones de fuego"
+  },
+  "{count} low-accuracy cells": {
+    "one": "{count} celda de baja precisión",
+    "many": "{count} de celdas de baja precisión",
+    "other": "{count} celdas de baja precisión"
+  },
+  "Members share one position": "Los miembros comparten una posición",
+  "Within {radius} km of its centre": "A menos de {radius} km de su centro",
+  "Altitude {min}–{max} km": "Altitud {min}–{max} km",
+  "Height {min}–{max} m": "Altura {min}–{max} m",
+  "Not moving": "Sin movimiento",
+  "Moving together · heading {heading}° · {speed} km/h": "Se mueven juntos · rumbo {heading}° · {speed} km/h",
+  "Moving in different directions": "Se mueven en direcciones distintas",
+  "{total} MW radiative power · peak {peak} MW": "{total} MW de potencia radiativa · pico {peak} MW",
+  "Last detected {time} UTC": "Última detección {time} UTC",
+  "{degraded} of {aircraft} aircraft reported low navigation accuracy": "{degraded} de {aircraft} aeronaves notificaron baja precisión de navegación",
+  "Just formed": "Recién formado",
+  "Together for {minutes} min": "Juntos desde hace {minutes} min",
+  "Together for {hours} h": "Juntos desde hace {hours} h",
+  "Show this cluster on the map": "Mostrar este grupo en el mapa",
+  "{shown} of {total} clusters · largest first": "{shown} de {total} grupos · primero los mayores",
+  "Turn on an intelligence layer overlay above to list its clusters": "Activa arriba una capa de inteligencia para ver sus grupos",
+  "Link military aircraft closer than {distance} km in a straight line, height included": "Unir aeronaves militares a menos de {distance} km en línea recta, altura incluida",
+  "Link satellites closer than {distance} km in a straight line": "Unir satélites a menos de {distance} km en línea recta",
+  "Link fire detections closer than {distance} km along the surface": "Unir detecciones de fuego a menos de {distance} km sobre la superficie",
+  "Join low-accuracy cells whose centres are closer than {distance} km": "Unir celdas de baja precisión cuyos centros estén a menos de {distance} km",
+  "Military clusters (IL)": "Grupos militares (IL)",
+  "Satellite clusters (IL)": "Grupos de satélites (IL)",
+  "Fire clusters (IL)": "Grupos de incendios (IL)",
+  "GNSS zones (IL)": "Zonas GNSS (IL)",
+  "Intelligence layer": "Capa de inteligencia",
+  "INTELLIGENCE": "INTELIGENCIA",
+  "Clusters listed": "Grupos listados"
 }

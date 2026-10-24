@@ -34,7 +34,12 @@ import { localGeoJsonServices } from './localGeojsonServices.js';
 import { createBhoteKoshiEventLayer } from '../data/bhoteKoshiEvent.js';
 import { createBhoteKoshiLocatorLayer } from '../data/bhoteKoshiLocator.js';
 import {
+  IL_LAYER_IDS,
   createIlAircraftClustersLayer,
+  createIlFireClustersLayer,
+  createIlGnssZonesLayer,
+  createIlMilitaryClustersLayer,
+  createIlSatelliteClustersLayer,
   createIlVesselClustersLayer,
 } from '../layers/ilClusters/index.js';
 
@@ -45,8 +50,7 @@ import {
 export const LOCAL_ONLY_LAYER_METADATA = Object.freeze([
   Object.freeze({ id: 'local-adsb', disposition: 'local-only' }),
   // Read the intelligence layer process running on this machine.
-  Object.freeze({ id: 'il-aircraft-clusters', disposition: 'local-only' }),
-  Object.freeze({ id: 'il-vessel-clusters', disposition: 'local-only' }),
+  ...IL_LAYER_IDS.map((id) => Object.freeze({ id, disposition: 'local-only' })),
 ]);
 
 /** Serialization metadata for every layer the application catalog constructs. */
@@ -126,6 +130,7 @@ export function createApplicationCatalog({
           ...(resolveAsset ? { resolveAsset } : {}),
         }),
         createIlAircraftClustersLayer({ flights }),
+        createIlMilitaryClustersLayer({ military }),
         createApplicationEarthquakes({ source: sources.earthquakes }),
         createApplicationAirQuality({ source: sources['air-quality'] }),
         createApplicationFirePerimeters({
@@ -142,6 +147,7 @@ export function createApplicationCatalog({
         }),
         satellites,
         createApplicationLaunches({ source: sources.launches, satellites }),
+        createIlSatelliteClustersLayer({ satellites }),
         createApplicationTraffic({ source: sources.traffic, surface }),
         createApplicationCctv({ surface, source: sources.cctv }),
         createApplicationRadio({ surface, source: sources.radio }),
@@ -185,6 +191,8 @@ export function createApplicationCatalog({
           source: 'NASA FIRMS · LIVE',
           feed: sources.firms,
         }),
+        createIlFireClustersLayer({ surface }),
+        createIlGnssZonesLayer({ surface }),
       ],
       metadata,
     );
