@@ -1,6 +1,7 @@
 import * as Cesium from 'cesium';
 import { formatNumber, msg, t } from '../../i18n/index.js';
 import { governorRequestRender } from '../../renderGovernor.js';
+import { nearFarScalarValueAtDistance } from '../../data/focusDeemphasis.js';
 import {
   IL_AIRCRAFT_CLUSTERS_ID,
   aircraftClustersUrl,
@@ -12,16 +13,23 @@ import {
 } from './model.js';
 export * from './model.js';
 
-const REPOSITION_MS = 1000;
+const REPOSITION_MS = 250;
+// Same near/far scaling as the flights layer's aircraft sprites, so rings and
+// links grow and shrink with the planes they mark.
+const SCALE_BY_DISTANCE = new Cesium.NearFarScalar(1000, 3.0, 8000000, 0.5);
+const RING_PIXELS = 14;
+const LINK_WIDTH = 1.5;
 
 /**
  * Proximity clusters of airborne aircraft computed by the local intelligence
  * layer: aircraft closer than the chosen straight-line 3D distance (height
  * included) are linked. Draws a ring per clustered aircraft and the shortest
- * links that join each cluster, coloured by cluster and dead-reckoned between
- * polls so they follow the planes. The distance is chosen with the row chips.
+ * links that join each cluster, coloured by cluster. Rings sit where the
+ * flights layer is drawing each plane (its detection anchors); aircraft it
+ * isn't drawing are dead-reckoned from the intelligence layer's report. The
+ * distance is chosen with the row chips.
  */
-export function createIlAircraftClustersLayer({ fetchImpl = globalThis.fetch } = {}) {
+export function createIlAircraftClustersLayer({ flights = null, fetchImpl = globalThis.fetch } = {}) {
   let _viewer = null;
   let _points = null;
   let _lines = null;
@@ -42,22 +50,49 @@ export function createIlAircraftClustersLayer({ fetchImpl = globalThis.fetch } =
   const toCartesian = (p) => Cesium.Cartesian3.fromDegrees(p.lon, p.lat, p.altM);
   const notifyRow = () => _rowListener?.();
 
+  /** icao24 -> where the flights layer is drawing that plane right now. */
+  function liveAnchors() {
+    const anchors = new Map();
+    let objects = [];
+    try {
+      objects = flights?.getDetectableObjects?.() || [];
+    } catch (error) {
+      console.warn('[Data:IL] Flight anchors unavailable:', error);
+    }
+    for (const object of objects) {
+      if (object?.sourceId && object.position)
+        anchors.set(String(object.sourceId).toLowerCase(), object.position);
+    }
+    return anchors;
+  }
+
   function reposition() {
     if (!_enabled || !_points) return;
     const now = Date.now() / 1000;
+    const anchors = liveAnchors();
     const where = new Map();
     for (const node of _nodes) {
-      const p = predictPosition(node, now);
-      if (!p) continue;
-      const cart = toCartesian(p);
+      const anchor = anchors.get(node.id);
+      let cart;
+      if (anchor) cart = Cesium.Cartesian3.clone(anchor);
+      else {
+        const p = predictPosition(node, now);
+        if (!p) continue;
+        cart = toCartesian(p);
+      }
       where.set(node.id, cart);
       const point = _drawnPoints.get(node.id);
       if (point) point.position = cart;
     }
+    const height = _viewer?.camera?.positionCartographic?.height;
+    const width = Number.isFinite(height)
+      ? Math.max(1, LINK_WIDTH * nearFarScalarValueAtDistance(SCALE_BY_DISTANCE, height))
+      : LINK_WIDTH;
     for (const { line, a, b } of _drawnLines) {
       const pa = where.get(a);
       const pb = where.get(b);
       if (pa && pb) line.positions = [pa, pb];
+      if (line.width !== width) line.width = width;
     }
     governorRequestRender(IL_AIRCRAFT_CLUSTERS_ID);
   }
@@ -78,10 +113,11 @@ export function createIlAircraftClustersLayer({ fetchImpl = globalThis.fetch } =
       _drawnPoints.set(node.id, _points.add({
         id: `${IL_AIRCRAFT_CLUSTERS_ID}:${node.id}`,
         position: Cesium.Cartesian3.ZERO,
-        pixelSize: 12,
+        pixelSize: RING_PIXELS,
         color: c.withAlpha(0.15),
         outlineColor: c,
         outlineWidth: 2,
+        scaleByDistance: SCALE_BY_DISTANCE,
       }));
     }
     const clusterOf = new Map(_nodes.map((n) => [n.id, n.cluster_id]));
@@ -89,7 +125,7 @@ export function createIlAircraftClustersLayer({ fetchImpl = globalThis.fetch } =
       if (!clusterOf.has(edge.a) || !clusterOf.has(edge.b)) continue;
       const line = _lines.add({
         positions: [Cesium.Cartesian3.ZERO, Cesium.Cartesian3.ZERO],
-        width: 2,
+        width: LINK_WIDTH,
         material: Cesium.Material.fromType('Color', {
           color: color(clusterOf.get(edge.a)).withAlpha(0.9),
         }),
@@ -124,8 +160,10 @@ export function createIlAircraftClustersLayer({ fetchImpl = globalThis.fetch } =
       rebuild();
       _lastUpdate = Date.now();
       _lastError = null;
+      const anchors = liveAnchors();
+      const anchored = _nodes.filter((n) => anchors.has(n.id)).length;
       console.log(
-        `[Data:IL] ${distanceLabel(_distanceKm)} km: ${_nodes.length} clustered aircraft, ${_clusterCount} clusters, ${_edges.length} links`,
+        `[Data:IL] ${distanceLabel(_distanceKm)} km: ${_nodes.length} clustered aircraft (${anchored} on drawn planes), ${_clusterCount} clusters, ${_edges.length} links`,
       );
       return true;
     } catch (e) {

@@ -121,7 +121,7 @@ export function createApplicationCatalog({
           displayParams: () => flights.getParams(),
           ...(resolveAsset ? { resolveAsset } : {}),
         }),
-        createIlAircraftClustersLayer(),
+        createIlAircraftClustersLayer({ flights }),
         createApplicationEarthquakes({ source: sources.earthquakes }),
         createApplicationAirQuality({ source: sources['air-quality'] }),
         createApplicationFirePerimeters({
