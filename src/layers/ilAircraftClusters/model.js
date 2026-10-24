@@ -23,14 +23,17 @@ const finite = (v) => typeof v === 'number' && Number.isFinite(v);
 
 /**
  * Where an aircraft is now, extrapolated from its last OpenSky report along
- * its ground track at its ground speed and vertical rate.
- * @param {object} node IL node: lat, lon, alt_m, velocity (m/s), true_track (deg), vertical_rate (m/s), time_position (s).
+ * its ground track at its ground speed and vertical rate. Height is the GNSS
+ * altitude (`geo_altitude`, an ellipsoid height like the globe's) when
+ * reported; barometric `alt_m` is a pressure reading and can sit below the
+ * terrain near high airports.
+ * @param {object} node IL node: lat, lon, geo_altitude, alt_m, velocity (m/s), true_track (deg), vertical_rate (m/s), time_position (s).
  * @param {number} nowSec Current Unix time in seconds.
  * @returns {{lat:number, lon:number, altM:number}|null}
  */
 export function predictPosition(node, nowSec) {
   if (!finite(node?.lat) || !finite(node?.lon)) return null;
-  const alt = finite(node.alt_m) ? node.alt_m : 0;
+  const alt = finite(node.geo_altitude) ? node.geo_altitude : finite(node.alt_m) ? node.alt_m : 0;
   const reportedAt = finite(node.time_position) ? node.time_position : nowSec;
   const dt = Math.min(Math.max(nowSec - reportedAt, 0), MAX_DEAD_RECKON_S);
   if (!finite(node.velocity) || !finite(node.true_track) || dt === 0) {

@@ -26,6 +26,11 @@ test('climb follows vertical rate and never goes below ground', () => {
   assert.equal(predictPosition({ ...base, alt_m: 100, vertical_rate: -50 }, 1010).altM, 0);
 });
 
+test('height prefers GNSS altitude over barometric', () => {
+  assert.equal(predictPosition({ ...base, geo_altitude: 10180 }, 1000).altM, 10180);
+  assert.equal(predictPosition({ ...base, geo_altitude: null }, 1000).altM, 10000);
+});
+
 test('missing motion or position is handled', () => {
   assert.deepEqual(predictPosition({ ...base, velocity: null }, 1050), { lat: 50, lon: 5, altM: 10000 });
   assert.equal(predictPosition({ lat: null, lon: 5 }, 0), null);

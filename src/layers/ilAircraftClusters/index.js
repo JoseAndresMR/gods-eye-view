@@ -16,9 +16,9 @@ const msg = (text) => text;
 
 /**
  * Proximity clusters of airborne aircraft computed by the local intelligence
- * layer (5 NM / 1,000 ft by default): links between linked aircraft and a
- * ring per clustered aircraft, coloured by cluster and dead-reckoned between
- * polls so they follow the planes.
+ * layer (within 5 NM horizontally by default): links between linked aircraft
+ * and a ring per clustered aircraft, coloured by cluster and dead-reckoned
+ * between polls so they follow the planes.
  */
 export function createIlAircraftClustersLayer({ fetchImpl = globalThis.fetch } = {}) {
   let _viewer = null;
