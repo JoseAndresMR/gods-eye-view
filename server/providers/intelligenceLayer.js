@@ -1,12 +1,11 @@
 // Read-only bridge to the local intelligence layer (a separate process on this
-// machine). Only allowlisted files are forwarded, so this route can never be
-// used to reach anything else.
+// machine). Only allowlisted file names are forwarded, so this route can never
+// be used to reach anything else.
 
 const IL_API_BASE = (process.env.IL_API_BASE || 'http://127.0.0.1:8700').replace(/\/+$/, '');
 const IL_TIMEOUT_MS = 5000;
-const IL_FILES = Object.freeze({
-  '/aircraft': 'aircraft.json',
-});
+// A link distance in km as the intelligence layer names its files: "5", "20", "2.5".
+const DISTANCE_KM = /^[1-9]\d{0,3}(?:\.\d{1,3})?$/;
 
 function sendJson(res, status, body) {
   res.statusCode = status;
@@ -15,13 +14,27 @@ function sendJson(res, status, body) {
   res.end(typeof body === 'string' ? body : JSON.stringify(body));
 }
 
-/** Vite plugin: GET /api/il/aircraft -> the intelligence layer's aircraft.json. */
+/** Map a request to the intelligence layer file it may read, or null. */
+export function intelligenceLayerFile(url) {
+  const { pathname, searchParams } = new URL(url || '', 'http://localhost');
+  if (pathname === '/aircraft/index') return 'aircraft-index.json';
+  if (pathname === '/aircraft') {
+    const km = searchParams.get('km') || '';
+    return DISTANCE_KM.test(km) ? `aircraft-${km}km.json` : null;
+  }
+  return null;
+}
+
+/**
+ * Vite plugin:
+ *   GET /api/il/aircraft/index     -> available link distances
+ *   GET /api/il/aircraft?km=<km>   -> aircraft clusters at that distance
+ */
 export function intelligenceLayerProxy() {
   function install(middlewares) {
     middlewares.use('/api/il', async (req, res) => {
-      const pathname = new URL(req.url || '', 'http://localhost').pathname;
-      const file = IL_FILES[pathname];
-      if (req.method !== 'GET' || !file) {
+      const file = req.method === 'GET' ? intelligenceLayerFile(req.url) : null;
+      if (!file) {
         sendJson(res, 404, { error: 'Unknown intelligence layer resource' });
         return;
       }

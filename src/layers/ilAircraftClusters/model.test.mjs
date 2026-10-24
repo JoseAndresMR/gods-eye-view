@@ -1,6 +1,26 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { MAX_DEAD_RECKON_S, clusterColorCss, predictPosition } from './model.js';
+import {
+  MAX_DEAD_RECKON_S,
+  aircraftClustersUrl,
+  clusterColorCss,
+  distanceLabel,
+  pickDistance,
+  predictPosition,
+} from './model.js';
+
+test('distance choice keeps the current one while it is offered', () => {
+  assert.equal(pickDistance([5, 10, 20], 10, 20), 10);
+  assert.equal(pickDistance([5, 10, 20], 30, 20), 20);
+  assert.equal(pickDistance([5, 10], null, 20), 5);
+  assert.equal(pickDistance([], 10, 20), null);
+});
+
+test('distance URLs use the intelligence layer file names', () => {
+  assert.equal(distanceLabel(20), '20');
+  assert.equal(distanceLabel(2.5), '2.5');
+  assert.equal(aircraftClustersUrl(20), '/api/il/aircraft?km=20');
+});
 
 const base = { lat: 50, lon: 5, alt_m: 10000, velocity: 200, true_track: 90, vertical_rate: 0, time_position: 1000 };
 

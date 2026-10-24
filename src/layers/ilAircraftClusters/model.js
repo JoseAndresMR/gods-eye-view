@@ -1,7 +1,28 @@
 // Pure helpers for the intelligence-layer aircraft clusters overlay.
 
 export const IL_AIRCRAFT_CLUSTERS_ID = 'il-aircraft-clusters';
-export const IL_AIRCRAFT_CLUSTERS_URL = '/api/il/aircraft';
+export const IL_AIRCRAFT_INDEX_URL = '/api/il/aircraft/index';
+
+/** A distance as the intelligence layer names it in files: 20 -> "20", 2.5 -> "2.5". */
+export function distanceLabel(km) {
+  return String(Number(km));
+}
+
+export function aircraftClustersUrl(km) {
+  return `/api/il/aircraft?km=${encodeURIComponent(distanceLabel(km))}`;
+}
+
+/**
+ * The distance to show: the current choice while the intelligence layer still
+ * offers it, otherwise its default, otherwise its first distance.
+ */
+export function pickDistance(available, current, fallback) {
+  const list = (available || []).map(Number).filter((km) => Number.isFinite(km) && km > 0);
+  if (!list.length) return null;
+  if (list.includes(Number(current))) return Number(current);
+  if (list.includes(Number(fallback))) return Number(fallback);
+  return list[0];
+}
 
 /** Never extrapolate further than this; an older report is drawn where it was. */
 export const MAX_DEAD_RECKON_S = 120;
