@@ -4,8 +4,9 @@
 
 const IL_API_BASE = (process.env.IL_API_BASE || 'http://127.0.0.1:8700').replace(/\/+$/, '');
 const IL_TIMEOUT_MS = 5000;
-// A link distance in km as the intelligence layer names its files: "5", "20", "2.5".
-const DISTANCE_KM = /^[1-9]\d{0,3}(?:\.\d{1,3})?$/;
+// A link distance in km as the intelligence layer names its files: "5", "20", "0.25".
+const DISTANCE_KM = /^(?:[1-9]\d{0,3}(?:\.\d{1,3})?|0\.\d{0,2}[1-9])$/;
+const KINDS = new Set(['aircraft', 'vessels']);
 
 function sendJson(res, status, body) {
   res.statusCode = status;
@@ -17,18 +18,20 @@ function sendJson(res, status, body) {
 /** Map a request to the intelligence layer file it may read, or null. */
 export function intelligenceLayerFile(url) {
   const { pathname, searchParams } = new URL(url || '', 'http://localhost');
-  if (pathname === '/aircraft/index') return 'aircraft-index.json';
-  if (pathname === '/aircraft') {
+  const [, kind, rest, extra] = pathname.split('/');
+  if (!KINDS.has(kind) || extra !== undefined) return null;
+  if (rest === 'index') return `${kind}-index.json`;
+  if (rest === undefined) {
     const km = searchParams.get('km') || '';
-    return DISTANCE_KM.test(km) ? `aircraft-${km}km.json` : null;
+    return DISTANCE_KM.test(km) ? `${kind}-${km}km.json` : null;
   }
   return null;
 }
 
 /**
- * Vite plugin:
- *   GET /api/il/aircraft/index     -> available link distances
- *   GET /api/il/aircraft?km=<km>   -> aircraft clusters at that distance
+ * Vite plugin, for kind = aircraft | vessels:
+ *   GET /api/il/<kind>/index     -> available link distances
+ *   GET /api/il/<kind>?km=<km>   -> clusters at that distance
  */
 export function intelligenceLayerProxy() {
   function install(middlewares) {

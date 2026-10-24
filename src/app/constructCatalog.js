@@ -33,7 +33,10 @@ import { createInfrastructureLayers } from '../data/infrastructure.js';
 import { localGeoJsonServices } from './localGeojsonServices.js';
 import { createBhoteKoshiEventLayer } from '../data/bhoteKoshiEvent.js';
 import { createBhoteKoshiLocatorLayer } from '../data/bhoteKoshiLocator.js';
-import { createIlAircraftClustersLayer } from '../layers/ilAircraftClusters/index.js';
+import {
+  createIlAircraftClustersLayer,
+  createIlVesselClustersLayer,
+} from '../layers/ilClusters/index.js';
 
 /**
  * Hardware-local layers are registered like any other but never enter share
@@ -41,8 +44,9 @@ import { createIlAircraftClustersLayer } from '../layers/ilAircraftClusters/inde
  */
 export const LOCAL_ONLY_LAYER_METADATA = Object.freeze([
   Object.freeze({ id: 'local-adsb', disposition: 'local-only' }),
-  // Reads the intelligence layer process running on this machine.
+  // Read the intelligence layer process running on this machine.
   Object.freeze({ id: 'il-aircraft-clusters', disposition: 'local-only' }),
+  Object.freeze({ id: 'il-vessel-clusters', disposition: 'local-only' }),
 ]);
 
 /** Serialization metadata for every layer the application catalog constructs. */
@@ -146,6 +150,7 @@ export function createApplicationCatalog({
         createApplicationDirections({ source: sources.directions }),
         createApplicationRecentImagery({ source: sources['recent-imagery'] }),
         vessels,
+        createIlVesselClustersLayer({ vessels }),
         installations,
         createApplicationAwareness({
           flights,

@@ -31,6 +31,7 @@ export const LAYER_NAME_KEYS = Object.freeze({
   'local-firms': msg('FIRMS Active Fires'),
   'local-adsb': msg('Local ADS-B'),
   'il-aircraft-clusters': msg('Aircraft clusters (IL)'),
+  'il-vessel-clusters': msg('Vessel clusters (IL)'),
   transit: msg('Transit'),
   'recent-imagery': msg('Recent Imagery'),
   'fire-perimeters': msg('Fire Perimeters'),
