@@ -2,8 +2,14 @@ import * as Cesium from 'cesium';
 import { formatNumber, msg, t } from '../../i18n/index.js';
 import { governorRequestRender } from '../../renderGovernor.js';
 import {
+  clearOverlaySource,
+  setOverlayEntries,
+  setOverlaySourceVisible,
+} from '../../overlays/worldOverlay.js';
+import {
   IL_OBSERVATION_ID,
   boxCovers,
+  clusterLabelEntry,
   distanceLabel,
   elevationDeg,
   observationUrl,
@@ -20,6 +26,10 @@ const CARD_REFRESH_MS = 30000;
 const MOVE_SETTLE_MS = 400;
 const RETRY_MS = 10000;
 const IMAGING_CSS = '#ffd166';
+/** Name tags of the drawn satellites, on the shared world-overlay host. */
+const TAG_SOURCE = 'il-observation-satellites';
+/** Satellite names win label collisions against cluster counts. */
+const TAG_PRIORITY = 1e9;
 const LINE_WIDTH = 1.5;
 /** Lines end this far above the ground so terrain doesn't swallow them. */
 const GROUND_LIFT_M = 20;
@@ -67,6 +77,9 @@ export function createIlObservationLayer({ targets = [], surface = null, fetchIm
   let _overhead = new Map();
   let _drawnKey = '';
   let _cardsAt = 0;
+  // satId -> Cartesian3 moved in place each tick, so the name tags follow it.
+  let _satCarts = new Map();
+  let _taggedKey = '';
 
   const notifyRow = () => _rowListener?.();
   const laneKey = (kind, km, clusterId) => `${kind}|${km}|${clusterId}`;
@@ -140,6 +153,28 @@ export function createIlObservationLayer({ targets = [], surface = null, fetchIm
     }
   }
 
+  /** Name tags for the satellites drawn now; republished only when that set changes. */
+  function tag(satIds) {
+    const key = satIds.join(',');
+    if (key === _taggedKey) return;
+    _taggedKey = key;
+    if (!satIds.length) {
+      clearOverlaySource(TAG_SOURCE);
+      return;
+    }
+    setOverlayEntries(
+      TAG_SOURCE,
+      satIds.map((satId) => clusterLabelEntry({
+        clusterId: `sat:${satId}`,
+        count: TAG_PRIORITY,
+        title: _doc.satellites[satId].name,
+        position: _satCarts.get(satId),
+        color: IMAGING_CSS,
+      })),
+      { moving: true },
+    );
+  }
+
   function draw(pairs, nowSec) {
     _points.removeAll();
     _lines.removeAll();
@@ -148,8 +183,14 @@ export function createIlObservationLayer({ targets = [], surface = null, fetchIm
     for (const { satId } of pairs) {
       if (satCart.has(satId)) continue;
       const p = satellitePosition(_doc.satellites[satId], nowSec);
-      satCart.set(satId, p ? Cesium.Cartesian3.fromDegrees(p.lon, p.lat, p.altM) : null);
-      if (!p) continue;
+      if (!p) {
+        satCart.set(satId, null);
+        continue;
+      }
+      const cart = _satCarts.get(satId) || new Cesium.Cartesian3();
+      Cesium.Cartesian3.fromDegrees(p.lon, p.lat, p.altM, Cesium.Ellipsoid.WGS84, cart);
+      _satCarts.set(satId, cart);
+      satCart.set(satId, cart);
       _points.add({
         id: `${IL_OBSERVATION_ID}:${satId}`,
         position: satCart.get(satId),
@@ -168,6 +209,8 @@ export function createIlObservationLayer({ targets = [], surface = null, fetchIm
         material: Cesium.Material.fromType('Color', { color: color.withAlpha(0.7) }),
       });
     }
+    for (const satId of _satCarts.keys()) if (!satCart.get(satId)) _satCarts.delete(satId);
+    tag([..._satCarts.keys()].sort());
     governorRequestRender(IL_OBSERVATION_ID);
   }
 
@@ -203,6 +246,9 @@ export function createIlObservationLayer({ targets = [], surface = null, fetchIm
     _drawnKey = '';
     _points?.removeAll();
     _lines?.removeAll();
+    _satCarts = new Map();
+    _taggedKey = '';
+    clearOverlaySource(TAG_SOURCE);
     governorRequestRender(IL_OBSERVATION_ID);
   }
 
@@ -261,6 +307,7 @@ export function createIlObservationLayer({ targets = [], surface = null, fetchIm
 
   function show(visible) {
     for (const collection of [_points, _lines]) if (collection) collection.show = visible;
+    setOverlaySourceVisible(TAG_SOURCE, visible);
   }
 
   return {
