@@ -20,9 +20,11 @@ export const IMAGERY_BOX_POINTER_OWNER = 'recent-imagery-box';
 
 /**
  * Wire the box tool.
- * @param {{ viewer: object, onBox: (box: object) => void, onCancel?: (reason: string, message?: string, box?: object) => void, onActive?: (active: boolean) => void, onEscape?: () => boolean, cesium?: object, pickWorld?: Function, documentRef?: object }} deps
+ * @param {{ viewer: object, onBox: (box: object) => void, onCancel?: (reason: string, message?: string, box?: object) => void, onActive?: (active: boolean) => void, onEscape?: () => boolean, validate?: (box: object) => {ok: boolean, box?: object, reason?: string, message?: string}, ownerId?: string, cesium?: object, pickWorld?: Function, documentRef?: object }} deps
  *   `onEscape` runs before the tool cancels on Escape; returning `true` claims
- *   the key (it is still consumed) and leaves the tool armed.
+ *   the key (it is still consumed) and leaves the tool armed. `validate`
+ *   replaces the imagery box rules and `ownerId` the pointer owner, for other
+ *   box selections.
  * @returns {{ start: () => boolean, cancel: (reason?: string) => void, isActive: () => boolean, destroy: () => Promise<void> } | null}
  */
 export function initImageryBoxTool({
@@ -31,6 +33,8 @@ export function initImageryBoxTool({
   onCancel,
   onActive,
   onEscape,
+  validate = validateBox,
+  ownerId = IMAGERY_BOX_POINTER_OWNER,
   cesium = Cesium,
   pickWorld = pickWorldFromScreen,
   documentRef = globalThis.document,
@@ -169,7 +173,7 @@ export function initImageryBoxTool({
     if (!anchor || destroyed) return;
     corner = worldAt(event.position) || corner;
     const box = dragBox();
-    const result = validateBox(box);
+    const result = validate(box);
     if (result.reason === 'degenerate')
       result.message = msg('Drag to size the box');
     endDrag();
@@ -236,7 +240,7 @@ export function initImageryBoxTool({
   function setActive(next) {
     if (next === active) return active;
     if (next) {
-      lease = claimPointer(IMAGERY_BOX_POINTER_OWNER);
+      lease = claimPointer(ownerId);
       if (!lease) {
         onCancel?.(
           'pointer-busy',

@@ -1,19 +1,28 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { intelligenceLayerFile } from './intelligenceLayer.js';
+import { intelligenceLayerPath } from './intelligenceLayer.js';
 
-test('the index and per-distance files are allowed for each kind', () => {
-  assert.equal(intelligenceLayerFile('/aircraft/index'), 'aircraft-index.json');
-  assert.equal(intelligenceLayerFile('/aircraft?km=20'), 'aircraft-20km.json');
-  assert.equal(intelligenceLayerFile('/aircraft?km=2.5'), 'aircraft-2.5km.json');
-  assert.equal(intelligenceLayerFile('/vessels/index'), 'vessels-index.json');
-  assert.equal(intelligenceLayerFile('/vessels?km=0.25'), 'vessels-0.25km.json');
-  assert.equal(intelligenceLayerFile('/vessels?km=0.5'), 'vessels-0.5km.json');
-  assert.equal(intelligenceLayerFile('/vessels?km=5'), 'vessels-5km.json');
-  assert.equal(intelligenceLayerFile('/military?km=20'), 'military-20km.json');
-  assert.equal(intelligenceLayerFile('/satellites/index'), 'satellites-index.json');
-  assert.equal(intelligenceLayerFile('/fires?km=2'), 'fires-2km.json');
-  assert.equal(intelligenceLayerFile('/gnss?km=100'), 'gnss-100km.json');
+test('index, per-distance and box reads are allowed for each kind', () => {
+  assert.equal(intelligenceLayerPath('GET', '/aircraft/index'), '/api/aircraft/index');
+  assert.equal(intelligenceLayerPath('GET', '/aircraft?km=20'), '/api/aircraft?km=20');
+  assert.equal(intelligenceLayerPath('GET', '/vessels?km=0.25'), '/api/vessels?km=0.25');
+  assert.equal(intelligenceLayerPath('GET', '/military?km=20'), '/api/military?km=20');
+  assert.equal(intelligenceLayerPath('GET', '/satellites/index'), '/api/satellites/index');
+  assert.equal(intelligenceLayerPath('GET', '/gnss?km=100'), '/api/gnss?km=100');
+  assert.equal(
+    intelligenceLayerPath('GET', '/fires?km=2&bbox=110,-40.123456,155,-10'),
+    '/api/fires?km=2&bbox=110,-40.1235,155,-10',
+  );
+  // West greater than east crosses the antimeridian.
+  assert.equal(intelligenceLayerPath('GET', '/vessels?km=1&bbox=170,-5,-170,5'), '/api/vessels?km=1&bbox=170,-5,-170,5');
+});
+
+test('areas can be read and saved, nothing else written', () => {
+  assert.equal(intelligenceLayerPath('GET', '/areas'), '/api/areas');
+  assert.equal(intelligenceLayerPath('PUT', '/areas'), '/api/areas');
+  assert.equal(intelligenceLayerPath('DELETE', '/areas'), null);
+  assert.equal(intelligenceLayerPath('PUT', '/aircraft/index'), null);
+  assert.equal(intelligenceLayerPath('POST', '/aircraft?km=20'), null);
 });
 
 test('anything else is refused', () => {
@@ -27,13 +36,18 @@ test('anything else is refused', () => {
     '/aircraft?km=../tracking',
     '/aircraft?km=1/../../etc/passwd',
     '/aircraft?km=12345',
+    '/aircraft?km=20&bbox=1,2,3',
+    '/aircraft?km=20&bbox=0,10,5,5',
+    '/aircraft?km=20&bbox=0,0,200,5',
+    '/aircraft?km=20&bbox=a,b,c,d',
     '/vessels?km=.5',
     '/tracking',
     '/ships/index',
     '/aircraft/index/x',
     '/aircraft/other',
+    '/areas/x',
     '/',
   ]) {
-    assert.equal(intelligenceLayerFile(url), null, url);
+    assert.equal(intelligenceLayerPath('GET', url), null, url);
   }
 });

@@ -10,6 +10,8 @@ import {
   IL_SATELLITE_CLUSTERS_ID,
   IL_VESSEL_CLUSTERS_ID,
   aircraftMotion,
+  boxCovers,
+  requestBox,
   clusterColorCss,
   clustersIndexUrl,
   clustersUrl,
@@ -33,6 +35,8 @@ const REPOSITION_MS = 250;
 const LINK_WIDTH = 1.5;
 const FOOTPRINT_WIDTH = 2;
 const FLY_SECONDS = 1.5;
+/** Wait this long after the camera stops before asking for the new view. */
+const MOVE_SETTLE_MS = 400;
 const COVERAGE_COLOR = Cesium.Color.fromCssColorString('#9a9a94').withAlpha(0.6);
 
 /**
@@ -130,6 +134,12 @@ export function createIlClustersLayer({
   let _staticWhere = new Map();
   let _clusterCount = 0;
   let _meta = {};
+  let _box = null;
+  let _idle = false;
+  let _truncated = null;
+  let _summaryOnly = [];
+  let _removeMoveEnd = null;
+  let _moveTimer = null;
   let _lastUpdate = null;
   let _lastError = null;
   let _rowListener = null;
@@ -298,8 +308,45 @@ export function createIlClustersLayer({
       });
       _drawnLines.push({ line, a: edge.a, b: edge.b });
     }
+    // Clusters listed without members (zoomed out, or over the node budget)
+    // are drawn by their summary: a larger ring at their centre.
+    for (const cluster of _summaryOnly) {
+      const centre = cluster.summary?.centroid;
+      if (!centre) continue;
+      const alt = staticPositions ? groundHeight(centre.lat, centre.lon) : Number.isFinite(centre.alt_m) ? centre.alt_m : 0;
+      const c = color(cluster.id);
+      _points.add({
+        id: `${id}:${cluster.id}`,
+        position: Cesium.Cartesian3.fromDegrees(centre.lon, centre.lat, alt + liftM),
+        pixelSize: ringPixels * 1.6,
+        color: c.withAlpha(0.35),
+        outlineColor: c,
+        outlineWidth: 3,
+        ...(scaleByDistance ? { scaleByDistance } : {}),
+        ...(alwaysOnTop ? { disableDepthTestDistance: Number.POSITIVE_INFINITY } : {}),
+      });
+    }
     drawFootprints(color);
     reposition();
+  }
+
+  /** The view rectangle in degrees, or null when the camera sees no ground. */
+  function viewRect() {
+    const r = _viewer?.camera?.computeViewRectangle?.();
+    if (!r) return null;
+    const deg = Cesium.Math.toDegrees;
+    return { west: deg(r.west), south: deg(r.south), east: deg(r.east), north: deg(r.north) };
+  }
+
+  /** After the camera settles, fetch again if the view left what was fetched. */
+  function onMoveEnd() {
+    clearTimeout(_moveTimer);
+    _moveTimer = setTimeout(() => {
+      if (!_enabled || _idle) return;
+      const next = requestBox(viewRect());
+      const partial = _truncated && (_truncated.listed < _truncated.of || _truncated.drawn < _truncated.listed);
+      if (!boxCovers(_box, next) || (partial && JSON.stringify(next) !== JSON.stringify(_box))) refresh();
+    }, MOVE_SETTLE_MS);
   }
 
   /** Warm DEM heights under static contacts, then re-place them once. */
@@ -331,8 +378,23 @@ export function createIlClustersLayer({
       _distances = Array.isArray(index.distances_km) ? index.distances_km : [];
       _distanceKm = pickDistance(_distances, _distanceKm, index.default_km);
       if (_distanceKm === null) throw new Error(msg('Intelligence layer offers no link distances'));
+      _idle = Boolean(index.idle);
+      if (_idle) {
+        // No area of interest is enabled: the IL computes nothing.
+        _nodes = [];
+        _edges = [];
+        _clusters = [];
+        _summaryOnly = [];
+        _clusterCount = 0;
+        _truncated = null;
+        rebuild();
+        _lastUpdate = Date.now();
+        _lastError = null;
+        return true;
+      }
 
-      const res = await fetchImpl(clustersUrl(kind, _distanceKm), { signal: request.signal, cache: 'no-store' });
+      const box = requestBox(viewRect());
+      const res = await fetchImpl(clustersUrl(kind, _distanceKm, box), { signal: request.signal, cache: 'no-store' });
       const body = await res.json();
       if (stale()) return false;
       if (!res.ok) throw new Error(body?.error || `HTTP ${res.status}`);
@@ -352,8 +414,12 @@ export function createIlClustersLayer({
         .map((e) => ({ a: String(e.a).toLowerCase(), b: String(e.b).toLowerCase() }))
         .filter((e) => nodeIds.has(e.a) && nodeIds.has(e.b));
       // Only clusters seen this tick carry a summary; ended ones are history.
-      _clusters = (body.clusters || []).filter((c) => c.summary && clusterIds.has(c.id));
-      _clusterCount = new Set(_nodes.map((n) => n.cluster_id)).size;
+      // A tiled feed may list clusters without their members (`drawn` false).
+      _clusters = (body.clusters || []).filter((c) => c.summary && (clusterIds.has(c.id) || c.drawn === false));
+      _summaryOnly = _clusters.filter((c) => c.drawn === false);
+      _clusterCount = _clusters.length;
+      _truncated = body.truncated || null;
+      _box = box;
       _meta = body.meta || {};
       rebuild();
       warmGround();
@@ -401,6 +467,8 @@ export function createIlClustersLayer({
     enable() {
       _enabled = true;
       show(true);
+      _removeMoveEnd?.();
+      _removeMoveEnd = _viewer?.camera?.moveEnd?.addEventListener?.(onMoveEnd) || null;
       clearInterval(_timer);
       _timer = staticPositions ? setInterval(reposition, REPOSITION_MS * 4) : setInterval(reposition, REPOSITION_MS);
     },
@@ -409,6 +477,9 @@ export function createIlClustersLayer({
       _request?.abort();
       _request = null;
       _enabled = false;
+      _removeMoveEnd?.();
+      _removeMoveEnd = null;
+      clearTimeout(_moveTimer);
       clearInterval(_timer);
       _timer = null;
       show(false);
@@ -451,7 +522,14 @@ export function createIlClustersLayer({
         })),
         info: !_lastUpdate
           ? null
-          : infoOf
+          : _idle
+            ? t('Paused · no area of interest is enabled')
+            : _truncated && (_truncated.listed < _truncated.of || _truncated.drawn < _truncated.listed)
+              ? t('{listed} largest of {total} clusters here · large rings are whole clusters, zoom in for their members', {
+                  listed: formatNumber(_truncated.listed),
+                  total: formatNumber(_truncated.of),
+                })
+              : infoOf
             ? infoOf({ clusters: _clusterCount, meta: _meta })
             : t('{clusters} clusters · lines show the shortest links joining each cluster', {
                 clusters: formatNumber(_clusterCount),
@@ -500,6 +578,9 @@ export function createIlClustersLayer({
     destroy(viewer = _viewer) {
       _request?.abort();
       _request = null;
+      _removeMoveEnd?.();
+      _removeMoveEnd = null;
+      clearTimeout(_moveTimer);
       clearInterval(_timer);
       _timer = null;
       _enabled = false;

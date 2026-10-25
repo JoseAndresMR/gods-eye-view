@@ -105,3 +105,43 @@
   border: 2px solid;
   border-radius: 50%;
 }
+.intel-areas {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+.intel-area-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.intel-area-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--text-secondary);
+  font: 12px var(--font-sans);
+}
+input.intel-area-name {
+  padding: 2px 6px;
+}
+.intel-area-icon {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid var(--glass-border);
+  border-radius: 4px;
+  background: none;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+.intel-area-icon:hover,
+.intel-area-icon:focus-visible {
+  color: var(--text-primary);
+  border-color: #79c2ff;
+}
+.intel-area-draw {
+  align-self: flex-start;
+}

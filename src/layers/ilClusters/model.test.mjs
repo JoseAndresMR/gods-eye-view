@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   aircraftMotion,
+  boxCovers,
+  requestBox,
   cellCorners,
   circleRing,
   densifyRing,
@@ -130,4 +132,30 @@ test('coverage circles close and keep their radius', () => {
   assert.ok(Math.abs(ring[0][1] - 463 / 111.195) < 0.01, String(ring[0]));
   assert.deepEqual(ring[0].map((v) => v.toFixed(6)), ring.at(-1).map((v) => v.toFixed(6)));
   assert.deepEqual(circleRing(0, 0, 0), []);
+});
+
+test('cluster requests can name a box', () => {
+  assert.equal(clustersUrl('fires', 2), '/api/il/fires?km=2');
+  assert.equal(
+    clustersUrl('fires', 2, { west: 110.12345, south: -40, east: 155, north: -10 }),
+    '/api/il/fires?km=2&bbox=110.123,-40,155,-10',
+  );
+});
+
+test('request boxes pad the view and give up near global views', () => {
+  assert.deepEqual(requestBox({ west: 0, south: 50, east: 10, north: 54 }), { west: -2.5, east: 12.5, south: 49, north: 55 });
+  assert.equal(requestBox(null), null);
+  assert.equal(requestBox({ west: -170, south: -60, east: 170, north: 60 }), null);
+  const across = requestBox({ west: 175, south: -5, east: -175, north: 5 });
+  assert.ok(across.west > 170 && across.east < -170, JSON.stringify(across));
+});
+
+test('a request box covers views inside it', () => {
+  const box = { west: 0, south: 40, east: 20, north: 60 };
+  assert.equal(boxCovers(box, { west: 5, south: 45, east: 15, north: 55 }), true);
+  assert.equal(boxCovers(box, { west: 15, south: 45, east: 25, north: 55 }), false);
+  assert.equal(boxCovers(null, box), true);
+  assert.equal(boxCovers(box, null), false);
+  const across = { west: 170, south: -10, east: -170, north: 10 };
+  assert.equal(boxCovers(across, { west: 175, south: -5, east: -175, north: 5 }), true);
 });

@@ -49,9 +49,54 @@ export function clustersIndexUrl(kind) {
   return `/api/il/${kind}/index`;
 }
 
-/** @param {string} kind */
-export function clustersUrl(kind, km) {
-  return `/api/il/${kind}?km=${encodeURIComponent(distanceLabel(km))}`;
+/**
+ * @param {string} kind
+ * @param {number} km
+ * @param {{west:number, south:number, east:number, north:number}|null} [box]
+ *   Only clusters touching this box (degrees; west > east crosses the antimeridian).
+ */
+export function clustersUrl(kind, km, box = null) {
+  const base = `/api/il/${kind}?km=${encodeURIComponent(distanceLabel(km))}`;
+  if (!box) return base;
+  const edges = [box.west, box.south, box.east, box.north].map((v) => Number(v.toFixed(3)));
+  return `${base}&bbox=${edges.join(',')}`;
+}
+
+/** Areas of interest: where the intelligence layer computes. */
+export const IL_AREAS_URL = '/api/il/areas';
+
+/** Views wider than this are treated as worldwide (the overview). */
+const MAX_VIEW_SPAN_DEG = 150;
+
+/**
+ * The part of the world to ask for, from a view rectangle in degrees: padded
+ * by `pad` of its size on each side so small pans need no new request, or null
+ * (worldwide) when the view is missing or nearly global.
+ * @param {{west:number, south:number, east:number, north:number}|null} view
+ */
+export function requestBox(view, pad = 0.25) {
+  if (!view || ![view.west, view.south, view.east, view.north].every(finite)) return null;
+  const width = view.east >= view.west ? view.east - view.west : view.east + 360 - view.west;
+  const height = view.north - view.south;
+  if (width > MAX_VIEW_SPAN_DEG || height > MAX_VIEW_SPAN_DEG / 2 || height <= 0) return null;
+  const wrap = (lon) => ((((lon + 180) % 360) + 360) % 360) - 180;
+  const grow = Math.min(width * (1 + 2 * pad), 359.999);
+  const cx = view.west + width / 2;
+  return {
+    west: wrap(cx - grow / 2),
+    east: wrap(cx + grow / 2),
+    south: Math.max(-90, view.south - height * pad),
+    north: Math.min(90, view.north + height * pad),
+  };
+}
+
+/** Whether `inner` lies within `outer` (both request boxes; null = worldwide). */
+export function boxCovers(outer, inner) {
+  if (!outer) return true;
+  if (!inner) return false;
+  const span = (b) => (b.east >= b.west ? [[b.west, b.east]] : [[b.west, 180], [-180, b.east]]);
+  if (inner.south < outer.south || inner.north > outer.north) return false;
+  return span(inner).every(([a, b]) => span(outer).some(([c, d]) => a >= c && b <= d));
 }
 
 /**
