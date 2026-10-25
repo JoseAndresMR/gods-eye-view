@@ -57,6 +57,9 @@ const FLY_SECONDS = 1.5;
  * @param {{fireAnchorHeight: Function, warmFireAnchorFloors: Function}|null} [config.groundAnchors]
  *   Ground heights for static contacts (the FIRMS layer's DEM anchors).
  * @param {boolean} [config.footprints=false] Draw each cluster's outline.
+ * @param {(node: object) => boolean} [config.includeNode] Contacts to show (e.g.
+ *   only those the anchor layer currently draws); clusters left with fewer than
+ *   two shown members are dropped. Re-evaluated on every update.
  * @param {number} config.updateInterval
  * @param {number} config.ringPixels
  * @param {Cesium.NearFarScalar|null} [config.scaleByDistance] Size scaling of the
@@ -81,6 +84,7 @@ export function createIlClustersLayer({
   staticPositions = false,
   groundAnchors = null,
   footprints = false,
+  includeNode = null,
   updateInterval,
   ringPixels,
   scaleByDistance = null,
@@ -295,12 +299,23 @@ export function createIlClustersLayer({
       const body = await res.json();
       if (stale()) return false;
       if (!res.ok) throw new Error(body?.error || `HTTP ${res.status}`);
-      _nodes = (body.nodes || [])
+      let nodes = (body.nodes || [])
         .filter((n) => n.cluster_id)
         .map((n) => ({ ...n, id: String(n.id).toLowerCase() }));
-      _edges = (body.edges || []).map((e) => ({ a: String(e.a).toLowerCase(), b: String(e.b).toLowerCase() }));
+      if (includeNode) {
+        nodes = nodes.filter(includeNode);
+        const shown = new Map();
+        for (const n of nodes) shown.set(n.cluster_id, (shown.get(n.cluster_id) || 0) + 1);
+        nodes = nodes.filter((n) => shown.get(n.cluster_id) >= 2);
+      }
+      _nodes = nodes;
+      const nodeIds = new Set(_nodes.map((n) => n.id));
+      const clusterIds = new Set(_nodes.map((n) => n.cluster_id));
+      _edges = (body.edges || [])
+        .map((e) => ({ a: String(e.a).toLowerCase(), b: String(e.b).toLowerCase() }))
+        .filter((e) => nodeIds.has(e.a) && nodeIds.has(e.b));
       // Only clusters seen this tick carry a summary; ended ones are history.
-      _clusters = (body.clusters || []).filter((c) => c.summary);
+      _clusters = (body.clusters || []).filter((c) => c.summary && clusterIds.has(c.id));
       _clusterCount = new Set(_nodes.map((n) => n.cluster_id)).size;
       rebuild();
       warmGround();
@@ -553,6 +568,9 @@ export function createIlSatelliteClustersLayer({ satellites = null, fetchImpl } 
     kind: 'satellites',
     anchorLayer: satellites,
     positionOf: satellitePosition,
+    // GEV draws Starlink only with its DENSE chip on; without it those rings
+    // would mark empty sky.
+    includeNode: (node) => node.group !== 'starlink' || satellites?.getParams?.().catalog === 'dense',
     updateInterval: 30000,
     ringPixels: 14,
     // The satellites layer's point scaling.
