@@ -70,7 +70,8 @@ const SAME_PLACE_DEFAULT_DEG = 0.06;
  * @param {string[]} [config.lineKinds] Observed kinds drawn live.
  * @param {(o: object) => string[]} config.describe Card lines for one cluster.
  * @param {string} config.offHint Row text while no target layer is on.
- * @param {(o: {places: number, overhead: number}) => string} config.infoOf
+ * @param {(o: {rows: Array<{kind: string, place: object}>, overhead: number}) => string} config.infoOf
+ *   Row summary over the clusters in and around the view (the cards list only the largest).
  * @param {object|null} [config.surface] GEV surface (DEM anchors for line ends).
  * @param {Function} [config.fetchImpl]
  */
@@ -407,7 +408,7 @@ export function createIlSatelliteRelationLayer({
       let info = null;
       if (_lastUpdate && !_lanes.length) info = offHint();
       else if (_lastUpdate && _doc?.meta?.idle) info = t('Paused · no area of interest is enabled');
-      else if (_lastUpdate && _doc) info = infoOf({ places: placesInView().length, overhead: _overhead.size });
+      else if (_lastUpdate && _doc) info = infoOf({ rows: placesInView(), overhead: _overhead.size });
       return { chips: [], info };
     },
 
@@ -439,9 +440,10 @@ export function createIlImagingSatellitesLayer({ targets, surface, fetchImpl } =
     lineKinds: ['optical', 'radar'],
     describe: describeImaging,
     offHint: () => t('Switch on military area, data centre, dam, cable landing, fire or vessel clusters'),
-    infoOf: ({ overhead }) =>
-      t('{count} clusters under an imaging satellite now (amber optical, violet radar) · next passes on the cards', {
-        count: formatNumber(overhead),
+    infoOf: ({ rows, overhead }) =>
+      t('{overhead} of {count} clusters around the view have an imaging satellite overhead now (amber optical, violet radar) · each card below gives the next passes', {
+        overhead: formatNumber(overhead),
+        count: formatNumber(rows.length),
       }),
     surface,
     fetchImpl,
@@ -459,9 +461,10 @@ export function createIlFireSatellitesLayer({ targets, surface, fetchImpl } = {}
     lineKinds: ['fire'],
     describe: describeFireSatellites,
     offHint: () => t('Switch on fire clusters'),
-    infoOf: ({ overhead }) =>
-      t('{count} fire clusters under a FIRMS satellite now (orange lines) · next overpass on the cards', {
-        count: formatNumber(overhead),
+    infoOf: ({ rows, overhead }) =>
+      t('{overhead} of {count} fire clusters around the view are under a FIRMS satellite now (orange lines) · each card below gives the next overpass', {
+        overhead: formatNumber(overhead),
+        count: formatNumber(rows.length),
       }),
     surface,
     fetchImpl,
@@ -478,7 +481,14 @@ export function createIlWeatherSatellitesLayer({ targets, surface, fetchImpl } =
     targets,
     describe: describeWeather,
     offHint: () => t('Switch on military area, data centre, dam, cable landing or fire clusters'),
-    infoOf: ({ places }) => t('Weather satellites in view of {count} clusters, on their cards', { count: formatNumber(places) }),
+    infoOf: ({ rows }) => {
+      const counts = rows.map(({ place }) => place.counts?.weather || 0);
+      return t('{min}–{max} weather satellites in view of each of the {count} clusters around the view · each card below names the highest', {
+        min: formatNumber(counts.length ? Math.min(...counts) : 0),
+        max: formatNumber(counts.length ? Math.max(...counts) : 0),
+        count: formatNumber(rows.length),
+      });
+    },
     surface,
     fetchImpl,
   });
@@ -494,7 +504,13 @@ export function createIlReceiverSatellitesLayer({ targets, surface, fetchImpl } 
     targets,
     describe: describeReceivers,
     offHint: () => t('Switch on vessel, aircraft or military aircraft clusters'),
-    infoOf: ({ places }) => t('Receivers in reach of {count} clusters, on their cards', { count: formatNumber(places) }),
+    infoOf: ({ rows }) => {
+      const reached = rows.filter(({ kind, place }) => place.counts?.[kind === 'vessels' ? 'ais' : 'adsb'] > 0).length;
+      return t('{reached} of {count} clusters around the view have a space AIS / ADS-B receiver in reach now · each card below gives how many, or when the next comes', {
+        reached: formatNumber(reached),
+        count: formatNumber(rows.length),
+      });
+    },
     surface,
     fetchImpl,
   });
@@ -510,7 +526,16 @@ export function createIlNavigationSatellitesLayer({ targets, surface, fetchImpl 
     targets,
     describe: describeNavigation,
     offHint: () => t('Switch on GNSS zones'),
-    infoOf: ({ places }) => t('Navigation satellites in view of {count} zones, on their cards', { count: formatNumber(places) }),
+    infoOf: ({ rows }) => {
+      const pdops = rows.map(({ place }) => place.pdop).filter(Number.isFinite);
+      return pdops.length
+        ? t('PDOP {best}–{worst} over the {count} zones around the view (lower is better) · each card below gives the satellites in view', {
+            best: formatNumber(Math.min(...pdops), { maximumFractionDigits: 1 }),
+            worst: formatNumber(Math.max(...pdops), { maximumFractionDigits: 1 }),
+            count: formatNumber(rows.length),
+          })
+        : t('{count} zones around the view · each card below gives the satellites in view', { count: formatNumber(rows.length) });
+    },
     surface,
     fetchImpl,
   });
