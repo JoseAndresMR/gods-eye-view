@@ -8,6 +8,7 @@ import {
 } from '../../overlays/worldOverlay.js';
 import {
   IL_SAT_FIRE_ID,
+  IL_SAT_IMAGED_ID,
   IL_SAT_IMAGING_ID,
   IL_SAT_NAVIGATION_ID,
   IL_SAT_RECEIVERS_ID,
@@ -30,7 +31,9 @@ import {
   useIlPicking,
 } from './selection.js';
 import {
+  ago,
   describeFireSatellites,
+  describeImaged,
   describeImaging,
   describeNavigation,
   describeReceivers,
@@ -58,6 +61,8 @@ const KIND_CSS = Object.freeze({
   gps: '#8bd450',
   galileo: '#5b8cff',
   glonass: '#ff6b6b',
+  sentinel2: '#a3e635',
+  landsat: '#34d399',
 });
 /** Satellite names win label collisions against cluster counts. */
 const TAG_PRIORITY = 1e9;
@@ -100,6 +105,11 @@ const SAME_PLACE_DEFAULT_DEG = 0.06;
  * @param {string} config.offHint Row text while no target layer is on.
  * @param {(o: {rows: Array<{kind: string, place: object}>, overhead: number}) => string} config.infoOf
  *   Row summary over the clusters in and around the view (the cards list only the largest).
+ * @param {(value: number, meta: object) => number} [config.edgeTime] For past observations: the
+ *   time (Unix s) an edge refers to, from its feed value; the edge then ends where the satellite
+ *   was at that time (a faint marker) instead of where it is now.
+ * @param {(o: {count: number, sat: object}) => string} [config.satelliteLine] What a selected
+ *   satellite's card says about the clusters it is linked to (default: observed now).
  * @param {object|null} [config.surface] GEV surface (DEM anchors for line ends).
  * @param {Function} [config.fetchImpl]
  */
@@ -114,6 +124,13 @@ export function createIlSatelliteRelationLayer({
   describe,
   offHint,
   infoOf,
+  edgeTime = null,
+  satelliteLine = ({ count, sat }) =>
+    t('Observes {count} clusters in view now · from {low}° to {high}° elevation', {
+      count: formatNumber(count),
+      low: formatNumber(sat.elev_min, { maximumFractionDigits: 1 }),
+      high: formatNumber(sat.elev_max, { maximumFractionDigits: 1 }),
+    }),
   surface = null,
   fetchImpl = globalThis.fetch,
 }) {
@@ -144,7 +161,8 @@ export function createIlSatelliteRelationLayer({
   let _drawnAt = 0;
   let _drawnEdges = 0;
   let _forceDraw = true;
-  // satId -> Cartesian3 moved in place each draw, so the name tags follow it.
+  // Satellite marker key (`satId`, or `satId@time` for a past position) -> Cartesian3,
+  // moved in place each draw so the name tags follow it.
   let _satCarts = new Map();
   let _taggedKey = '';
 
@@ -214,13 +232,14 @@ export function createIlSatelliteRelationLayer({
         const elev = elevationDeg(where(satId), place.lat, place.lon);
         if (elev === null || elev < sat.elev_min || elev > sat.elev_max) continue;
         seen.push({ name: sat.name, kinds: sat.kinds });
-        if (wanted(selection, layer, clusterId, satId, sat)) edges.push({ satId, layer, clusterId, place });
+        if (wanted(selection, layer, clusterId, satId, sat)) edges.push({ satId, layer, clusterId, place, at: null });
       }
       if (seen.length) overhead.set(laneKey(kind, distanceLabel(km), clusterId), seen.sort((a, b) => a.name.localeCompare(b.name)));
       // Wide kinds: the feed's edges as computed.
-      for (const [satId] of place.now) {
+      for (const [satId, value] of place.now) {
         const sat = sats[satId];
-        if (!isLive(sat) && wanted(selection, layer, clusterId, satId, sat)) edges.push({ satId, layer, clusterId, place });
+        if (!isLive(sat) && wanted(selection, layer, clusterId, satId, sat))
+          edges.push({ satId, layer, clusterId, place, at: edgeTime ? edgeTime(value, _doc.meta || {}) : null });
       }
     }
     _overhead = overhead;
@@ -234,22 +253,25 @@ export function createIlSatelliteRelationLayer({
     }
   }
 
-  /** Name tags for the satellites drawn now; republished only when that set changes. */
-  function tag(satIds) {
-    const key = satIds.join(',');
+  const markerKey = (satId, at) => (at ? `${satId}@${Math.round(at)}` : String(satId));
+
+  /** Name tags for the satellite markers drawn now; republished only when that set changes. */
+  function tag(markers) {
+    const key = markers.map((m) => m.key).join(',');
     if (key === _taggedKey) return;
     _taggedKey = key;
-    if (!satIds.length) {
+    if (!markers.length) {
       clearOverlaySource(tagSource);
       return;
     }
+    const nowSec = Date.now() / 1000;
     setOverlayEntries(
       tagSource,
-      satIds.map((satId) => clusterLabelEntry({
-        clusterId: `sat:${satId}`,
+      markers.map(({ key: markerId, satId, at }) => clusterLabelEntry({
+        clusterId: `sat:${markerId}`,
         count: TAG_PRIORITY,
-        title: _doc.satellites[satId].name,
-        position: _satCarts.get(satId),
+        title: at ? `${_doc.satellites[satId].name} · ${ago(nowSec - at)}` : _doc.satellites[satId].name,
+        position: _satCarts.get(markerId),
         color: cssOf(_doc.satellites[satId]),
       })),
       { moving: true },
@@ -268,32 +290,35 @@ export function createIlSatelliteRelationLayer({
     _points.removeAll();
     _lines.removeAll();
     const satCart = new Map();
-    const satIds = new Set(edges.map((e) => e.satId));
+    const markers = new Map();
+    for (const { satId, at } of edges) markers.set(markerKey(satId, at), { key: markerKey(satId, at), satId, at });
     // A selected satellite of this relation is drawn even when it observes nothing in view.
-    if (selection?.type === 'satellite' && _doc.satellites?.[selection.satId]) satIds.add(selection.satId);
-    for (const satId of satIds) {
+    if (selection?.type === 'satellite' && _doc.satellites?.[selection.satId] && !edgeTime)
+      markers.set(markerKey(selection.satId, null), { key: markerKey(selection.satId, null), satId: selection.satId, at: null });
+    for (const { key, satId, at } of markers.values()) {
       const sat = _doc.satellites[satId];
-      const p = satellitePosition(sat, nowSec);
+      const p = satellitePosition(sat, at ?? nowSec);
       if (!p) {
-        satCart.set(satId, null);
+        satCart.set(key, null);
         continue;
       }
-      const cart = _satCarts.get(satId) || new Cesium.Cartesian3();
+      const cart = _satCarts.get(key) || new Cesium.Cartesian3();
       Cesium.Cartesian3.fromDegrees(p.lon, p.lat, p.altM, Cesium.Ellipsoid.WGS84, cart);
-      _satCarts.set(satId, cart);
-      satCart.set(satId, cart);
+      _satCarts.set(key, cart);
+      satCart.set(key, cart);
       const selected = isSatelliteSelected(satId);
+      // A past position is a fainter, smaller marker of the same satellite node.
       _points.add({
         id: satellitePickId(satId),
         position: cart,
-        pixelSize: selected ? 12 : 8,
-        color: Cesium.Color.fromCssColorString(cssOf(sat)).withAlpha(0.9),
+        pixelSize: (selected ? 12 : 8) * (at ? 0.75 : 1),
+        color: Cesium.Color.fromCssColorString(cssOf(sat)).withAlpha(at ? 0.55 : 0.9),
         outlineColor: selected ? Cesium.Color.WHITE : Cesium.Color.BLACK.withAlpha(0.6),
         outlineWidth: selected ? 2 : 1,
       });
     }
-    for (const { satId, layer, clusterId, place } of edges) {
-      const from = satCart.get(satId);
+    for (const { satId, layer, clusterId, place, at } of edges) {
+      const from = satCart.get(markerKey(satId, at));
       if (!from) continue;
       const to = layer.clusterNodePosition?.(clusterId)
         || Cesium.Cartesian3.fromDegrees(place.lon, place.lat, groundHeight(place.lat, place.lon) + GROUND_LIFT_M);
@@ -305,8 +330,11 @@ export function createIlSatelliteRelationLayer({
         }),
       });
     }
-    for (const satId of _satCarts.keys()) if (!satCart.get(satId)) _satCarts.delete(satId);
-    tag([..._satCarts.keys()].sort());
+    for (const key of _satCarts.keys()) if (!satCart.get(key)) _satCarts.delete(key);
+    // Past positions are many (one per scene): tag them only for the selection's edges.
+    tag([...markers.values()]
+      .filter((m) => _satCarts.has(m.key) && (!m.at || selection))
+      .sort((a, b) => a.key.localeCompare(b.key)));
     governorRequestRender(id);
   }
 
@@ -527,14 +555,7 @@ export function createIlSatelliteRelationLayer({
       }
       return {
         name: sat.name,
-        lines: [
-          sat.family,
-          t('Observes {count} clusters in view now · from {low}° to {high}° elevation', {
-            count: formatNumber(observing),
-            low: formatNumber(sat.elev_min, { maximumFractionDigits: 1 }),
-            high: formatNumber(sat.elev_max, { maximumFractionDigits: 1 }),
-          }),
-        ],
+        lines: [sat.family, satelliteLine({ count: observing, sat, meta: _doc.meta || {} })],
       };
     },
 
@@ -678,6 +699,41 @@ export function createIlNavigationSatellitesLayer({ targets, surface, fetchImpl 
           })
         : t('{count} zones around the view · each card below gives the satellites in view', { count: formatNumber(rows.length) });
     },
+    surface,
+    fetchImpl,
+  });
+}
+
+/** Landsat and Sentinel-2 scenes that actually covered fixed sites and fires (NASA HLS). */
+export function createIlImagedSatellitesLayer({ targets, surface, fetchImpl } = {}) {
+  return createIlSatelliteRelationLayer({
+    id: IL_SAT_IMAGED_ID,
+    name: 'Recent images',
+    icon: '🖼',
+    relation: 'imaged',
+    targets,
+    edgeKinds: [
+      { kind: 'sentinel2', label: msg('Sentinel-2'), on: true },
+      { kind: 'landsat', label: msg('Landsat'), on: true },
+    ],
+    describe: describeImaged,
+    // Each edge is a scene: it ends where the satellite was when it took the image.
+    edgeTime: (hoursAgo, meta) => (meta.t || Date.now() / 1000) - hoursAgo * 3600,
+    offHint: () => t('Switch on military area, data centre, dam, cable landing or fire clusters'),
+    infoOf: ({ rows }) => {
+      const checked = rows.filter(({ place }) => !place.pending);
+      return t('{imaged} of {count} clusters around the view were imaged in the last days, {clear} with a clear image · {pending} still being checked · each card below gives the latest', {
+        imaged: formatNumber(checked.filter(({ place }) => place.now.length).length),
+        count: formatNumber(rows.length),
+        clear: formatNumber(checked.filter(({ place }) => place.latest_clear).length),
+        pending: formatNumber(rows.length - checked.length),
+      });
+    },
+    satelliteLine: ({ count, meta }) =>
+      t('Imaged {count} clusters in view in the last {days} days', {
+        count: formatNumber(count),
+        days: formatNumber(meta.window_days || 0),
+      }),
     surface,
     fetchImpl,
   });

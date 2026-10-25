@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   describeCluster,
   describeFireSatellites,
+  describeImaged,
   describeImaging,
   describeNavigation,
   describeReceivers,
@@ -99,4 +100,23 @@ test('fire, weather, receivers and navigation lines', () => {
     describeNavigation({ place: { counts: { gps: 9, galileo: 7, glonass: 8 }, pdop: 1.02, pdop_gps: 1.84 } }),
     ['In view: 9 GPS · 7 Galileo · 8 GLONASS', 'Satellite geometry: PDOP 1 all · 1.8 GPS alone (lower is better)'],
   );
+});
+
+test('imaged lines: latest image, then the latest clear one', () => {
+  const sats = { 42063: { name: 'SENTINEL-2B' }, 49260: { name: 'LANDSAT 9' } };
+  const now = 1_800_000_000;
+  assert.deepEqual(
+    describeImaged({
+      place: {
+        now: [['42063', 5]],
+        latest: { sat: '42063', platform: 'SENTINEL-2B', t: now - 5 * 3600, cloud: 80 },
+        latest_clear: { sat: '49260', platform: 'LANDSAT 9', t: now - 4 * 86400, cloud: 3 },
+      },
+      satellites: sats,
+      nowSec: now,
+    }),
+    ['Last image: SENTINEL-2B · 5 h ago · 80% cloud', 'Last clear image: LANDSAT 9 · 4 days ago · 3% cloud'],
+  );
+  assert.deepEqual(describeImaged({ place: { pending: true }, satellites: sats, nowSec: now }), ['Recent images: still being checked']);
+  assert.deepEqual(describeImaged({ place: { now: [], latest: null }, satellites: sats, nowSec: now }), ['No image in the last days']);
 });

@@ -44,6 +44,7 @@ import {
   createIlLandingClustersLayer,
   createIlCameraClustersLayer,
   createIlFireSatellitesLayer,
+  createIlImagedSatellitesLayer,
   createIlImagingSatellitesLayer,
   createIlNavigationSatellitesLayer,
   createIlReceiverSatellitesLayer,
@@ -222,6 +223,7 @@ export function createApplicationCatalog({
         createIlWeatherSatellitesLayer({ targets: [...ilFixedSites, ilFires], surface }),
         createIlReceiverSatellitesLayer({ targets: [ilVessels, ilAircraft, ilMilitary], surface }),
         createIlNavigationSatellitesLayer({ targets: [ilGnss], surface }),
+        createIlImagedSatellitesLayer({ targets: [...ilFixedSites, ilFires], surface }),
       ],
       metadata,
     );

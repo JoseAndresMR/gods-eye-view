@@ -27,6 +27,7 @@ export const IL_SAT_FIRE_ID = 'il-sat-fire';
 export const IL_SAT_WEATHER_ID = 'il-sat-weather';
 export const IL_SAT_RECEIVERS_ID = 'il-sat-receivers';
 export const IL_SAT_NAVIGATION_ID = 'il-sat-navigation';
+export const IL_SAT_IMAGED_ID = 'il-sat-imaged';
 
 /** Every intelligence-layer overlay, in the order the Intelligence panel lists them. */
 export const IL_LAYER_IDS = Object.freeze([
@@ -46,6 +47,7 @@ export const IL_LAYER_IDS = Object.freeze([
   IL_SAT_WEATHER_ID,
   IL_SAT_RECEIVERS_ID,
   IL_SAT_NAVIGATION_ID,
+  IL_SAT_IMAGED_ID,
 ]);
 
 const EARTH_RADIUS_M = 6371008.8;
@@ -87,7 +89,7 @@ export function clustersUrl(kind, km, box = null) {
 
 /**
  * Which satellites of one relation observe the clusters of the given lanes.
- * @param {string} relation imaging | fire | weather | receivers | navigation
+ * @param {string} relation imaging | fire | weather | receivers | navigation | imaged
  * @param {Array<{kind: string, km: number}>} lanes
  * @param {{west:number, south:number, east:number, north:number}|null} [box]
  */

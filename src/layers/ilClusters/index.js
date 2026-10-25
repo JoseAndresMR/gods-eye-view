@@ -51,6 +51,7 @@ export * from './model.js';
 export { describeCluster, CLUSTER_KINDS } from './describe.js';
 export {
   createIlFireSatellitesLayer,
+  createIlImagedSatellitesLayer,
   createIlImagingSatellitesLayer,
   createIlNavigationSatellitesLayer,
   createIlReceiverSatellitesLayer,

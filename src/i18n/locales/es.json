@@ -3135,5 +3135,16 @@
   "Galileo": "Galileo",
   "GLONASS": "GLONASS",
   "Selected satellite": "Satélite seleccionado",
-  "Clear the selection (Esc)": "Quitar la selección (Esc)"
+  "Clear the selection (Esc)": "Quitar la selección (Esc)",
+  "{days} days ago": "hace {days} días",
+  "{hours} h ago": "hace {hours} h",
+  "Imaged {count} clusters in view in the last {days} days": "Fotografió {count} grupos a la vista en los últimos {days} días",
+  "{imaged} of {count} clusters around the view were imaged in the last days, {clear} with a clear image · {pending} still being checked · each card below gives the latest": "{imaged} de {count} grupos en la vista y alrededores se fotografiaron en los últimos días, {clear} con una imagen despejada · {pending} aún en comprobación · cada tarjeta de abajo da la más reciente",
+  "Landsat": "Landsat",
+  "Last clear image: {name} · {ago} · {cloud}% cloud": "Última imagen despejada: {name} · {ago} · {cloud}% de nubes",
+  "Last image: {name} · {ago} · {cloud}% cloud": "Última imagen: {name} · {ago} · {cloud}% de nubes",
+  "No clear image (at most 20% cloud) in the last days": "Ninguna imagen despejada (como máximo 20% de nubes) en los últimos días",
+  "No image in the last days": "Ninguna imagen en los últimos días",
+  "Recent images": "Imágenes recientes",
+  "Recent images: still being checked": "Imágenes recientes: aún en comprobación"
 }

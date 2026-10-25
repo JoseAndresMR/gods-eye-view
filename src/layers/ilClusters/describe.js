@@ -266,3 +266,30 @@ export function describeNavigation({ place }) {
       : t('Satellite geometry: PDOP {pdop} all · too few GPS satellites alone', { pdop: round(place.pdop, 1) }));
   return lines;
 }
+
+/** "5 h ago" under two days, else "4 days ago". */
+export function ago(seconds) {
+  const hours = seconds / 3600;
+  return hours < 48
+    ? t('{hours} h ago', { hours: formatNumber(Math.max(1, Math.round(hours))) })
+    : t('{days} days ago', { days: formatNumber(Math.round(hours / 24)) });
+}
+
+/**
+ * Which scenes actually covered the cluster (NASA HLS), not geometry.
+ * @param {ObservationContext & {place: {pending?: boolean, latest?: object, latest_clear?: object}, meta?: object}} o
+ */
+export function describeImaged({ place, satellites, nowSec }) {
+  if (place.pending) return [t('Recent images: still being checked')];
+  const image = (fact) => ({
+    name: satName(satellites, fact.sat) === `NORAD ${fact.sat}` ? fact.platform : satName(satellites, fact.sat),
+    ago: ago(nowSec - fact.t),
+    cloud: fact.cloud === null || fact.cloud === undefined ? '?' : round(fact.cloud),
+  });
+  if (!place.latest) return [t('No image in the last days')];
+  const lines = [t('Last image: {name} · {ago} · {cloud}% cloud', image(place.latest))];
+  if (!place.latest_clear) lines.push(t('No clear image (at most 20% cloud) in the last days'));
+  else if (place.latest_clear.t !== place.latest.t)
+    lines.push(t('Last clear image: {name} · {ago} · {cloud}% cloud', image(place.latest_clear)));
+  return lines;
+}

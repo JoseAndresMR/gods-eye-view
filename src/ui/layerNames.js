@@ -46,6 +46,7 @@ export const LAYER_NAME_KEYS = Object.freeze({
   'il-sat-weather': msg('Weather satellites'),
   'il-sat-receivers': msg('Space AIS / ADS-B receivers'),
   'il-sat-navigation': msg('Navigation geometry'),
+  'il-sat-imaged': msg('Recent images'),
   transit: msg('Transit'),
   'recent-imagery': msg('Recent Imagery'),
   'fire-perimeters': msg('Fire Perimeters'),
