@@ -3007,5 +3007,6 @@
   "GNSS zones (IL)": "Zonas GNSS (IL)",
   "Intelligence layer": "Capa de inteligencia",
   "INTELLIGENCE": "INTELIGENCIA",
-  "Clusters listed": "Grupos listados"
+  "Clusters listed": "Grupos listados",
+  "{clusters} zones · grey circles are the {regions} regions the intelligence layer watches": "{clusters} zonas · los círculos grises son las {regions} regiones que vigila la capa de inteligencia"
 }

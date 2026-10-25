@@ -232,8 +232,41 @@ export function densifyRing(hull, stepKm = 10) {
   return out;
 }
 
-/** The camera height that frames a cluster of this radius (metres above it). */
-export function framingHeightM(radiusKm) {
-  const r = finite(radiusKm) ? radiusKm : 0;
+/**
+ * The camera height that frames a cluster (metres above it): from how far
+ * members lie from its centre, or the size of its footprint when that is
+ * larger (one GNSS cell is ~55 km wide but has a single centre).
+ */
+export function framingHeightM(radiusKm, areaKm2 = 0) {
+  const r = Math.max(finite(radiusKm) ? radiusKm : 0, finite(areaKm2) && areaKm2 > 0 ? Math.sqrt(areaKm2) : 0);
   return Math.min(Math.max(r * 4000, 8000), 4_000_000);
+}
+
+/** A 0.5° GNSS cell as the IL publishes it, as a [lon, lat] ring of its corners. */
+export function cellCorners(node) {
+  const { south, west, north, east } = node || {};
+  if (![south, west, north, east].every(finite)) return [];
+  return [[west, south], [east, south], [east, north], [west, north]];
+}
+
+/**
+ * A circle of `radiusKm` around a point on the surface, as a closed
+ * [lon, lat] ring of `steps` segments.
+ */
+export function circleRing(lat, lon, radiusKm, steps = 72) {
+  if (!finite(lat) || !finite(lon) || !finite(radiusKm) || radiusKm <= 0) return [];
+  const d = (radiusKm * 1000) / EARTH_RADIUS_M;
+  const la = (lat * Math.PI) / 180;
+  const lo = (lon * Math.PI) / 180;
+  const ring = [];
+  for (let i = 0; i <= steps; i++) {
+    const brg = (2 * Math.PI * i) / steps;
+    const la2 = Math.asin(Math.sin(la) * Math.cos(d) + Math.cos(la) * Math.sin(d) * Math.cos(brg));
+    const lo2 = lo + Math.atan2(
+      Math.sin(brg) * Math.sin(d) * Math.cos(la),
+      Math.cos(d) - Math.sin(la) * Math.sin(la2),
+    );
+    ring.push([((((lo2 * 180) / Math.PI + 540) % 360) - 180), (la2 * 180) / Math.PI]);
+  }
+  return ring;
 }

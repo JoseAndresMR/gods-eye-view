@@ -51,7 +51,7 @@ export const CLUSTER_KINDS = Object.freeze({
 });
 
 function spreadLine(s) {
-  if (!finite(s.radius_km)) return null;
+  if (!finite(s.radius_km) || !(s.size > 1)) return null;
   if (s.radius_km < 0.05) return t('Members share one position');
   return t('Within {radius} km of its centre', { radius: round(s.radius_km, s.radius_km < 10 ? 1 : 0) });
 }

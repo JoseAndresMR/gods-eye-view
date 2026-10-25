@@ -13,6 +13,8 @@ import {
   clusterColorCss,
   clustersIndexUrl,
   clustersUrl,
+  cellCorners,
+  circleRing,
   densifyRing,
   distanceLabel,
   framingHeightM,
@@ -30,6 +32,7 @@ const REPOSITION_MS = 250;
 const LINK_WIDTH = 1.5;
 const FOOTPRINT_WIDTH = 2;
 const FLY_SECONDS = 1.5;
+const COVERAGE_COLOR = Cesium.Color.fromCssColorString('#9a9a94').withAlpha(0.6);
 
 /**
  * Proximity clusters computed by the local intelligence layer, drawn over the
@@ -57,6 +60,13 @@ const FLY_SECONDS = 1.5;
  * @param {{fireAnchorHeight: Function, warmFireAnchorFloors: Function}|null} [config.groundAnchors]
  *   Ground heights for static contacts (the FIRMS layer's DEM anchors).
  * @param {boolean} [config.footprints=false] Draw each cluster's outline.
+ * @param {(node: object) => Array<[number, number]>} [config.areaOf] Contacts are
+ *   areas (GNSS cells): draw each one's outline ([lon, lat] corners) in its
+ *   cluster colour instead of a ring, and no links.
+ * @param {(meta: object) => Array<{lat: number, lon: number, radiusKm: number}>} [config.coverageOf]
+ *   Where the feed can see at all (from the IL file's meta), drawn as faint circles.
+ * @param {(state: {clusters: number, meta: object}) => string} [config.infoOf]
+ *   Row info text; defaults to the cluster count and link note.
  * @param {(node: object) => boolean} [config.includeNode] Contacts to show (e.g.
  *   only those the anchor layer currently draws); clusters left with fewer than
  *   two shown members are dropped. Re-evaluated on every update.
@@ -85,6 +95,9 @@ export function createIlClustersLayer({
   groundAnchors = null,
   footprints = false,
   includeNode = null,
+  areaOf = null,
+  coverageOf = null,
+  infoOf = null,
   updateInterval,
   ringPixels,
   scaleByDistance = null,
@@ -109,6 +122,7 @@ export function createIlClustersLayer({
   let _drawnLines = [];
   let _staticWhere = new Map();
   let _clusterCount = 0;
+  let _meta = {};
   let _lastUpdate = null;
   let _lastError = null;
   let _rowListener = null;
@@ -208,21 +222,25 @@ export function createIlClustersLayer({
     governorRequestRender(id);
   }
 
+  /** A [lon, lat] ring as a polyline on the ground. */
+  function drawRing(collection, ring, color, width) {
+    if (ring.length < 2) return;
+    collection.add({
+      positions: ring.map(([lon, lat]) =>
+        Cesium.Cartesian3.fromDegrees(lon, lat, groundHeight(lat, lon) + liftM),
+      ),
+      width,
+      material: Cesium.Material.fromType('Color', { color }),
+    });
+  }
+
   function drawFootprints(color) {
     _outlines.removeAll();
+    for (const c of coverageOf?.(_meta) || [])
+      drawRing(_outlines, circleRing(c.lat, c.lon, c.radiusKm), COVERAGE_COLOR, 1);
     if (!footprints) return;
-    for (const cluster of _clusters) {
-      const ring = densifyRing(cluster.summary?.hull);
-      if (ring.length < 2) continue;
-      const positions = ring.map(([lon, lat]) =>
-        Cesium.Cartesian3.fromDegrees(lon, lat, groundHeight(lat, lon) + liftM),
-      );
-      _outlines.add({
-        positions,
-        width: FOOTPRINT_WIDTH,
-        material: Cesium.Material.fromType('Color', { color: color(cluster.id).withAlpha(0.85) }),
-      });
-    }
+    for (const cluster of _clusters)
+      drawRing(_outlines, densifyRing(cluster.summary?.hull), color(cluster.id).withAlpha(0.85), FOOTPRINT_WIDTH);
   }
 
   function rebuild() {
@@ -237,6 +255,12 @@ export function createIlClustersLayer({
       return colorOf.get(clusterId);
     };
     if (staticPositions) placeStatic();
+    if (areaOf) {
+      for (const node of _nodes)
+        drawRing(_lines, densifyRing(areaOf(node)), color(node.cluster_id), FOOTPRINT_WIDTH);
+      drawFootprints(color);
+      return;
+    }
     for (const node of _nodes) {
       const c = color(node.cluster_id);
       _drawnPoints.set(node.id, _points.add({
@@ -273,7 +297,10 @@ export function createIlClustersLayer({
     if (!staticPositions || !groundAnchors?.warmFireAnchorFloors) return;
     const points = _nodes.map(({ lat, lon }) => ({ lat, lon }));
     for (const c of _clusters)
-      for (const [lon, lat] of c.summary?.hull || []) points.push({ lat, lon });
+      for (const [lon, lat] of densifyRing(c.summary?.hull)) points.push({ lat, lon });
+    if (areaOf)
+      for (const n of _nodes)
+        for (const [lon, lat] of densifyRing(areaOf(n))) points.push({ lat, lon });
     const nodes = _nodes;
     groundAnchors.warmFireAnchorFloors(points).then((warmed) => {
       if (warmed && _enabled && _points && nodes === _nodes) rebuild();
@@ -317,6 +344,7 @@ export function createIlClustersLayer({
       // Only clusters seen this tick carry a summary; ended ones are history.
       _clusters = (body.clusters || []).filter((c) => c.summary && clusterIds.has(c.id));
       _clusterCount = new Set(_nodes.map((n) => n.cluster_id)).size;
+      _meta = body.meta || {};
       rebuild();
       warmGround();
       _lastUpdate = Date.now();
@@ -411,11 +439,13 @@ export function createIlClustersLayer({
           params: { distanceKm: km },
           title: chipTitle(formatNumber(km)),
         })),
-        info: _lastUpdate
-          ? t('{clusters} clusters · lines show the shortest links joining each cluster', {
-              clusters: formatNumber(_clusterCount),
-            })
-          : null,
+        info: !_lastUpdate
+          ? null
+          : infoOf
+            ? infoOf({ clusters: _clusterCount, meta: _meta })
+            : t('{clusters} clusters · lines show the shortest links joining each cluster', {
+                clusters: formatNumber(_clusterCount),
+              }),
       };
     },
 
@@ -451,7 +481,7 @@ export function createIlClustersLayer({
       if (!_viewer || !centre) return false;
       const alt = Number.isFinite(centre.alt_m) ? centre.alt_m : 0;
       _viewer.camera.flyTo({
-        destination: Cesium.Cartesian3.fromDegrees(centre.lon, centre.lat, alt + framingHeightM(cluster.summary.radius_km)),
+        destination: Cesium.Cartesian3.fromDegrees(centre.lon, centre.lat, alt + framingHeightM(cluster.summary.radius_km, cluster.summary.area_km2)),
         duration: FLY_SECONDS,
       });
       return true;
@@ -614,9 +644,21 @@ export function createIlGnssZonesLayer({ surface = null, fetchImpl } = {}) {
     staticPositions: true,
     groundAnchors: surface?.anchors ?? null,
     footprints: true,
+    // Cells are areas: outline each like GEV's GNSS tiles, and show which
+    // regions the IL watches (GEV's own layer only sees around the view).
+    areaOf: cellCorners,
+    coverageOf: (meta) =>
+      (meta.anchors || []).map(([lat, lon]) => ({ lat, lon, radiusKm: (meta.radius_nm || 250) * 1.852 })),
+    infoOf: ({ clusters, meta }) =>
+      t('{clusters} zones · grey circles are the {regions} regions the intelligence layer watches', {
+        clusters: formatNumber(clusters),
+        regions: formatNumber((meta.anchors || []).length),
+      }),
     updateInterval: 60000,
     ringPixels: 16,
-    liftM: 50,
+    // Cells are tens of km wide and viewed from far up; lift the outlines
+    // clear of the sea surface and terrain that otherwise break them up.
+    liftM: 1500,
     alwaysOnTop: true,
     chipTitle: (distance) =>
       t('Join low-accuracy cells whose centres are closer than {distance} km', { distance }),

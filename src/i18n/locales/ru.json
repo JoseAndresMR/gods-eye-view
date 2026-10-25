@@ -3080,5 +3080,6 @@
   "GNSS zones (IL)": "Зоны GNSS (IL)",
   "Intelligence layer": "Слой аналитики",
   "INTELLIGENCE": "АНАЛИТИКА",
-  "Clusters listed": "Показано групп"
+  "Clusters listed": "Показано групп",
+  "{clusters} zones · grey circles are the {regions} regions the intelligence layer watches": "Зон: {clusters} · серые круги — {regions} регионов, за которыми следит слой аналитики"
 }

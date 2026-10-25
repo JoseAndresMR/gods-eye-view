@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   aircraftMotion,
+  cellCorners,
+  circleRing,
   densifyRing,
   framingHeightM,
   militaryMotion,
@@ -112,4 +114,20 @@ test('framing height grows with the cluster and stays bounded', () => {
   assert.equal(framingHeightM(0), 8000);
   assert.equal(framingHeightM(10), 40000);
   assert.equal(framingHeightM(1e6), 4_000_000);
+  assert.equal(framingHeightM(0, 2500), 200000); // one ~50 km cell
+});
+
+test('GNSS cells become corner rings', () => {
+  assert.deepEqual(cellCorners({ south: 54, west: 18, north: 54.5, east: 18.5 }), [
+    [18, 54], [18.5, 54], [18.5, 54.5], [18, 54.5],
+  ]);
+  assert.deepEqual(cellCorners({ south: 54 }), []);
+});
+
+test('coverage circles close and keep their radius', () => {
+  const ring = circleRing(0, 0, 463, 36);
+  assert.equal(ring.length, 37);
+  assert.ok(Math.abs(ring[0][1] - 463 / 111.195) < 0.01, String(ring[0]));
+  assert.deepEqual(ring[0].map((v) => v.toFixed(6)), ring.at(-1).map((v) => v.toFixed(6)));
+  assert.deepEqual(circleRing(0, 0, 0), []);
 });
