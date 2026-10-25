@@ -1,9 +1,10 @@
 // Read-only bridge to the local intelligence layer (a separate process on this
 // machine), plus saving its areas of interest. Only allowlisted resources are
 // forwarded, so this route can never be used to reach anything else.
-// Also the intelligence layer's one window onto NASA's public granule catalog
-// (CMR): which HLS scenes (Sentinel-2, Landsat 8/9) were acquired over a box,
-// the same collections GEV's Recent Imagery layer searches from the browser.
+// Also the intelligence layer's windows onto public data GEV's layers fetch
+// from the browser: NASA's granule catalog (CMR), which HLS scenes (Sentinel-2,
+// Landsat 8/9) were acquired over a box, as the Recent Imagery layer searches;
+// and DeFlock's hourly licence-plate-reader tiles, as the ALPR layer reads.
 
 const IL_API_BASE = (process.env.IL_API_BASE || 'http://127.0.0.1:8700').replace(/\/+$/, '');
 const IL_TIMEOUT_MS = 5000;
@@ -15,8 +16,13 @@ const KINDS = new Set([
   'military-areas', 'datacenters', 'dams', 'landings', 'cameras',
 ]);
 /** Cross-layer satellite relations; each names the cluster feeds it observes. */
-const RELATIONS = new Set(['imaging', 'fire', 'weather', 'receivers', 'navigation', 'imaged']);
+const RELATIONS = new Set([
+  'imaging', 'fire', 'weather', 'receivers', 'navigation', 'imaged',
+  'cameras', 'alpr', 'street', 'overflights',
+]);
 const MAX_OBSERVED_TARGETS = 8;
+/** Cluster feeds that act as observers (overflights). */
+const OBSERVER_KINDS = new Set(['aircraft', 'military']);
 
 const CMR_GRANULES = 'https://cmr.earthdata.nasa.gov/search/granules.umm_json';
 /** HLS collections (as in src/layers/recentImagery/model.js PRODUCTS). */
@@ -30,6 +36,17 @@ const IMAGERY_CACHE_MS = 30 * 60 * 1000;
 const IMAGERY_CACHE_MAX = 1000;
 const CURSOR = /^[\x21-\x7e]{1,512}$/;
 const DAY_MS = 86400000;
+
+const ALPR_TILES = 'https://tiles.dontgetflocked.com/cameras-{country}-hourly/{z}/{x}/{y}.mvt';
+const ALPR_COUNTRIES = new Set(['us', 'ca']);
+/** DeFlock carries full detail from z9; the IL reads z10 tiles. */
+const ALPR_MIN_ZOOM = 9;
+const ALPR_MAX_ZOOM = 14;
+/** DeFlock rebuilds its tiles hourly. */
+const ALPR_CACHE_MS = 60 * 60 * 1000;
+const ALPR_CACHE_MAX = 2000;
+const ALPR_TIMEOUT_MS = 20000;
+const ALPR_MAX_BYTES = 2 * 1024 * 1024;
 
 function sendJson(res, status, body) {
   res.statusCode = status;
@@ -83,7 +100,15 @@ function observabilityPath(relation, searchParams) {
   const rawBbox = searchParams.get('bbox');
   const bbox = parseBbox(rawBbox);
   if (rawBbox && !bbox) return null;
-  return `/api/observability/${relation}?targets=${targets.join(',')}${bbox ? `&bbox=${bbox}` : ''}`;
+  // Overflights name the aircraft lanes on show as observers.
+  const observers = (searchParams.get('observers') || '').split(',').filter(Boolean);
+  if (observers.length > 2) return null;
+  for (const lane of observers) {
+    const [kind, km, more] = lane.split(':');
+    if (more !== undefined || !OBSERVER_KINDS.has(kind) || !DISTANCE_KM.test(km || '')) return null;
+  }
+  return `/api/observability/${relation}?targets=${targets.join(',')}` +
+    `${observers.length ? `&observers=${observers.join(',')}` : ''}${bbox ? `&bbox=${bbox}` : ''}`;
 }
 
 /**
@@ -113,6 +138,51 @@ export function imageryRequest(url) {
       `&sort_key=-start_date&page_size=${IMAGERY_PAGE_SIZE}`,
     cursor,
   };
+}
+
+/**
+ * The DeFlock tile URL for an ALPR tile read, or null when it isn't allowed.
+ *   GET /alpr/<us|ca>/<z>/<x>/<y>   (z 9–14)
+ */
+export function alprTileUrl(url) {
+  const { pathname } = new URL(url || '', 'http://localhost');
+  const match = /^\/alpr\/([a-z]{2})\/(\d{1,2})\/(\d{1,5})\/(\d{1,5})$/.exec(pathname);
+  if (!match || !ALPR_COUNTRIES.has(match[1])) return null;
+  const [z, x, y] = match.slice(2).map(Number);
+  if (z < ALPR_MIN_ZOOM || z > ALPR_MAX_ZOOM || x >= 2 ** z || y >= 2 ** z) return null;
+  return ALPR_TILES.replace('{country}', match[1]).replace('{z}', z).replace('{x}', x).replace('{y}', y);
+}
+
+const _alprCache = new Map(); // url -> { at, bytes }
+
+async function serveAlprTile(res, url) {
+  const cached = _alprCache.get(url);
+  let bytes = cached && Date.now() - cached.at < ALPR_CACHE_MS ? cached.bytes : null;
+  if (!bytes) {
+    try {
+      const upstream = await fetch(url, { signal: AbortSignal.timeout(ALPR_TIMEOUT_MS) });
+      if (upstream.status === 404 || upstream.status === 204) bytes = Buffer.alloc(0);
+      else if (!upstream.ok) {
+        sendJson(res, 502, { error: `DeFlock tiles answered HTTP ${upstream.status}` });
+        return;
+      } else {
+        bytes = Buffer.from(await upstream.arrayBuffer());
+        if (bytes.length > ALPR_MAX_BYTES) {
+          sendJson(res, 502, { error: 'DeFlock tile too large' });
+          return;
+        }
+      }
+    } catch {
+      sendJson(res, 503, { error: 'DeFlock tiles not reachable' });
+      return;
+    }
+    if (_alprCache.size >= ALPR_CACHE_MAX) _alprCache.delete(_alprCache.keys().next().value);
+    _alprCache.set(url, { at: Date.now(), bytes });
+  }
+  res.statusCode = bytes.length ? 200 : 204;
+  res.setHeader('Content-Type', 'application/x-protobuf');
+  res.setHeader('Cache-Control', 'no-store');
+  res.end(bytes.length ? bytes : undefined);
 }
 
 function ringOf(points) {
@@ -191,11 +261,17 @@ async function readBody(req, limit) {
 /**
  * Vite plugin: /api/il/* → the intelligence layer's localhost API
  * (cluster feeds, their satellite observation, areas of interest), and
- * /api/il/imagery → NASA CMR (HLS scenes over a box).
+ * /api/il/imagery → NASA CMR (HLS scenes over a box), /api/il/alpr → DeFlock tiles.
  */
 export function intelligenceLayerProxy() {
   function install(middlewares) {
     middlewares.use('/api/il', async (req, res) => {
+      if (req.method === 'GET' && new URL(req.url || '', 'http://localhost').pathname.startsWith('/alpr/')) {
+        const url = alprTileUrl(req.url);
+        if (url) await serveAlprTile(res, url);
+        else sendJson(res, 400, { error: 'alpr tiles are /alpr/<us|ca>/<z 9–14>/<x>/<y>' });
+        return;
+      }
       if (req.method === 'GET' && new URL(req.url || '', 'http://localhost').pathname === '/imagery') {
         const request = imageryRequest(req.url);
         if (request) await serveImagery(req, res, request);

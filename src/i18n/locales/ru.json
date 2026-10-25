@@ -3228,5 +3228,56 @@
   "No clear image (at most 20% cloud) in the last days": "Нет безоблачных снимков (облачность не более 20%) за последние дни",
   "No image in the last days": "Нет снимков за последние дни",
   "Recent images": "Свежие снимки",
-  "Recent images: still being checked": "Свежие снимки: ещё проверяются"
+  "Recent images: still being checked": "Свежие снимки: ещё проверяются",
+  "Aircraft": "Воздушные суда",
+  "Capture drives": "Съёмочные проезды",
+  "{count} plate readers within 100 m · nearest {distance} m": {
+    "one": "{count} считыватель номеров в пределах 100 м · ближайший в {distance} м",
+    "few": "{count} считывателя номеров в пределах 100 м · ближайший в {distance} м",
+    "many": "{count} считывателей номеров в пределах 100 м · ближайший в {distance} м",
+    "other": "{count} считывателя номеров в пределах 100 м · ближайший в {distance} м"
+  },
+  "Ground and air": "Земля и воздух",
+  "Its view reaches {count} clusters in view · {range} m, {fov}° wide": "Её обзор достигает групп в зоне видимости: {count} · {range} м, ширина {fov}°",
+  "Overflies {count} clusters in view below 3,000 m": "Пролетает над группами в зоне видимости ниже 3000 м: {count}",
+  "Overflights": "Пролёты",
+  "Overflown now by {count} aircraft clusters · lowest {altitude} m": {
+    "one": "Сейчас над ним {count} группа воздушных судов · самая низкая на {altitude} м",
+    "few": "Сейчас над ним {count} группы воздушных судов · самая низкая на {altitude} м",
+    "many": "Сейчас над ним {count} групп воздушных судов · самая низкая на {altitude} м",
+    "other": "Сейчас над ним {count} группы воздушных судов · самая низкая на {altitude} м"
+  },
+  "Overflown now by {count} military aircraft clusters · lowest {altitude} m": {
+    "one": "Сейчас над ним {count} группа военных воздушных судов · самая низкая на {altitude} м",
+    "few": "Сейчас над ним {count} группы военных воздушных судов · самая низкая на {altitude} м",
+    "many": "Сейчас над ним {count} групп военных воздушных судов · самая низкая на {altitude} м",
+    "other": "Сейчас над ним {count} группы военных воздушных судов · самая низкая на {altitude} м"
+  },
+  "Passed {count} clusters in view": "Проехал мимо групп в зоне видимости: {count}",
+  "Plate readers": "Считыватели номеров",
+  "Public cameras": "Общественные камеры",
+  "{reached} of {count} clusters around the view are overflown below 3,000 m now": "Групп в зоне обзора и рядом, над которыми сейчас пролетают ниже 3000 м: {reached} из {count}",
+  "{reached} of {count} sites around the view are watched by a public camera": "Объектов в зоне обзора и рядом под наблюдением общественной камеры: {reached} из {count}",
+  "{reached} of {count} sites around the view have a plate reader within 100 m · {waiting} map tiles still to check (US and Canada only)": "Объектов в зоне обзора и рядом со считывателем номеров в пределах 100 м: {reached} из {count} · ещё проверить тайлов: {waiting} (только США и Канада)",
+  "{reached} of {count} sites around the view were passed by a street-imagery drive · {waiting} map tiles still to check": "Объектов в зоне обзора и рядом, мимо которых проезжала уличная съёмка: {reached} из {count} · ещё проверить тайлов: {waiting}",
+  "Selected aircraft cluster": "Выбранная группа воздушных судов",
+  "Selected camera": "Выбранная камера",
+  "Selected capture drive": "Выбранный съёмочный проезд",
+  "Selected plate reader": "Выбранный считыватель номеров",
+  "Street imagery: {count} capture drives passed · latest {ago}": {
+    "one": "Уличная съёмка: {count} проезд · последний {ago}",
+    "few": "Уличная съёмка: {count} проезда · последний {ago}",
+    "many": "Уличная съёмка: {count} проездов · последний {ago}",
+    "other": "Уличная съёмка: {count} проезда · последний {ago}"
+  },
+  "Street imagery": "Уличная съёмка",
+  "Switch on military area, data centre, dam, cable landing, vessel or fire clusters": "Включите группы военных объектов, ЦОД, плотин, точек выхода кабелей, судов или пожаров",
+  "Switch on military area, data centre, dam or cable landing clusters": "Включите группы военных объектов, ЦОД, плотин или точек выхода кабелей",
+  "Watched by {count} public cameras: {names}": {
+    "one": "Под наблюдением {count} общественной камеры: {names}",
+    "few": "Под наблюдением {count} общественных камер: {names}",
+    "many": "Под наблюдением {count} общественных камер: {names}",
+    "other": "Под наблюдением {count} общественных камер: {names}"
+  },
+  "Within 100 m of {count} clusters in view": "В пределах 100 м от групп в зоне видимости: {count}"
 }

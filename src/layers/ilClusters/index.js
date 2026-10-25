@@ -50,11 +50,15 @@ import { GNSS_LEVEL_COLORS } from '../gnss/records.js';
 export * from './model.js';
 export { describeCluster, CLUSTER_KINDS } from './describe.js';
 export {
+  createIlCameraObserversLayer,
   createIlFireSatellitesLayer,
   createIlImagedSatellitesLayer,
   createIlImagingSatellitesLayer,
   createIlNavigationSatellitesLayer,
   createIlReceiverSatellitesLayer,
+  createIlOverflightObserversLayer,
+  createIlPlateReaderObserversLayer,
+  createIlStreetImageryObserversLayer,
   createIlWeatherSatellitesLayer,
 } from './observation.js';
 

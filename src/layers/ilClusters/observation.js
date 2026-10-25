@@ -7,6 +7,10 @@ import {
   setOverlaySourceVisible,
 } from '../../overlays/worldOverlay.js';
 import {
+  IL_OBS_ALPR_ID,
+  IL_OBS_CAMERAS_ID,
+  IL_OBS_OVERFLIGHTS_ID,
+  IL_OBS_STREET_ID,
   IL_SAT_FIRE_ID,
   IL_SAT_IMAGED_ID,
   IL_SAT_IMAGING_ID,
@@ -32,7 +36,11 @@ import {
 } from './selection.js';
 import {
   ago,
+  describeCameras,
   describeFireSatellites,
+  describeOverflights,
+  describePlateReaders,
+  describeStreetImagery,
   describeImaged,
   describeImaging,
   describeNavigation,
@@ -79,10 +87,14 @@ const SAME_PLACE_DEG = Object.freeze({ aircraft: 1, military: 1, vessels: 0.3 })
 const SAME_PLACE_DEFAULT_DEG = 0.06;
 
 /**
- * One cross-layer relation of the intelligence-layer graph: edges from the
- * satellites of a family (imaging, fire, weather, receivers, navigation) to
- * the cluster nodes of other IL layers they observe, from the IL's
- * observability feed. Every edge can be drawn:
+ * One cross-layer relation of the intelligence-layer graph: edges from
+ * observers to the cluster nodes of other IL layers they observe, from the
+ * IL's observability feed. Observers are satellites of a family (imaging,
+ * fire, weather, receivers, navigation, recent images), placed from their
+ * TLEs, or ground and air observers (public cameras, plate readers, street
+ * imagery drives, aircraft clusters), placed where they stand or, for an
+ * aircraft cluster whose layer is on, at that cluster's node. Every edge can
+ * be drawn:
  *  - with nothing selected, the edges of the kinds whose chip is on;
  *  - a selected cluster shows all its edges, a selected satellite all of its
  *    clusters (click a node, a satellite or a card; Escape clears).
@@ -103,13 +115,21 @@ const SAME_PLACE_DEFAULT_DEG = 0.06;
  * @param {string[]} [config.lineKinds] Kinds re-checked live (narrow sensors).
  * @param {(o: object) => string[]} config.describe Card lines for one cluster.
  * @param {string} config.offHint Row text while no target layer is on.
- * @param {(o: {rows: Array<{kind: string, place: object}>, overhead: number}) => string} config.infoOf
+ * @param {(o: {rows: Array<{kind: string, place: object}>, overhead: number, meta: object}) => string} config.infoOf
  *   Row summary over the clusters in and around the view (the cards list only the largest).
  * @param {(value: number, meta: object) => number} [config.edgeTime] For past observations: the
  *   time (Unix s) an edge refers to, from its feed value; the edge then ends where the satellite
  *   was at that time (a faint marker) instead of where it is now.
  * @param {(o: {count: number, sat: object}) => string} [config.satelliteLine] What a selected
- *   satellite's card says about the clusters it is linked to (default: observed now).
+ *   observer's card says about the clusters it is linked to (default: observed now).
+ * @param {string} [config.source]
+ * @param {Object<string, object>} [config.observerLayers] Layers whose cluster nodes are
+ *   observers (aircraft clusters), by layer id.
+ * @param {() => Array<{kind: string, km: number}>} [config.observerLanes] The observer lanes
+ *   to ask for (the aircraft distances on show).
+ * @param {boolean} [config.tagAll=true] Name every observer drawn; false names only the
+ *   selection's (numerous observers such as cameras).
+ * @param {string} [config.selectedHeading] msg() key heading a selected observer's card.
  * @param {object|null} [config.surface] GEV surface (DEM anchors for line ends).
  * @param {Function} [config.fetchImpl]
  */
@@ -131,6 +151,11 @@ export function createIlSatelliteRelationLayer({
       low: formatNumber(sat.elev_min, { maximumFractionDigits: 1 }),
       high: formatNumber(sat.elev_max, { maximumFractionDigits: 1 }),
     }),
+  source = 'Intelligence layer · CelesTrak',
+  observerLayers = {},
+  observerLanes = null,
+  tagAll = true,
+  selectedHeading = msg('Selected satellite'),
   surface = null,
   fetchImpl = globalThis.fetch,
 }) {
@@ -201,7 +226,10 @@ export function createIlSatelliteRelationLayer({
 
   /** Is this edge drawn now: the selection's edges, else those of the kinds switched on. */
   function wanted(selection, layer, clusterId, satId, sat) {
-    if (selection?.type === 'cluster') return selection.layerId === layer.id && selection.clusterId === clusterId;
+    // A selected cluster: its edges as a target, and as an observer (an aircraft cluster).
+    if (selection?.type === 'cluster')
+      return (selection.layerId === layer.id && selection.clusterId === clusterId)
+        || (sat?.layer === selection.layerId && sat?.cluster === selection.clusterId);
     if (selection?.type === 'satellite') return selection.satId === satId;
     return (sat?.kinds || []).some((k) => edgeOn.has(k));
   }
@@ -255,6 +283,26 @@ export function createIlSatelliteRelationLayer({
 
   const markerKey = (satId, at) => (at ? `${satId}@${Math.round(at)}` : String(satId));
 
+  /**
+   * Where an observer is drawn: from its TLE (satellites), at its cluster's node
+   * (an aircraft cluster whose layer is on; it then has no marker of its own),
+   * or where it stands. Returns a Cartesian3 and whether this layer marks it.
+   */
+  function observerPlace(sat, at, nowSec) {
+    if (sat?.tle_line1) {
+      const p = satellitePosition(sat, at ?? nowSec);
+      return p ? { cart: Cesium.Cartesian3.fromDegrees(p.lon, p.lat, p.altM), own: true } : null;
+    }
+    const layer = sat?.layer ? observerLayers[sat.layer] : null;
+    if (layer?.isEnabled?.()) {
+      const node = layer.clusterNodePosition?.(sat.cluster);
+      if (node) return { cart: node, own: false };
+    }
+    if (!Number.isFinite(sat?.lat) || !Number.isFinite(sat?.lon)) return null;
+    const alt = Number.isFinite(sat.alt_m) && sat.alt_m > 0 ? sat.alt_m : groundHeight(sat.lat, sat.lon) + GROUND_LIFT_M;
+    return { cart: Cesium.Cartesian3.fromDegrees(sat.lon, sat.lat, alt), own: true };
+  }
+
   /** Name tags for the satellite markers drawn now; republished only when that set changes. */
   function tag(markers) {
     const key = markers.map((m) => m.key).join(',');
@@ -297,15 +345,15 @@ export function createIlSatelliteRelationLayer({
       markers.set(markerKey(selection.satId, null), { key: markerKey(selection.satId, null), satId: selection.satId, at: null });
     for (const { key, satId, at } of markers.values()) {
       const sat = _doc.satellites[satId];
-      const p = satellitePosition(sat, at ?? nowSec);
-      if (!p) {
+      const placed = observerPlace(sat, at, nowSec);
+      if (!placed) {
         satCart.set(key, null);
         continue;
       }
-      const cart = _satCarts.get(key) || new Cesium.Cartesian3();
-      Cesium.Cartesian3.fromDegrees(p.lon, p.lat, p.altM, Cesium.Ellipsoid.WGS84, cart);
+      const cart = Cesium.Cartesian3.clone(placed.cart, _satCarts.get(key) || new Cesium.Cartesian3());
       _satCarts.set(key, cart);
       satCart.set(key, cart);
+      if (!placed.own) continue; // drawn by its own layer (an aircraft cluster node)
       const selected = isSatelliteSelected(satId);
       // A past position is a fainter, smaller marker of the same satellite node.
       _points.add({
@@ -333,7 +381,7 @@ export function createIlSatelliteRelationLayer({
     for (const key of _satCarts.keys()) if (!satCart.get(key)) _satCarts.delete(key);
     // Past positions are many (one per scene): tag them only for the selection's edges.
     tag([...markers.values()]
-      .filter((m) => _satCarts.has(m.key) && (!m.at || selection))
+      .filter((m) => _satCarts.has(m.key) && ((!m.at && tagAll) || selection))
       .sort((a, b) => a.key.localeCompare(b.key)));
     governorRequestRender(id);
   }
@@ -393,18 +441,20 @@ export function createIlSatelliteRelationLayer({
         return true;
       }
       const box = requestBox(viewRect());
-      const res = await fetchImpl(observationUrl(relation, _lanes, box), { signal: request.signal, cache: 'no-store' });
+      const url = observationUrl(relation, _lanes, box, observerLanes?.() || null);
+      const res = await fetchImpl(url, { signal: request.signal, cache: 'no-store' });
       const body = await res.json();
       if (stale()) return false;
       if (!res.ok) throw new Error(body?.error || `HTTP ${res.status}`);
-      _doc = body;
+      // Satellite relations list `satellites`, ground and air ones `observers`.
+      _doc = { ...body, satellites: body.observers || body.satellites || {} };
       _box = box;
       _overheadKey = null; // the next tick re-renders the cards
       _forceDraw = true;
       _lastUpdate = Date.now();
       _lastError = null;
       tick();
-      console.log(`[Data:IL] ${relation} observation ${lanesSignature(_lanes)}: ${placesInView().length} clusters, ${Object.keys(body.satellites || {}).length} satellites, ${_drawnEdges} edges drawn`);
+      console.log(`[Data:IL] ${relation} observation ${lanesSignature(_lanes)}: ${placesInView().length} clusters, ${Object.keys(_doc.satellites).length} observers, ${_drawnEdges} edges drawn`);
       return true;
     } catch (e) {
       if (stale()) return false;
@@ -447,7 +497,7 @@ export function createIlSatelliteRelationLayer({
     id,
     name,
     icon,
-    source: 'Intelligence layer · CelesTrak',
+    source,
     kind: `observability-${relation}`,
     updateInterval: 30000,
 
@@ -526,7 +576,7 @@ export function createIlSatelliteRelationLayer({
       let info = null;
       if (_lastUpdate && !_lanes.length) info = offHint();
       else if (_lastUpdate && _doc?.meta?.idle) info = t('Paused · no area of interest is enabled');
-      else if (_lastUpdate && _doc) info = infoOf({ rows: placesInView(), overhead: _overhead.size });
+      else if (_lastUpdate && _doc) info = infoOf({ rows: placesInView(), overhead: _overhead.size, meta: _doc.meta || {} });
       return {
         chips: edgeKinds.map(({ kind, label }) => ({
           id: `edges-${kind}`,
@@ -555,6 +605,7 @@ export function createIlSatelliteRelationLayer({
       }
       return {
         name: sat.name,
+        heading: t(selectedHeading),
         lines: [sat.family, satelliteLine({ count: observing, sat, meta: _doc.meta || {} })],
       };
     },
@@ -734,6 +785,114 @@ export function createIlImagedSatellitesLayer({ targets, surface, fetchImpl } = 
         count: formatNumber(count),
         days: formatNumber(meta.window_days || 0),
       }),
+    surface,
+    fetchImpl,
+  });
+}
+
+/** How many of the clusters around the view have at least one edge of this relation. */
+const reached = (rows) => formatNumber(rows.filter(({ place }) => place.now.length).length);
+const fixedSitesHint = () => t('Switch on military area, data centre, dam or cable landing clusters');
+
+/** Public traffic cameras whose view reaches into a site (GEV's CCTV catalog). */
+export function createIlCameraObserversLayer({ targets, surface, fetchImpl } = {}) {
+  return createIlSatelliteRelationLayer({
+    id: IL_OBS_CAMERAS_ID,
+    name: 'Public cameras',
+    icon: '📹',
+    relation: 'cameras',
+    source: 'Intelligence layer · GEV CCTV catalog',
+    targets,
+    edgeKinds: [{ kind: 'camera', label: msg('Cameras'), on: true }],
+    describe: describeCameras,
+    tagAll: false,
+    selectedHeading: msg('Selected camera'),
+    offHint: fixedSitesHint,
+    infoOf: ({ rows }) =>
+      t('{reached} of {count} sites around the view are watched by a public camera', {
+        reached: reached(rows), count: formatNumber(rows.length),
+      }),
+    satelliteLine: ({ count, sat }) =>
+      t('Its view reaches {count} clusters in view · {range} m, {fov}° wide', {
+        count: formatNumber(count), range: formatNumber(sat.range_m), fov: formatNumber(sat.fov_deg),
+      }),
+    surface,
+    fetchImpl,
+  });
+}
+
+/** Licence-plate readers next to a site (OpenStreetMap, via DeFlock's tiles). */
+export function createIlPlateReaderObserversLayer({ targets, surface, fetchImpl } = {}) {
+  return createIlSatelliteRelationLayer({
+    id: IL_OBS_ALPR_ID,
+    name: 'Plate readers',
+    icon: '🚘',
+    relation: 'alpr',
+    source: 'Intelligence layer · DeFlock (OpenStreetMap)',
+    targets,
+    edgeKinds: [{ kind: 'alpr', label: msg('Plate readers'), on: true }],
+    describe: describePlateReaders,
+    tagAll: false,
+    selectedHeading: msg('Selected plate reader'),
+    offHint: fixedSitesHint,
+    infoOf: ({ rows, meta }) =>
+      t('{reached} of {count} sites around the view have a plate reader within 100 m · {waiting} map tiles still to check (US and Canada only)', {
+        reached: reached(rows), count: formatNumber(rows.length), waiting: formatNumber(meta.tiles_waiting || 0),
+      }),
+    satelliteLine: ({ count }) => t('Within 100 m of {count} clusters in view', { count: formatNumber(count) }),
+    surface,
+    fetchImpl,
+  });
+}
+
+/** Street-level imagery drives passing a site (Mapillary). */
+export function createIlStreetImageryObserversLayer({ targets, surface, fetchImpl } = {}) {
+  return createIlSatelliteRelationLayer({
+    id: IL_OBS_STREET_ID,
+    name: 'Street imagery',
+    icon: '🛣',
+    relation: 'street',
+    source: 'Intelligence layer · Mapillary',
+    targets,
+    edgeKinds: [{ kind: 'street', label: msg('Capture drives'), on: true }],
+    describe: describeStreetImagery,
+    tagAll: false,
+    selectedHeading: msg('Selected capture drive'),
+    offHint: fixedSitesHint,
+    infoOf: ({ rows, meta }) =>
+      t('{reached} of {count} sites around the view were passed by a street-imagery drive · {waiting} map tiles still to check', {
+        reached: reached(rows), count: formatNumber(rows.length), waiting: formatNumber(meta.tiles_waiting || 0),
+      }),
+    satelliteLine: ({ count }) => t('Passed {count} clusters in view', { count: formatNumber(count) }),
+    surface,
+    fetchImpl,
+  });
+}
+
+/** Aircraft and military-aircraft clusters flying low over sites, ship clusters and fires. */
+export function createIlOverflightObserversLayer({ targets, aircraft, military, surface, fetchImpl } = {}) {
+  const laneOf = (layer, kind) => ({ kind, km: layer?.getParams?.().distanceKm ?? 20 });
+  return createIlSatelliteRelationLayer({
+    id: IL_OBS_OVERFLIGHTS_ID,
+    name: 'Overflights',
+    icon: '✈',
+    relation: 'overflights',
+    source: 'Intelligence layer · OpenSky / adsb.lol',
+    targets,
+    edgeKinds: [
+      { kind: 'aircraft', label: msg('Aircraft'), on: true },
+      { kind: 'military', label: msg('Military aircraft'), on: true },
+    ],
+    describe: describeOverflights,
+    observerLayers: Object.fromEntries([aircraft, military].filter(Boolean).map((layer) => [layer.id, layer])),
+    observerLanes: () => [laneOf(aircraft, 'aircraft'), laneOf(military, 'military')],
+    selectedHeading: msg('Selected aircraft cluster'),
+    offHint: () => t('Switch on military area, data centre, dam, cable landing, vessel or fire clusters'),
+    infoOf: ({ rows }) =>
+      t('{reached} of {count} clusters around the view are overflown below 3,000 m now', {
+        reached: reached(rows), count: formatNumber(rows.length),
+      }),
+    satelliteLine: ({ count }) => t('Overflies {count} clusters in view below 3,000 m', { count: formatNumber(count) }),
     surface,
     fetchImpl,
   });

@@ -3146,5 +3146,51 @@
   "No clear image (at most 20% cloud) in the last days": "Ninguna imagen despejada (como máximo 20% de nubes) en los últimos días",
   "No image in the last days": "Ninguna imagen en los últimos días",
   "Recent images": "Imágenes recientes",
-  "Recent images: still being checked": "Imágenes recientes: aún en comprobación"
+  "Recent images: still being checked": "Imágenes recientes: aún en comprobación",
+  "Aircraft": "Aeronaves",
+  "Capture drives": "Recorridos de captura",
+  "{count} plate readers within 100 m · nearest {distance} m": {
+    "one": "{count} lector de matrículas a menos de 100 m · el más cercano a {distance} m",
+    "many": "{count} de lectores de matrículas a menos de 100 m · el más cercano a {distance} m",
+    "other": "{count} lectores de matrículas a menos de 100 m · el más cercano a {distance} m"
+  },
+  "Ground and air": "Tierra y aire",
+  "Its view reaches {count} clusters in view · {range} m, {fov}° wide": "Su vista alcanza {count} grupos a la vista · {range} m, {fov}° de ancho",
+  "Overflies {count} clusters in view below 3,000 m": "Sobrevuela {count} grupos a la vista por debajo de 3.000 m",
+  "Overflights": "Sobrevuelos",
+  "Overflown now by {count} aircraft clusters · lowest {altitude} m": {
+    "one": "Sobrevolado ahora por {count} grupo de aeronaves · el más bajo a {altitude} m",
+    "many": "Sobrevolado ahora por {count} de grupos de aeronaves · el más bajo a {altitude} m",
+    "other": "Sobrevolado ahora por {count} grupos de aeronaves · el más bajo a {altitude} m"
+  },
+  "Overflown now by {count} military aircraft clusters · lowest {altitude} m": {
+    "one": "Sobrevolado ahora por {count} grupo de aeronaves militares · el más bajo a {altitude} m",
+    "many": "Sobrevolado ahora por {count} de grupos de aeronaves militares · el más bajo a {altitude} m",
+    "other": "Sobrevolado ahora por {count} grupos de aeronaves militares · el más bajo a {altitude} m"
+  },
+  "Passed {count} clusters in view": "Pasó junto a {count} grupos a la vista",
+  "Plate readers": "Lectores de matrículas",
+  "Public cameras": "Cámaras públicas",
+  "{reached} of {count} clusters around the view are overflown below 3,000 m now": "{reached} de {count} grupos en la vista y alrededores se sobrevuelan ahora por debajo de 3.000 m",
+  "{reached} of {count} sites around the view are watched by a public camera": "{reached} de {count} sitios en la vista y alrededores están vigilados por una cámara pública",
+  "{reached} of {count} sites around the view have a plate reader within 100 m · {waiting} map tiles still to check (US and Canada only)": "{reached} de {count} sitios en la vista y alrededores tienen un lector de matrículas a menos de 100 m · quedan {waiting} teselas por comprobar (solo EE. UU. y Canadá)",
+  "{reached} of {count} sites around the view were passed by a street-imagery drive · {waiting} map tiles still to check": "Un recorrido de imágenes a pie de calle pasó junto a {reached} de {count} sitios en la vista y alrededores · quedan {waiting} teselas por comprobar",
+  "Selected aircraft cluster": "Grupo de aeronaves seleccionado",
+  "Selected camera": "Cámara seleccionada",
+  "Selected capture drive": "Recorrido de captura seleccionado",
+  "Selected plate reader": "Lector de matrículas seleccionado",
+  "Street imagery: {count} capture drives passed · latest {ago}": {
+    "one": "Imágenes a pie de calle: pasó {count} recorrido de captura · el último {ago}",
+    "many": "Imágenes a pie de calle: pasaron {count} de recorridos de captura · el último {ago}",
+    "other": "Imágenes a pie de calle: pasaron {count} recorridos de captura · el último {ago}"
+  },
+  "Street imagery": "Imágenes a pie de calle",
+  "Switch on military area, data centre, dam, cable landing, vessel or fire clusters": "Activa grupos de zonas militares, centros de datos, presas, aterrajes de cables, buques o incendios",
+  "Switch on military area, data centre, dam or cable landing clusters": "Activa grupos de zonas militares, centros de datos, presas o aterrajes de cables",
+  "Watched by {count} public cameras: {names}": {
+    "one": "Vigilado por {count} cámara pública: {names}",
+    "many": "Vigilado por {count} de cámaras públicas: {names}",
+    "other": "Vigilado por {count} cámaras públicas: {names}"
+  },
+  "Within 100 m of {count} clusters in view": "A menos de 100 m de {count} grupos a la vista"
 }

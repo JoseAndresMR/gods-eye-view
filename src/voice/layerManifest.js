@@ -427,6 +427,10 @@ export const VOICE_OFF_LAYERS = Object.freeze({
   'il-sat-receivers': 'local intelligence-layer overlay, not a voice data source',
   'il-sat-navigation': 'local intelligence-layer overlay, not a voice data source',
   'il-sat-imaged': 'local intelligence-layer overlay, not a voice data source',
+  'il-obs-cameras': 'local intelligence-layer overlay, not a voice data source',
+  'il-obs-alpr': 'local intelligence-layer overlay, not a voice data source',
+  'il-obs-street': 'local intelligence-layer overlay, not a voice data source',
+  'il-obs-overflights': 'local intelligence-layer overlay, not a voice data source',
 });
 
 const TYPE_NAMES = Object.freeze({

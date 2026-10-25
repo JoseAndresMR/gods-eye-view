@@ -293,3 +293,49 @@ export function describeImaged({ place, satellites, nowSec }) {
     lines.push(t('Last clear image: {name} · {ago} · {cloud}% cloud', image(place.latest_clear)));
   return lines;
 }
+
+/** Ground and air observers: the edges list each observer once, closest or most recent first. */
+const observerNames = (place, satellites) => place.now.map(([id]) => satellites[id]?.name).filter(Boolean);
+
+/** @param {ObservationContext} o */
+export function describeCameras({ place, satellites }) {
+  const cams = observerNames(place, satellites);
+  if (!cams.length) return [];
+  return [tn(cams.length, 'Watched by {count} public camera: {names}', 'Watched by {count} public cameras: {names}', {
+    count: formatNumber(cams.length), names: names(cams),
+  })];
+}
+
+/** @param {ObservationContext} o */
+export function describePlateReaders({ place }) {
+  const count = place.now.length;
+  if (!count) return [];
+  return [tn(count, '{count} plate reader within 100 m · nearest {distance} m', '{count} plate readers within 100 m · nearest {distance} m', {
+    count: formatNumber(count), distance: round(place.now[0][1]),
+  })];
+}
+
+/** @param {ObservationContext} o */
+export function describeStreetImagery({ place }) {
+  const count = place.now.length;
+  if (!count) return [];
+  return [tn(count, 'Street imagery: {count} capture drive passed · latest {ago}', 'Street imagery: {count} capture drives passed · latest {ago}', {
+    count: formatNumber(count), ago: ago(place.now[0][1] * 3600),
+  })];
+}
+
+/** @param {ObservationContext} o */
+export function describeOverflights({ place, satellites }) {
+  const lines = [];
+  const military = place.now.filter(([id]) => satellites[id]?.kinds?.includes('military'));
+  const civil = place.now.filter(([id]) => !satellites[id]?.kinds?.includes('military'));
+  if (civil.length)
+    lines.push(tn(civil.length, 'Overflown now by {count} aircraft cluster · lowest {altitude} m', 'Overflown now by {count} aircraft clusters · lowest {altitude} m', {
+      count: formatNumber(civil.length), altitude: round(Math.min(...civil.map(([, v]) => v))),
+    }));
+  if (military.length)
+    lines.push(tn(military.length, 'Overflown now by {count} military aircraft cluster · lowest {altitude} m', 'Overflown now by {count} military aircraft clusters · lowest {altitude} m', {
+      count: formatNumber(military.length), altitude: round(Math.min(...military.map(([, v]) => v))),
+    }));
+  return lines;
+}

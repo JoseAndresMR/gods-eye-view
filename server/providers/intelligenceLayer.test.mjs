@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { imageryRequest, intelligenceLayerPath, slimGranules } from './intelligenceLayer.js';
+import { alprTileUrl, imageryRequest, intelligenceLayerPath, slimGranules } from './intelligenceLayer.js';
 
 test('index, per-distance and box reads are allowed for each kind', () => {
   assert.equal(intelligenceLayerPath('GET', '/aircraft/index'), '/api/aircraft/index');
@@ -108,4 +108,20 @@ test('CMR pages are reduced to time, cloud, platform and footprint', () => {
     id: 'G1', name: 'HLS.S30.T14RPU.2026297T170901.v2.0', start: '2026-10-24T17:09:01Z', end: '2026-10-24T17:09:05Z',
     cloud: 12, platforms: ['Sentinel-2B'], footprint: [[[-98, 30], [-97, 30], [-97, 31], [-98, 30]]],
   }]);
+});
+
+test('alpr reads only DeFlock US/CA tiles at detail zooms', () => {
+  assert.equal(alprTileUrl('/alpr/us/10/235/423'), 'https://tiles.dontgetflocked.com/cameras-us-hourly/10/235/423.mvt');
+  assert.equal(alprTileUrl('/alpr/ca/14/4000/5000'), 'https://tiles.dontgetflocked.com/cameras-ca-hourly/14/4000/5000.mvt');
+  for (const bad of ['/alpr/mx/10/1/1', '/alpr/us/8/1/1', '/alpr/us/15/1/1', '/alpr/us/10/1024/1', '/alpr/us/10/1/1/2', '/alpr/us/10/a/1', '/alprs/us/10/1/1'])
+    assert.equal(alprTileUrl(bad), null, bad);
+});
+
+test('overflights may name the aircraft lanes on show', () => {
+  assert.equal(
+    intelligenceLayerPath('GET', '/observability/overflights?targets=dams:10&observers=aircraft:20,military:5'),
+    '/api/observability/overflights?targets=dams:10&observers=aircraft:20,military:5',
+  );
+  assert.equal(intelligenceLayerPath('GET', '/observability/overflights?targets=dams:10&observers=vessels:1'), null);
+  assert.equal(intelligenceLayerPath('GET', '/observability/overflights?targets=dams:10&observers=aircraft:x'), null);
 });

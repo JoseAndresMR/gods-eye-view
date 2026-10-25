@@ -115,6 +115,12 @@ const PANEL_GROUPS = [
     hostId: 'intel-cross-toggles',
     ids: ['il-sat-imaging', 'il-sat-imaged', 'il-sat-fire', 'il-sat-weather', 'il-sat-receivers', 'il-sat-navigation'],
   },
+  // Cross-layer relations: cameras, plate readers, street imagery and aircraft observing them.
+  {
+    label: msg('Ground and air'),
+    hostId: 'intel-ground-toggles',
+    ids: ['il-obs-cameras', 'il-obs-alpr', 'il-obs-street', 'il-obs-overflights'],
+  },
 ];
 const PANEL_ORDER = PANEL_GROUPS.flatMap(({ label, ids, hostId }) =>
   ids.map((id) => ({ id, label, hostId })),

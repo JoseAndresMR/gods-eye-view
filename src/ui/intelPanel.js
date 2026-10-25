@@ -65,7 +65,7 @@ export function mountIntelPanel({ container, count = null, layers }) {
     if (!parts.length) return null;
     const heading = doc.createElement('h3');
     heading.className = 'data-layer-group-heading';
-    heading.textContent = t('Selected satellite');
+    heading.textContent = parts[0].heading || t('Selected satellite');
     const el = doc.createElement('button');
     el.type = 'button';
     el.className = 'rail-card intel-cluster is-open is-selected';

@@ -1,7 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  describeCameras,
   describeCluster,
+  describeOverflights,
+  describePlateReaders,
+  describeStreetImagery,
   describeFireSatellites,
   describeImaged,
   describeImaging,
@@ -119,4 +123,24 @@ test('imaged lines: latest image, then the latest clear one', () => {
   );
   assert.deepEqual(describeImaged({ place: { pending: true }, satellites: sats, nowSec: now }), ['Recent images: still being checked']);
   assert.deepEqual(describeImaged({ place: { now: [], latest: null }, satellites: sats, nowSec: now }), ['No image in the last days']);
+});
+
+test('ground and air observer lines', () => {
+  const obs = {
+    'cam:1': { name: 'US 281 at Hildebrand', kinds: ['camera'] },
+    'cam:2': { name: 'I-35 at 51st', kinds: ['camera'] },
+    'air:aircraft:20:A': { name: 'A', kinds: ['aircraft'] },
+    'air:military:20:M': { name: 'M', kinds: ['military'] },
+  };
+  assert.deepEqual(describeCameras({ place: { now: [['cam:1', 18], ['cam:2', 40]] }, satellites: obs }),
+    ['Watched by 2 public cameras: US 281 at Hildebrand, I-35 at 51st']);
+  assert.deepEqual(describeCameras({ place: { now: [] }, satellites: obs }), []);
+  assert.deepEqual(describePlateReaders({ place: { now: [['alpr:1', 32], ['alpr:2', 80]] } }),
+    ['2 plate readers within 100 m · nearest 32 m']);
+  assert.deepEqual(describeStreetImagery({ place: { now: [['mly:1', 30], ['mly:2', 900]] } }),
+    ['Street imagery: 2 capture drives passed · latest 30 h ago']);
+  assert.deepEqual(
+    describeOverflights({ place: { now: [['air:aircraft:20:A', 900], ['air:military:20:M', 450]] }, satellites: obs }),
+    ['Overflown now by 1 aircraft cluster · lowest 900 m', 'Overflown now by 1 military aircraft cluster · lowest 450 m'],
+  );
 });

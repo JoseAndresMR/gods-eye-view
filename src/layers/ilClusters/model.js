@@ -28,6 +28,11 @@ export const IL_SAT_WEATHER_ID = 'il-sat-weather';
 export const IL_SAT_RECEIVERS_ID = 'il-sat-receivers';
 export const IL_SAT_NAVIGATION_ID = 'il-sat-navigation';
 export const IL_SAT_IMAGED_ID = 'il-sat-imaged';
+// Cross-layer: ground and air observers of the clusters of other IL layers.
+export const IL_OBS_CAMERAS_ID = 'il-obs-cameras';
+export const IL_OBS_ALPR_ID = 'il-obs-alpr';
+export const IL_OBS_STREET_ID = 'il-obs-street';
+export const IL_OBS_OVERFLIGHTS_ID = 'il-obs-overflights';
 
 /** Every intelligence-layer overlay, in the order the Intelligence panel lists them. */
 export const IL_LAYER_IDS = Object.freeze([
@@ -48,6 +53,10 @@ export const IL_LAYER_IDS = Object.freeze([
   IL_SAT_RECEIVERS_ID,
   IL_SAT_NAVIGATION_ID,
   IL_SAT_IMAGED_ID,
+  IL_OBS_CAMERAS_ID,
+  IL_OBS_ALPR_ID,
+  IL_OBS_STREET_ID,
+  IL_OBS_OVERFLIGHTS_ID,
 ]);
 
 const EARTH_RADIUS_M = 6371008.8;
@@ -89,13 +98,17 @@ export function clustersUrl(kind, km, box = null) {
 
 /**
  * Which satellites of one relation observe the clusters of the given lanes.
- * @param {string} relation imaging | fire | weather | receivers | navigation | imaged
+ * @param {string} relation imaging | fire | weather | receivers | navigation | imaged |
+ *   cameras | alpr | street | overflights
  * @param {Array<{kind: string, km: number}>} lanes
  * @param {{west:number, south:number, east:number, north:number}|null} [box]
+ * @param {Array<{kind: string, km: number}>|null} [observers] Observer lanes (overflights:
+ *   the aircraft distances on show).
  */
-export function observationUrl(relation, lanes, box = null) {
+export function observationUrl(relation, lanes, box = null, observers = null) {
   const targets = lanes.map(({ kind, km }) => `${kind}:${distanceLabel(km)}`).join(',');
-  const base = `/api/il/observability/${relation}?targets=${targets}`;
+  const lanesOf = observers ? `&observers=${observers.map(({ kind, km }) => `${kind}:${distanceLabel(km)}`).join(',')}` : '';
+  const base = `/api/il/observability/${relation}?targets=${targets}${lanesOf}`;
   if (!box) return base;
   const edges = [box.west, box.south, box.east, box.north].map((v) => Number(v.toFixed(3)));
   return `${base}&bbox=${edges.join(',')}`;
