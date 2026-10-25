@@ -3026,5 +3026,7 @@
   "Nothing is on: the intelligence layer is paused": "Nada activado: la capa de inteligencia está en pausa",
   "Could not load areas: {error}": "No se pudieron cargar las zonas: {error}",
   "Paused · no area of interest is enabled": "En pausa · ninguna zona de interés activada",
-  "{listed} largest of {total} clusters here · large rings are whole clusters, zoom in for their members": "Los {listed} mayores de {total} grupos aquí · los anillos grandes son grupos enteros, acércate para ver sus miembros"
+  "{listed} largest of {total} clusters here · large rings are whole clusters, zoom in for their members": "Los {listed} mayores de {total} grupos aquí · los anillos grandes son grupos enteros, acércate para ver sus miembros",
+  "{clusters} zones · {cells} cells with traffic, green ones normal · elsewhere no data yet": "{clusters} zonas · {cells} celdas con tráfico, las verdes normales · en el resto aún no hay datos",
+  "adsb.lol rate limit: sampling resumes in {seconds} s": "límite de adsb.lol: el muestreo se reanuda en {seconds} s"
 }

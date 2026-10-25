@@ -37,7 +37,6 @@ const FOOTPRINT_WIDTH = 2;
 const FLY_SECONDS = 1.5;
 /** Wait this long after the camera stops before asking for the new view. */
 const MOVE_SETTLE_MS = 400;
-const COVERAGE_COLOR = Cesium.Color.fromCssColorString('#9a9a94').withAlpha(0.6);
 
 /**
  * Proximity clusters computed by the local intelligence layer, drawn over the
@@ -72,8 +71,9 @@ const COVERAGE_COLOR = Cesium.Color.fromCssColorString('#9a9a94').withAlpha(0.6)
  *   outline (e.g. its severity) instead of its cluster colour.
  * @param {string} [config.footprintColor] CSS colour for every cluster outline
  *   and card swatch, when area colours carry the meaning instead.
- * @param {(meta: object) => Array<{lat: number, lon: number, radiusKm: number}>} [config.coverageOf]
- *   Where the feed can see at all (from the IL file's meta), drawn as faint circles.
+ * @param {(meta: object) => Array<{ring: Array<[number, number]>, css: string, width: number}>} [config.contextOf]
+ *   Extra outlines from the IL file's meta (e.g. where the feed can see, or
+ *   areas with data but no cluster), drawn under the cluster outlines.
  * @param {(state: {clusters: number, meta: object}) => string} [config.infoOf]
  *   Row info text; defaults to the cluster count and link note.
  * @param {(node: object) => boolean} [config.includeNode] Contacts to show (e.g.
@@ -107,7 +107,7 @@ export function createIlClustersLayer({
   areaOf = null,
   areaColorOf = null,
   footprintColor = null,
-  coverageOf = null,
+  contextOf = null,
   infoOf = null,
   updateInterval,
   ringPixels,
@@ -138,6 +138,7 @@ export function createIlClustersLayer({
   let _idle = false;
   let _truncated = null;
   let _summaryOnly = [];
+  let _summaryPoints = [];
   let _removeMoveEnd = null;
   let _moveTimer = null;
   let _lastUpdate = null;
@@ -225,6 +226,8 @@ export function createIlClustersLayer({
       point.position = cart;
       point.show = occluder ? occluder.isPointVisible(cart) : true;
     }
+    // Summary rings ignore depth too, so hide those beyond the horizon.
+    for (const point of _summaryPoints) point.show = occluder ? occluder.isPointVisible(point.position) : true;
     const height = _viewer?.camera?.positionCartographic?.height;
     const width = scaleByDistance && Number.isFinite(height)
       ? Math.max(1, LINK_WIDTH * nearFarScalarValueAtDistance(scaleByDistance, height))
@@ -253,8 +256,8 @@ export function createIlClustersLayer({
 
   function drawFootprints(color) {
     _outlines.removeAll();
-    for (const c of coverageOf?.(_meta) || [])
-      drawRing(_outlines, circleRing(c.lat, c.lon, c.radiusKm), COVERAGE_COLOR, 1);
+    for (const c of contextOf?.(_meta) || [])
+      drawRing(_outlines, densifyRing(c.ring), Cesium.Color.fromCssColorString(c.css), c.width);
     if (!footprints) return;
     const fixed = footprintColor ? Cesium.Color.fromCssColorString(footprintColor) : null;
     for (const cluster of _clusters)
@@ -266,6 +269,7 @@ export function createIlClustersLayer({
     _lines.removeAll();
     _drawnPoints = new Map();
     _drawnLines = [];
+    _summaryPoints = [];
     const colorOf = new Map();
     const color = (clusterId) => {
       if (!colorOf.has(clusterId))
@@ -315,7 +319,7 @@ export function createIlClustersLayer({
       if (!centre) continue;
       const alt = staticPositions ? groundHeight(centre.lat, centre.lon) : Number.isFinite(centre.alt_m) ? centre.alt_m : 0;
       const c = color(cluster.id);
-      _points.add({
+      _summaryPoints.push(_points.add({
         id: `${id}:${cluster.id}`,
         position: Cesium.Cartesian3.fromDegrees(centre.lon, centre.lat, alt + liftM),
         pixelSize: ringPixels * 1.6,
@@ -324,7 +328,7 @@ export function createIlClustersLayer({
         outlineWidth: 3,
         ...(scaleByDistance ? { scaleByDistance } : {}),
         ...(alwaysOnTop ? { disableDepthTestDistance: Number.POSITIVE_INFINITY } : {}),
-      });
+      }));
     }
     drawFootprints(color);
     reposition();
@@ -597,6 +601,7 @@ export function createIlClustersLayer({
       _clusters = [];
       _drawnPoints = new Map();
       _drawnLines = [];
+      _summaryPoints = [];
       _staticWhere = new Map();
       _clusterCount = 0;
       _lastUpdate = null;
@@ -742,13 +747,35 @@ export function createIlGnssZonesLayer({ surface = null, fetchImpl } = {}) {
     // outline only groups cells, in a neutral colour.
     areaColorOf: (node) => GNSS_LEVEL_COLORS[node.level],
     footprintColor: '#e8feff',
-    coverageOf: (meta) =>
-      (meta.anchors || []).map(([lat, lon]) => ({ lat, lon, radiusKm: (meta.radius_nm || 250) * 1.852 })),
-    infoOf: ({ clusters, meta }) =>
-      t('{clusters} zones · grey circles are the {regions} regions the intelligence layer watches', {
-        clusters: formatNumber(clusters),
-        regions: formatNumber((meta.anchors || []).length),
-      }),
+    contextOf: (meta) => [
+      // Cells with enough traffic and normal accuracy, so "no zone" reads as
+      // "checked, fine" where there is data and as "no data" elsewhere.
+      ...(meta.cells || [])
+        .filter((cell) => cell.level === 'low')
+        .map((cell) => ({ ring: cellCorners(cell), css: GNSS_LEVEL_COLORS.low, width: 1 })),
+      // Worldwide mode watches a few fixed regions; areas show their own box.
+      ...(meta.worldwide
+        ? (meta.anchors || []).map(([lat, lon]) => ({
+            ring: circleRing(lat, lon, (meta.radius_nm || 250) * 1.852),
+            css: '#9a9a94',
+            width: 1,
+          }))
+        : []),
+    ],
+    infoOf: ({ clusters, meta }) => {
+      const base = meta.worldwide
+        ? t('{clusters} zones · grey circles are the {regions} regions the intelligence layer watches', {
+            clusters: formatNumber(clusters),
+            regions: formatNumber((meta.anchors || []).length),
+          })
+        : t('{clusters} zones · {cells} cells with traffic, green ones normal · elsewhere no data yet', {
+            clusters: formatNumber(clusters),
+            cells: formatNumber((meta.cells || []).length),
+          });
+      return meta.cooling_down_s > 0
+        ? `${base} · ${t('adsb.lol rate limit: sampling resumes in {seconds} s', { seconds: formatNumber(meta.cooling_down_s) })}`
+        : base;
+    },
     updateInterval: 60000,
     ringPixels: 16,
     // Cells are tens of km wide and viewed from far up; lift the outlines

@@ -3099,5 +3099,7 @@
   "Nothing is on: the intelligence layer is paused": "Ничего не включено: слой аналитики приостановлен",
   "Could not load areas: {error}": "Не удалось загрузить зоны: {error}",
   "Paused · no area of interest is enabled": "Пауза · ни одна зона интереса не включена",
-  "{listed} largest of {total} clusters here · large rings are whole clusters, zoom in for their members": "{listed} крупнейших из {total} групп здесь · большие кольца — целые группы, приблизьте, чтобы увидеть участников"
+  "{listed} largest of {total} clusters here · large rings are whole clusters, zoom in for their members": "{listed} крупнейших из {total} групп здесь · большие кольца — целые группы, приблизьте, чтобы увидеть участников",
+  "{clusters} zones · {cells} cells with traffic, green ones normal · elsewhere no data yet": "Зон: {clusters} · ячеек с трафиком: {cells}, зелёные — норма · в остальных данных пока нет",
+  "adsb.lol rate limit: sampling resumes in {seconds} s": "лимит adsb.lol: опрос возобновится через {seconds} с"
 }
