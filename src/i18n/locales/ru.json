@@ -3101,5 +3101,47 @@
   "Paused · no area of interest is enabled": "Пауза · ни одна зона интереса не включена",
   "{listed} largest of {total} clusters here · large rings are whole clusters, zoom in for their members": "{listed} крупнейших из {total} групп здесь · большие кольца — целые группы, приблизьте, чтобы увидеть участников",
   "{clusters} zones · {cells} cells with traffic, green ones normal · elsewhere no data yet": "Зон: {clusters} · ячеек с трафиком: {cells}, зелёные — норма · в остальных данных пока нет",
-  "adsb.lol rate limit: sampling resumes in {seconds} s": "лимит adsb.lol: опрос возобновится через {seconds} с"
+  "adsb.lol rate limit: sampling resumes in {seconds} s": "лимит adsb.lol: опрос возобновится через {seconds} с",
+  "{count} military areas": {
+    "one": "{count} военная зона",
+    "few": "{count} военные зоны",
+    "many": "{count} военных зон",
+    "other": "{count} военные зоны"
+  },
+  "{count} data centres": {
+    "one": "{count} центр обработки данных",
+    "few": "{count} центра обработки данных",
+    "many": "{count} центров обработки данных",
+    "other": "{count} центра обработки данных"
+  },
+  "Mostly operated by {value} ({count})": "В основном под управлением {value} ({count})",
+  "{count} dams": {
+    "one": "{count} плотина",
+    "few": "{count} плотины",
+    "many": "{count} плотин",
+    "other": "{count} плотины"
+  },
+  "{count} cable landings": {
+    "one": "{count} точка выхода кабеля",
+    "few": "{count} точки выхода кабеля",
+    "many": "{count} точек выхода кабеля",
+    "other": "{count} точки выхода кабеля"
+  },
+  "{count} cameras": {
+    "one": "{count} камера",
+    "few": "{count} камеры",
+    "many": "{count} камер",
+    "other": "{count} камеры"
+  },
+  "{area} km² of mapped military land": "{area} км² нанесённых на карту военных земель",
+  "Link military areas closer than {distance} km": "Связывать военные зоны ближе {distance} км",
+  "Link data centres closer than {distance} km": "Связывать центры обработки данных ближе {distance} км",
+  "Link dams closer than {distance} km": "Связывать плотины ближе {distance} км",
+  "Link cable landings closer than {distance} km": "Связывать точки выхода кабеля ближе {distance} км",
+  "Link cameras closer than {distance} km": "Связывать камеры ближе {distance} км",
+  "Military area clusters (IL)": "Группы военных зон (IL)",
+  "Data centre clusters (IL)": "Группы центров обработки данных (IL)",
+  "Dam clusters (IL)": "Группы плотин (IL)",
+  "Cable landing clusters (IL)": "Группы точек выхода кабеля (IL)",
+  "Camera clusters (IL)": "Группы камер (IL)"
 }

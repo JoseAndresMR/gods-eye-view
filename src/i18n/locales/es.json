@@ -3028,5 +3028,42 @@
   "Paused · no area of interest is enabled": "En pausa · ninguna zona de interés activada",
   "{listed} largest of {total} clusters here · large rings are whole clusters, zoom in for their members": "Los {listed} mayores de {total} grupos aquí · los anillos grandes son grupos enteros, acércate para ver sus miembros",
   "{clusters} zones · {cells} cells with traffic, green ones normal · elsewhere no data yet": "{clusters} zonas · {cells} celdas con tráfico, las verdes normales · en el resto aún no hay datos",
-  "adsb.lol rate limit: sampling resumes in {seconds} s": "límite de adsb.lol: el muestreo se reanuda en {seconds} s"
+  "adsb.lol rate limit: sampling resumes in {seconds} s": "límite de adsb.lol: el muestreo se reanuda en {seconds} s",
+  "{count} military areas": {
+    "one": "{count} zona militar",
+    "many": "{count} de zonas militares",
+    "other": "{count} zonas militares"
+  },
+  "{count} data centres": {
+    "one": "{count} centro de datos",
+    "many": "{count} de centros de datos",
+    "other": "{count} centros de datos"
+  },
+  "Mostly operated by {value} ({count})": "Mayoría operados por {value} ({count})",
+  "{count} dams": {
+    "one": "{count} presa",
+    "many": "{count} de presas",
+    "other": "{count} presas"
+  },
+  "{count} cable landings": {
+    "one": "{count} punto de amarre de cable",
+    "many": "{count} de puntos de amarre de cable",
+    "other": "{count} puntos de amarre de cable"
+  },
+  "{count} cameras": {
+    "one": "{count} cámara",
+    "many": "{count} de cámaras",
+    "other": "{count} cámaras"
+  },
+  "{area} km² of mapped military land": "{area} km² de terreno militar cartografiado",
+  "Link military areas closer than {distance} km": "Unir zonas militares a menos de {distance} km",
+  "Link data centres closer than {distance} km": "Unir centros de datos a menos de {distance} km",
+  "Link dams closer than {distance} km": "Unir presas a menos de {distance} km",
+  "Link cable landings closer than {distance} km": "Unir amarres de cable a menos de {distance} km",
+  "Link cameras closer than {distance} km": "Unir cámaras a menos de {distance} km",
+  "Military area clusters (IL)": "Grupos de zonas militares (IL)",
+  "Data centre clusters (IL)": "Grupos de centros de datos (IL)",
+  "Dam clusters (IL)": "Grupos de presas (IL)",
+  "Cable landing clusters (IL)": "Grupos de amarres de cable (IL)",
+  "Camera clusters (IL)": "Grupos de cámaras (IL)"
 }

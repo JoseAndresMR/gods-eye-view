@@ -7,7 +7,10 @@ const IL_TIMEOUT_MS = 5000;
 const MAX_AREAS_BODY = 64 * 1024;
 // A link distance in km as the intelligence layer names it: "5", "20", "0.25".
 const DISTANCE_KM = /^(?:[1-9]\d{0,3}(?:\.\d{1,3})?|0\.\d{0,2}[1-9])$/;
-const KINDS = new Set(['aircraft', 'vessels', 'military', 'satellites', 'fires', 'gnss']);
+const KINDS = new Set([
+  'aircraft', 'vessels', 'military', 'satellites', 'fires', 'gnss',
+  'military-areas', 'datacenters', 'dams', 'landings', 'cameras',
+]);
 
 function sendJson(res, status, body) {
   res.statusCode = status;

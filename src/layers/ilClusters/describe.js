@@ -48,6 +48,26 @@ export const CLUSTER_KINDS = Object.freeze({
     members: (n) => tn(n, '{count} low-accuracy cell', '{count} low-accuracy cells', { count: formatNumber(n) }),
     composition: [],
   },
+  'military-areas': {
+    members: (n) => tn(n, '{count} military area', '{count} military areas', { count: formatNumber(n) }),
+    composition: [{ key: 'class', line: msg('Mostly {value} ({count})') }],
+  },
+  datacenters: {
+    members: (n) => tn(n, '{count} data centre', '{count} data centres', { count: formatNumber(n) }),
+    composition: [{ key: 'operator', line: msg('Mostly operated by {value} ({count})') }],
+  },
+  dams: {
+    members: (n) => tn(n, '{count} dam', '{count} dams', { count: formatNumber(n) }),
+    composition: [],
+  },
+  landings: {
+    members: (n) => tn(n, '{count} cable landing', '{count} cable landings', { count: formatNumber(n) }),
+    composition: [],
+  },
+  cameras: {
+    members: (n) => tn(n, '{count} camera', '{count} cameras', { count: formatNumber(n) }),
+    composition: [{ key: 'city', line: msg('Mostly {value} ({count})') }],
+  },
 });
 
 function spreadLine(s) {
@@ -126,7 +146,10 @@ export function describeCluster(cluster, kind) {
     const top = s.composition?.[key]?.[0];
     if (top && top.count > 1) lines.push(t(line, { value: String(top.value), count: formatNumber(top.count) }));
   }
-  if (kind === 'satellites' && Array.isArray(s.names) && s.names.length)
+  if (finite(s.area_km2_total))
+    lines.push(t('{area} km² of mapped military land', { area: round(s.area_km2_total) }));
+  // Named members (satellites, fixed sites), largest first where it matters.
+  if (Array.isArray(s.names) && s.names.length)
     lines.push(s.names.slice(0, 3).join(', ') + (s.names.length > 3 ? '…' : ''));
   lines.push(ageLine(cluster));
   return { title: `${cluster?.id ?? ''} · ${spec.members(size)}`, lines: lines.filter(Boolean) };

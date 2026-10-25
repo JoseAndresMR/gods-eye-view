@@ -14,6 +14,11 @@ export const IL_MILITARY_CLUSTERS_ID = 'il-military-clusters';
 export const IL_SATELLITE_CLUSTERS_ID = 'il-satellite-clusters';
 export const IL_FIRE_CLUSTERS_ID = 'il-fire-clusters';
 export const IL_GNSS_ZONES_ID = 'il-gnss-zones';
+export const IL_MILITARY_AREA_CLUSTERS_ID = 'il-military-area-clusters';
+export const IL_DATACENTER_CLUSTERS_ID = 'il-datacenter-clusters';
+export const IL_DAM_CLUSTERS_ID = 'il-dam-clusters';
+export const IL_LANDING_CLUSTERS_ID = 'il-landing-clusters';
+export const IL_CAMERA_CLUSTERS_ID = 'il-camera-clusters';
 
 /** Every intelligence-layer overlay, in the order the Intelligence panel lists them. */
 export const IL_LAYER_IDS = Object.freeze([
@@ -23,6 +28,11 @@ export const IL_LAYER_IDS = Object.freeze([
   IL_SATELLITE_CLUSTERS_ID,
   IL_FIRE_CLUSTERS_ID,
   IL_GNSS_ZONES_ID,
+  IL_MILITARY_AREA_CLUSTERS_ID,
+  IL_DATACENTER_CLUSTERS_ID,
+  IL_DAM_CLUSTERS_ID,
+  IL_LANDING_CLUSTERS_ID,
+  IL_CAMERA_CLUSTERS_ID,
 ]);
 
 const EARTH_RADIUS_M = 6371008.8;

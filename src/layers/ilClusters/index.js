@@ -6,6 +6,11 @@ import {
   IL_AIRCRAFT_CLUSTERS_ID,
   IL_FIRE_CLUSTERS_ID,
   IL_GNSS_ZONES_ID,
+  IL_MILITARY_AREA_CLUSTERS_ID,
+  IL_DATACENTER_CLUSTERS_ID,
+  IL_DAM_CLUSTERS_ID,
+  IL_LANDING_CLUSTERS_ID,
+  IL_CAMERA_CLUSTERS_ID,
   IL_MILITARY_CLUSTERS_ID,
   IL_SATELLITE_CLUSTERS_ID,
   IL_VESSEL_CLUSTERS_ID,
@@ -37,6 +42,8 @@ const FOOTPRINT_WIDTH = 2;
 const FLY_SECONDS = 1.5;
 /** Wait this long after the camera stops before asking for the new view. */
 const MOVE_SETTLE_MS = 400;
+/** Retry this soon after a failed read: a paused tracker needs a few seconds to wake. */
+const RETRY_MS = 10000;
 
 /**
  * Proximity clusters computed by the local intelligence layer, drawn over the
@@ -141,6 +148,7 @@ export function createIlClustersLayer({
   let _summaryPoints = [];
   let _removeMoveEnd = null;
   let _moveTimer = null;
+  let _retryTimer = null;
   let _lastUpdate = null;
   let _lastError = null;
   let _rowListener = null;
@@ -439,6 +447,8 @@ export function createIlClustersLayer({
       if (stale()) return false;
       console.warn(`[Data:IL] ${kind} clusters unavailable:`, e);
       _lastError = e?.message || msg('Intelligence layer unavailable');
+      clearTimeout(_retryTimer);
+      _retryTimer = setTimeout(() => _enabled && refresh(), RETRY_MS);
       return false;
     } finally {
       if (_request === request) _request = null;
@@ -484,6 +494,7 @@ export function createIlClustersLayer({
       _removeMoveEnd?.();
       _removeMoveEnd = null;
       clearTimeout(_moveTimer);
+      clearTimeout(_retryTimer);
       clearInterval(_timer);
       _timer = null;
       show(false);
@@ -585,6 +596,7 @@ export function createIlClustersLayer({
       _removeMoveEnd?.();
       _removeMoveEnd = null;
       clearTimeout(_moveTimer);
+      clearTimeout(_retryTimer);
       clearInterval(_timer);
       _timer = null;
       _enabled = false;
@@ -784,6 +796,100 @@ export function createIlGnssZonesLayer({ surface = null, fetchImpl } = {}) {
     alwaysOnTop: true,
     chipTitle: (distance) =>
       t('Join low-accuracy cells whose centres are closer than {distance} km', { distance }),
+    fetchImpl,
+  });
+}
+
+/**
+ * Clusters of fixed sites (they never move): placed once on the DEM ground,
+ * with each cluster's outline. The IL recomputes them only when the data or
+ * the areas of interest change, so GEV re-reads every 5 min.
+ */
+function createIlFixedClustersLayer({ id, name, icon, source, kind, chipTitle, surface = null, fetchImpl }) {
+  return createIlClustersLayer({
+    id,
+    name,
+    icon,
+    source,
+    kind,
+    staticPositions: true,
+    groundAnchors: surface?.anchors ?? null,
+    footprints: true,
+    updateInterval: 300000,
+    ringPixels: 12,
+    liftM: 20,
+    alwaysOnTop: true,
+    chipTitle,
+    fetchImpl,
+  });
+}
+
+/** Groups of named military areas (bases, airfields, ranges, training areas). */
+export function createIlMilitaryAreaClustersLayer({ surface = null, fetchImpl } = {}) {
+  return createIlFixedClustersLayer({
+    id: IL_MILITARY_AREA_CLUSTERS_ID,
+    name: 'Military area clusters (IL)',
+    icon: '🪖',
+    source: 'Intelligence layer · OpenStreetMap',
+    kind: 'military-areas',
+    chipTitle: (distance) => t('Link military areas closer than {distance} km', { distance }),
+    surface,
+    fetchImpl,
+  });
+}
+
+/** Data centre campuses and hubs. */
+export function createIlDatacenterClustersLayer({ surface = null, fetchImpl } = {}) {
+  return createIlFixedClustersLayer({
+    id: IL_DATACENTER_CLUSTERS_ID,
+    name: 'Data centre clusters (IL)',
+    icon: '🖥',
+    source: 'Intelligence layer · OpenStreetMap',
+    kind: 'datacenters',
+    chipTitle: (distance) => t('Link data centres closer than {distance} km', { distance }),
+    surface,
+    fetchImpl,
+  });
+}
+
+/** Dams close together, e.g. a cascade along one river. */
+export function createIlDamClustersLayer({ surface = null, fetchImpl } = {}) {
+  return createIlFixedClustersLayer({
+    id: IL_DAM_CLUSTERS_ID,
+    name: 'Dam clusters (IL)',
+    icon: '🌊',
+    source: 'Intelligence layer · Open Infrastructure Map',
+    kind: 'dams',
+    chipTitle: (distance) => t('Link dams closer than {distance} km', { distance }),
+    surface,
+    fetchImpl,
+  });
+}
+
+/** Submarine cable landing hubs. */
+export function createIlLandingClustersLayer({ surface = null, fetchImpl } = {}) {
+  return createIlFixedClustersLayer({
+    id: IL_LANDING_CLUSTERS_ID,
+    name: 'Cable landing clusters (IL)',
+    icon: '🔌',
+    source: 'Intelligence layer · TeleGeography',
+    kind: 'landings',
+    chipTitle: (distance) => t('Link cable landings closer than {distance} km', { distance }),
+    surface,
+    fetchImpl,
+  });
+}
+
+/** Public traffic cameras of GEV's CCTV catalog, grouped into corridors. */
+export function createIlCameraClustersLayer({ surface = null, fetchImpl } = {}) {
+  return createIlFixedClustersLayer({
+    id: IL_CAMERA_CLUSTERS_ID,
+    name: 'Camera clusters (IL)',
+    icon: '📷',
+    source: 'Intelligence layer · GEV CCTV catalog',
+    kind: 'cameras',
+    chipTitle: (distance) => t('Link cameras closer than {distance} km', { distance }),
+    surface,
     fetchImpl,
   });
 }

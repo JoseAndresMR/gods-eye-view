@@ -102,6 +102,11 @@ const PANEL_GROUPS = [
       'il-satellite-clusters',
       'il-fire-clusters',
       'il-gnss-zones',
+      'il-military-area-clusters',
+      'il-datacenter-clusters',
+      'il-dam-clusters',
+      'il-landing-clusters',
+      'il-camera-clusters',
     ],
   },
 ];
