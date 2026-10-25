@@ -25,6 +25,7 @@ import {
   vesselMotion,
 } from './model.js';
 import { describeCluster } from './describe.js';
+import { GNSS_LEVEL_COLORS } from '../gnss/records.js';
 export * from './model.js';
 export { describeCluster, CLUSTER_KINDS } from './describe.js';
 
@@ -63,6 +64,10 @@ const COVERAGE_COLOR = Cesium.Color.fromCssColorString('#9a9a94').withAlpha(0.6)
  * @param {(node: object) => Array<[number, number]>} [config.areaOf] Contacts are
  *   areas (GNSS cells): draw each one's outline ([lon, lat] corners) in its
  *   cluster colour instead of a ring, and no links.
+ * @param {(node: object) => string} [config.areaColorOf] CSS colour of one area
+ *   outline (e.g. its severity) instead of its cluster colour.
+ * @param {string} [config.footprintColor] CSS colour for every cluster outline
+ *   and card swatch, when area colours carry the meaning instead.
  * @param {(meta: object) => Array<{lat: number, lon: number, radiusKm: number}>} [config.coverageOf]
  *   Where the feed can see at all (from the IL file's meta), drawn as faint circles.
  * @param {(state: {clusters: number, meta: object}) => string} [config.infoOf]
@@ -96,6 +101,8 @@ export function createIlClustersLayer({
   footprints = false,
   includeNode = null,
   areaOf = null,
+  areaColorOf = null,
+  footprintColor = null,
   coverageOf = null,
   infoOf = null,
   updateInterval,
@@ -239,8 +246,9 @@ export function createIlClustersLayer({
     for (const c of coverageOf?.(_meta) || [])
       drawRing(_outlines, circleRing(c.lat, c.lon, c.radiusKm), COVERAGE_COLOR, 1);
     if (!footprints) return;
+    const fixed = footprintColor ? Cesium.Color.fromCssColorString(footprintColor) : null;
     for (const cluster of _clusters)
-      drawRing(_outlines, densifyRing(cluster.summary?.hull), color(cluster.id).withAlpha(0.85), FOOTPRINT_WIDTH);
+      drawRing(_outlines, densifyRing(cluster.summary?.hull), (fixed || color(cluster.id)).withAlpha(0.85), FOOTPRINT_WIDTH);
   }
 
   function rebuild() {
@@ -256,8 +264,10 @@ export function createIlClustersLayer({
     };
     if (staticPositions) placeStatic();
     if (areaOf) {
-      for (const node of _nodes)
-        drawRing(_lines, densifyRing(areaOf(node)), color(node.cluster_id), FOOTPRINT_WIDTH);
+      for (const node of _nodes) {
+        const css = areaColorOf?.(node);
+        drawRing(_lines, densifyRing(areaOf(node)), css ? Cesium.Color.fromCssColorString(css) : color(node.cluster_id), FOOTPRINT_WIDTH);
+      }
       drawFootprints(color);
       return;
     }
@@ -461,7 +471,7 @@ export function createIlClustersLayer({
         .sort((a, b) => (b.summary.size ?? b.size) - (a.summary.size ?? a.size))
         .map((c) => ({
           id: c.id,
-          color: clusterColorCss(c.id),
+          color: footprintColor || clusterColorCss(c.id),
           size: c.summary.size ?? c.size,
           ...describeCluster(c, kind),
         }));
@@ -647,6 +657,10 @@ export function createIlGnssZonesLayer({ surface = null, fetchImpl } = {}) {
     // Cells are areas: outline each like GEV's GNSS tiles, and show which
     // regions the IL watches (GEV's own layer only sees around the view).
     areaOf: cellCorners,
+    // Severity in GEV's own GNSS colours (amber medium, red high); the zone
+    // outline only groups cells, in a neutral colour.
+    areaColorOf: (node) => GNSS_LEVEL_COLORS[node.level],
+    footprintColor: '#e8feff',
     coverageOf: (meta) =>
       (meta.anchors || []).map(([lat, lon]) => ({ lat, lon, radiusKm: (meta.radius_nm || 250) * 1.852 })),
     infoOf: ({ clusters, meta }) =>
