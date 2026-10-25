@@ -154,3 +154,40 @@ export function describeCluster(cluster, kind) {
   lines.push(ageLine(cluster));
   return { title: `${cluster?.id ?? ''} · ${spec.members(size)}`, lines: lines.filter(Boolean) };
 }
+
+/** Imaging satellites named on one card line before "+N". */
+const OVERHEAD_NAMES = 3;
+
+/**
+ * Card lines on which satellites observe a cluster.
+ * @param {object} o
+ * @param {string[]} o.overhead Imaging satellites above their threshold right now.
+ * @param {{t: number, name: string, day: boolean}|null} o.next Next imaging pass (Unix s).
+ * @param {number} o.weather Weather satellites in view.
+ * @param {number} o.horizonS How far ahead passes were searched.
+ * @param {number} o.nowSec
+ * @returns {string[]}
+ */
+export function describeObservation({ overhead, next, weather, horizonS, nowSec }) {
+  const lines = [];
+  if (overhead.length) {
+    const shown = overhead.slice(0, OVERHEAD_NAMES).join(', ');
+    const more = overhead.length - OVERHEAD_NAMES;
+    lines.push(t('Imaging satellites overhead: {names}', {
+      names: more > 0 ? `${shown} +${formatNumber(more)}` : shown,
+    }));
+  }
+  if (next && next.t > nowSec) {
+    const minutes = Math.max(1, Math.round((next.t - nowSec) / 60));
+    lines.push(next.day
+      ? t('Next imaging pass in {minutes} min · {name} · daylight', { minutes: formatNumber(minutes), name: next.name })
+      : t('Next imaging pass in {minutes} min · {name} · night', { minutes: formatNumber(minutes), name: next.name }));
+  } else if (!overhead.length && !next) {
+    lines.push(t('No imaging pass in the next {hours} h', { hours: round(horizonS / 3600, 1) }));
+  }
+  if (weather > 0)
+    lines.push(tn(weather, '{count} weather satellite in view', '{count} weather satellites in view', {
+      count: formatNumber(weather),
+    }));
+  return lines;
+}

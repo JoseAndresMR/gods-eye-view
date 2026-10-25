@@ -42,6 +42,7 @@ import { describeCluster } from './describe.js';
 import { GNSS_LEVEL_COLORS } from '../gnss/records.js';
 export * from './model.js';
 export { describeCluster, CLUSTER_KINDS } from './describe.js';
+export { createIlObservationLayer } from './observation.js';
 
 const REPOSITION_MS = 250;
 const LINK_WIDTH = 1.5;
@@ -163,6 +164,8 @@ export function createIlClustersLayer({
   let _lastUpdate = null;
   let _lastError = null;
   let _rowListener = null;
+  // Extra card lines from another layer (satellite observation), by cluster id.
+  let _annotator = null;
   const _clusterListeners = new Set();
 
   const notifyRow = () => _rowListener?.();
@@ -648,12 +651,41 @@ export function createIlClustersLayer({
       return _clusters
         .slice()
         .sort((a, b) => (b.summary.size ?? b.size) - (a.summary.size ?? a.size))
-        .map((c) => ({
-          id: c.id,
-          color: footprintColor || clusterColorCss(c.id),
-          size: c.summary.size ?? c.size,
-          ...describeCluster(c, kind),
-        }));
+        .map((c) => {
+          const card = describeCluster(c, kind);
+          let extra = [];
+          try {
+            extra = _annotator?.(c, _distanceKm) || [];
+          } catch (error) {
+            console.warn(`[Data:IL] ${kind} card annotation failed:`, error);
+          }
+          return {
+            id: c.id,
+            color: footprintColor || clusterColorCss(c.id),
+            size: c.summary.size ?? c.size,
+            ...card,
+            // After the first line, so a collapsed card still shows them.
+            lines: [...card.lines.slice(0, 1), ...extra, ...card.lines.slice(1)],
+          };
+        });
+    },
+
+    isEnabled() {
+      return _enabled;
+    },
+
+    /**
+     * @param {((cluster: object, km: number) => string[])|null} annotator
+     *   Extra card lines per cluster (as the IL lists it); null removes them.
+     */
+    setAnnotator(annotator) {
+      _annotator = typeof annotator === 'function' ? annotator : null;
+      notifyClusters();
+    },
+
+    /** Re-render the cards (e.g. after the annotator's data changed). */
+    refreshCards() {
+      notifyClusters();
     },
 
     /** @param {() => void} listener Called whenever the cluster list changes. */

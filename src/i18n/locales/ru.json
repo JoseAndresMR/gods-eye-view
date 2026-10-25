@@ -3143,5 +3143,18 @@
   "Data centre clusters": "Группы центров обработки данных",
   "Dam clusters": "Группы плотин",
   "Cable landing clusters": "Группы точек выхода кабеля",
-  "Camera clusters": "Группы камер"
+  "Camera clusters": "Группы камер",
+  "Satellite observation": "Спутниковое наблюдение",
+  "Imaging satellites overhead: {names}": "Съёмочные спутники над головой: {names}",
+  "Next imaging pass in {minutes} min · {name} · daylight": "Следующий съёмочный пролёт через {minutes} мин · {name} · днём",
+  "Next imaging pass in {minutes} min · {name} · night": "Следующий съёмочный пролёт через {minutes} мин · {name} · ночью",
+  "No imaging pass in the next {hours} h": "Нет съёмочных пролётов в ближайшие {hours} ч",
+  "{count} weather satellites in view": {
+    "one": "{count} метеоспутник в зоне видимости",
+    "few": "{count} метеоспутника в зоне видимости",
+    "many": "{count} метеоспутников в зоне видимости",
+    "other": "{count} метеоспутника в зоне видимости"
+  },
+  "Switch on military area, data centre, dam or cable landing clusters to see which satellites observe them": "Включите группы военных объектов, центров обработки данных, плотин или точек выхода кабелей, чтобы увидеть, какие спутники их наблюдают",
+  "{clusters} clusters with an imaging satellite overhead now (amber lines) · next passes on the cluster cards": "Групп со съёмочным спутником над головой сейчас: {clusters} (янтарные линии) · следующие пролёты — в карточках групп"
 }

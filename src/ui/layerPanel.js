@@ -107,6 +107,7 @@ const PANEL_GROUPS = [
       'il-dam-clusters',
       'il-landing-clusters',
       'il-camera-clusters',
+      'il-satellite-observation',
     ],
   },
 ];

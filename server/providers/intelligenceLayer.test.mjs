@@ -51,3 +51,17 @@ test('anything else is refused', () => {
     assert.equal(intelligenceLayerPath('GET', url), null, url);
   }
 });
+
+test('observability reads only allowlisted fixed-site targets', () => {
+  assert.equal(
+    intelligenceLayerPath('GET', '/observability?targets=dams:10,military-areas:2&bbox=-10,35,5,45'),
+    '/api/observability?targets=dams:10,military-areas:2&bbox=-10,35,5,45',
+  );
+  assert.equal(intelligenceLayerPath('GET', '/observability'), '/api/observability?targets=');
+  assert.equal(intelligenceLayerPath('GET', '/observability?targets=cameras:1'), null);
+  assert.equal(intelligenceLayerPath('GET', '/observability?targets=dams:x'), null);
+  assert.equal(intelligenceLayerPath('GET', '/observability?targets=dams:10:1'), null);
+  assert.equal(intelligenceLayerPath('GET', '/observability?targets=dams:10&bbox=nope'), null);
+  assert.equal(intelligenceLayerPath('PUT', '/observability?targets=dams:10'), null);
+  assert.equal(intelligenceLayerPath('GET', '/observability/x'), null);
+});

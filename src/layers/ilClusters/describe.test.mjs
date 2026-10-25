@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { describeCluster } from './describe.js';
+import { describeObservation, describeCluster } from './describe.js';
 
 test('a vessel cluster reads as size, spread, motion, make-up and age', () => {
   const { title, lines } = describeCluster(
@@ -44,4 +44,30 @@ test('docked satellites, fires and GNSS zones get their own facts', () => {
   );
   assert.equal(zone.title, 'C3 · 1 low-accuracy cell');
   assert.ok(zone.lines.includes('9 of 20 aircraft reported low navigation accuracy'));
+});
+
+test('observation lines: overhead, next pass with daylight, weather in view', () => {
+  const lines = describeObservation({
+    overhead: ['LANDSAT 9', 'SENTINEL-2B', 'WORLDVIEW-3', 'GAOFEN-1'],
+    next: { t: 1000 + 23 * 60, name: 'SENTINEL-1A', day: false },
+    weather: 3,
+    horizonS: 10800,
+    nowSec: 1000,
+  });
+  assert.deepEqual(lines, [
+    'Imaging satellites overhead: LANDSAT 9, SENTINEL-2B, WORLDVIEW-3 +1',
+    'Next imaging pass in 23 min · SENTINEL-1A · night',
+    '3 weather satellites in view',
+  ]);
+});
+
+test('observation lines: a pass already begun is not "next"; none within the horizon says so', () => {
+  assert.deepEqual(
+    describeObservation({ overhead: [], next: { t: 900, name: 'X', day: true }, weather: 1, horizonS: 10800, nowSec: 1000 }),
+    ['1 weather satellite in view'],
+  );
+  assert.deepEqual(
+    describeObservation({ overhead: [], next: null, weather: 0, horizonS: 10800, nowSec: 1000 }),
+    ['No imaging pass in the next 3 h'],
+  );
 });

@@ -421,6 +421,7 @@ export const VOICE_OFF_LAYERS = Object.freeze({
   'il-dam-clusters': 'local intelligence-layer overlay, not a voice data source',
   'il-landing-clusters': 'local intelligence-layer overlay, not a voice data source',
   'il-camera-clusters': 'local intelligence-layer overlay, not a voice data source',
+  'il-satellite-observation': 'local intelligence-layer overlay, not a voice data source',
 });
 
 const TYPE_NAMES = Object.freeze({

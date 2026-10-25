@@ -7,6 +7,9 @@ import {
   cellCorners,
   circleRing,
   clusterLabelEntry,
+  elevationDeg,
+  observationUrl,
+  satelliteEcf,
   densifyRing,
   framingHeightM,
   militaryMotion,
@@ -171,4 +174,26 @@ test('cluster labels show the count in the cluster colour, larger clusters first
   assert.equal(entry.position, position); // the layer moves it in place
   assert.ok(entry.priority > clusterLabelEntry({ clusterId: 'c8', count: 3, title: '3', position, color: '#fff' }).priority);
   assert.equal(entry.horizonCull, true);
+});
+
+test('observation url lists the lanes and the box', () => {
+  assert.equal(
+    observationUrl([{ kind: 'dams', km: 10 }, { kind: 'datacenters', km: 0.5 }], { west: -10, south: 35.12345, east: 5, north: 45 }),
+    '/api/il/observability?targets=dams:10,datacenters:0.5&bbox=-10,35.123,5,45',
+  );
+  assert.equal(observationUrl([{ kind: 'landings', km: 25 }]), '/api/il/observability?targets=landings:25');
+});
+
+test('a satellite is near 90° elevation over its own ground point and below the horizon opposite', () => {
+  const iss = {
+    tle_line1: '1 25544U 98067A   26293.50000000  .00016717  00000+0  30186-3 0  9991',
+    tle_line2: '2 25544  51.6400 120.0000 0005000  90.0000 270.0000 15.49000000400000',
+  };
+  const now = Date.UTC(2026, 9, 20, 12) / 1000;
+  const sub = satellitePosition(iss, now);
+  const ecf = satelliteEcf(iss, now);
+  assert.ok(elevationDeg(ecf, sub.lat, sub.lon) > 85);
+  assert.ok(elevationDeg(ecf, -sub.lat, sub.lon + 180) < 0);
+  assert.equal(elevationDeg(null, 0, 0), null);
+  assert.equal(satelliteEcf({}, now), null);
 });

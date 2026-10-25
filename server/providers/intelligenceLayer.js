@@ -11,6 +11,9 @@ const KINDS = new Set([
   'aircraft', 'vessels', 'military', 'satellites', 'fires', 'gnss',
   'military-areas', 'datacenters', 'dams', 'landings', 'cameras',
 ]);
+/** Cluster feeds whose satellite observation the intelligence layer computes. */
+const OBSERVED_KINDS = new Set(['military-areas', 'datacenters', 'dams', 'landings']);
+const MAX_OBSERVED_TARGETS = 8;
 
 function sendJson(res, status, body) {
   res.statusCode = status;
@@ -33,6 +36,7 @@ function parseBbox(raw) {
  * Map a request to the intelligence layer API path it may reach, or null.
  *   GET /<kind>/index                  → /api/<kind>/index
  *   GET /<kind>?km=<km>[&bbox=W,S,E,N] → /api/<kind>?km=…[&bbox=…]
+ *   GET /observability?targets=<kind>:<km>,…[&bbox=W,S,E,N] → /api/observability?…
  *   GET|PUT /areas                     → /api/areas
  */
 export function intelligenceLayerPath(method, url) {
@@ -40,6 +44,8 @@ export function intelligenceLayerPath(method, url) {
   const [, first, rest, extra] = pathname.split('/');
   if (first === 'areas' && rest === undefined)
     return method === 'GET' || method === 'PUT' ? '/api/areas' : null;
+  if (first === 'observability' && rest === undefined)
+    return method === 'GET' ? observabilityPath(searchParams) : null;
   if (method !== 'GET' || !KINDS.has(first) || extra !== undefined) return null;
   if (rest === 'index') return `/api/${first}/index`;
   if (rest !== undefined) return null;
@@ -49,6 +55,19 @@ export function intelligenceLayerPath(method, url) {
   const bbox = parseBbox(rawBbox);
   if (rawBbox && !bbox) return null;
   return `/api/${first}?km=${km}${bbox ? `&bbox=${bbox}` : ''}`;
+}
+
+function observabilityPath(searchParams) {
+  const targets = (searchParams.get('targets') || '').split(',').filter(Boolean);
+  if (targets.length > MAX_OBSERVED_TARGETS) return null;
+  for (const target of targets) {
+    const [kind, km, more] = target.split(':');
+    if (more !== undefined || !OBSERVED_KINDS.has(kind) || !DISTANCE_KM.test(km || '')) return null;
+  }
+  const rawBbox = searchParams.get('bbox');
+  const bbox = parseBbox(rawBbox);
+  if (rawBbox && !bbox) return null;
+  return `/api/observability?targets=${targets.join(',')}${bbox ? `&bbox=${bbox}` : ''}`;
 }
 
 async function readBody(req, limit) {
@@ -64,7 +83,7 @@ async function readBody(req, limit) {
 
 /**
  * Vite plugin: /api/il/* → the intelligence layer's localhost API
- * (kind = aircraft | vessels | military | satellites | fires | gnss).
+ * (cluster feeds, their satellite observation, areas of interest).
  */
 export function intelligenceLayerProxy() {
   function install(middlewares) {

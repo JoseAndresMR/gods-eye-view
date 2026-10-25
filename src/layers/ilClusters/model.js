@@ -2,6 +2,8 @@
 import {
   degreesLat,
   degreesLong,
+  ecfToLookAngles,
+  eciToEcf,
   eciToGeodetic,
   gstime,
   propagate,
@@ -19,6 +21,7 @@ export const IL_DATACENTER_CLUSTERS_ID = 'il-datacenter-clusters';
 export const IL_DAM_CLUSTERS_ID = 'il-dam-clusters';
 export const IL_LANDING_CLUSTERS_ID = 'il-landing-clusters';
 export const IL_CAMERA_CLUSTERS_ID = 'il-camera-clusters';
+export const IL_OBSERVATION_ID = 'il-satellite-observation';
 
 /** Every intelligence-layer overlay, in the order the Intelligence panel lists them. */
 export const IL_LAYER_IDS = Object.freeze([
@@ -33,6 +36,7 @@ export const IL_LAYER_IDS = Object.freeze([
   IL_DAM_CLUSTERS_ID,
   IL_LANDING_CLUSTERS_ID,
   IL_CAMERA_CLUSTERS_ID,
+  IL_OBSERVATION_ID,
 ]);
 
 const EARTH_RADIUS_M = 6371008.8;
@@ -67,6 +71,19 @@ export function clustersIndexUrl(kind) {
  */
 export function clustersUrl(kind, km, box = null) {
   const base = `/api/il/${kind}?km=${encodeURIComponent(distanceLabel(km))}`;
+  if (!box) return base;
+  const edges = [box.west, box.south, box.east, box.north].map((v) => Number(v.toFixed(3)));
+  return `${base}&bbox=${edges.join(',')}`;
+}
+
+/**
+ * Which satellites see the clusters of the given lanes.
+ * @param {Array<{kind: string, km: number}>} lanes
+ * @param {{west:number, south:number, east:number, north:number}|null} [box]
+ */
+export function observationUrl(lanes, box = null) {
+  const targets = lanes.map(({ kind, km }) => `${kind}:${distanceLabel(km)}`).join(',');
+  const base = `/api/il/observability?targets=${targets}`;
   if (!box) return base;
   const edges = [box.west, box.south, box.east, box.north].map((v) => Number(v.toFixed(3)));
   return `${base}&bbox=${edges.join(',')}`;
@@ -353,4 +370,28 @@ export function clusterLabelEntry({ clusterId, count, title, position, color }) 
     verticalOnly: true,
     placement: 'above',
   };
+}
+
+/**
+ * Where a satellite (`tle_line1`/`tle_line2`) is at `nowSec`, Earth-fixed (km),
+ * or null when SGP4 can't place it.
+ */
+export function satelliteEcf(sat, nowSec) {
+  if (!sat?.tle_line1 || !sat?.tle_line2) return null;
+  try {
+    sat._satrec ??= twoline2satrec(sat.tle_line1, sat.tle_line2);
+    const date = new Date(nowSec * 1000);
+    const pv = propagate(sat._satrec, date);
+    if (!pv?.position || typeof pv.position === 'boolean') return null;
+    return eciToEcf(pv.position, gstime(date));
+  } catch {
+    return null;
+  }
+}
+
+/** Elevation in degrees of an Earth-fixed position (km) above a place's horizon. */
+export function elevationDeg(ecf, lat, lon, heightM = 0) {
+  if (!ecf) return null;
+  const observer = { latitude: (lat * Math.PI) / 180, longitude: (lon * Math.PI) / 180, height: heightM / 1000 };
+  return (ecfToLookAngles(observer, ecf).elevation * 180) / Math.PI;
 }

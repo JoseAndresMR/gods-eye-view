@@ -43,6 +43,7 @@ import {
   createIlDamClustersLayer,
   createIlLandingClustersLayer,
   createIlCameraClustersLayer,
+  createIlObservationLayer,
   createIlMilitaryClustersLayer,
   createIlSatelliteClustersLayer,
   createIlVesselClustersLayer,
@@ -117,6 +118,13 @@ export function createApplicationCatalog({
       surface,
       source: sources.installations,
     });
+    // Fixed-site clusters, and the satellite observation layer that annotates them.
+    const ilFixedSites = [
+      createIlMilitaryAreaClustersLayer({ surface }),
+      createIlDatacenterClustersLayer({ surface }),
+      createIlDamClustersLayer({ surface }),
+      createIlLandingClustersLayer({ surface }),
+    ];
     const satellites = createApplicationSatellites({
       source: sources.satellites,
     });
@@ -198,11 +206,9 @@ export function createApplicationCatalog({
         }),
         createIlFireClustersLayer({ surface }),
         createIlGnssZonesLayer({ surface }),
-        createIlMilitaryAreaClustersLayer({ surface }),
-        createIlDatacenterClustersLayer({ surface }),
-        createIlDamClustersLayer({ surface }),
-        createIlLandingClustersLayer({ surface }),
+        ...ilFixedSites,
         createIlCameraClustersLayer({ surface }),
+        createIlObservationLayer({ targets: ilFixedSites, surface }),
       ],
       metadata,
     );

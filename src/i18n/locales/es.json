@@ -3065,5 +3065,17 @@
   "Data centre clusters": "Grupos de centros de datos",
   "Dam clusters": "Grupos de presas",
   "Cable landing clusters": "Grupos de amarres de cable",
-  "Camera clusters": "Grupos de cámaras"
+  "Camera clusters": "Grupos de cámaras",
+  "Satellite observation": "Observación por satélite",
+  "Imaging satellites overhead: {names}": "Satélites de imagen encima: {names}",
+  "Next imaging pass in {minutes} min · {name} · daylight": "Próximo paso de imagen en {minutes} min · {name} · de día",
+  "Next imaging pass in {minutes} min · {name} · night": "Próximo paso de imagen en {minutes} min · {name} · de noche",
+  "No imaging pass in the next {hours} h": "Ningún paso de imagen en las próximas {hours} h",
+  "{count} weather satellites in view": {
+    "one": "{count} satélite meteorológico a la vista",
+    "many": "{count} de satélites meteorológicos a la vista",
+    "other": "{count} satélites meteorológicos a la vista"
+  },
+  "Switch on military area, data centre, dam or cable landing clusters to see which satellites observe them": "Activa los grupos de zonas militares, centros de datos, presas o aterrajes de cables para ver qué satélites los observan",
+  "{clusters} clusters with an imaging satellite overhead now (amber lines) · next passes on the cluster cards": "{clusters} grupos con un satélite de imagen encima ahora (líneas ámbar) · próximos pasos en las tarjetas de los grupos"
 }
