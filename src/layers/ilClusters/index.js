@@ -632,7 +632,7 @@ export function createIlClustersLayer({
 export function createIlAircraftClustersLayer({ flights = null, fetchImpl } = {}) {
   return createIlClustersLayer({
     id: IL_AIRCRAFT_CLUSTERS_ID,
-    name: 'Aircraft clusters (IL)',
+    name: 'Aircraft clusters',
     icon: '🔗',
     source: 'Intelligence layer · OpenSky',
     kind: 'aircraft',
@@ -653,7 +653,7 @@ export function createIlAircraftClustersLayer({ flights = null, fetchImpl } = {}
 export function createIlMilitaryClustersLayer({ military = null, fetchImpl } = {}) {
   return createIlClustersLayer({
     id: IL_MILITARY_CLUSTERS_ID,
-    name: 'Military clusters (IL)',
+    name: 'Military aircraft clusters',
     icon: '🎖',
     source: 'Intelligence layer · adsb.lol',
     kind: 'military',
@@ -674,7 +674,7 @@ export function createIlMilitaryClustersLayer({ military = null, fetchImpl } = {
 export function createIlVesselClustersLayer({ vessels = null, fetchImpl } = {}) {
   return createIlClustersLayer({
     id: IL_VESSEL_CLUSTERS_ID,
-    name: 'Vessel clusters (IL)',
+    name: 'Vessel clusters',
     icon: '⚓',
     source: 'Intelligence layer · AISStream',
     kind: 'vessels',
@@ -700,7 +700,7 @@ export function createIlVesselClustersLayer({ vessels = null, fetchImpl } = {}) 
 export function createIlSatelliteClustersLayer({ satellites = null, fetchImpl } = {}) {
   return createIlClustersLayer({
     id: IL_SATELLITE_CLUSTERS_ID,
-    name: 'Satellite clusters (IL)',
+    name: 'Satellite clusters',
     icon: '🛰',
     source: 'Intelligence layer · CelesTrak',
     kind: 'satellites',
@@ -723,7 +723,7 @@ export function createIlSatelliteClustersLayer({ satellites = null, fetchImpl } 
 export function createIlFireClustersLayer({ surface = null, fetchImpl } = {}) {
   return createIlClustersLayer({
     id: IL_FIRE_CLUSTERS_ID,
-    name: 'Fire clusters (IL)',
+    name: 'Fire clusters',
     icon: '🔥',
     source: 'Intelligence layer · NASA FIRMS',
     kind: 'fires',
@@ -745,7 +745,7 @@ export function createIlFireClustersLayer({ surface = null, fetchImpl } = {}) {
 export function createIlGnssZonesLayer({ surface = null, fetchImpl } = {}) {
   return createIlClustersLayer({
     id: IL_GNSS_ZONES_ID,
-    name: 'GNSS zones (IL)',
+    name: 'GNSS zones',
     icon: '📡',
     source: 'Intelligence layer · adsb.lol',
     kind: 'gnss',
@@ -828,7 +828,7 @@ function createIlFixedClustersLayer({ id, name, icon, source, kind, chipTitle, s
 export function createIlMilitaryAreaClustersLayer({ surface = null, fetchImpl } = {}) {
   return createIlFixedClustersLayer({
     id: IL_MILITARY_AREA_CLUSTERS_ID,
-    name: 'Military area clusters (IL)',
+    name: 'Military area clusters',
     icon: '🪖',
     source: 'Intelligence layer · OpenStreetMap',
     kind: 'military-areas',
@@ -842,7 +842,7 @@ export function createIlMilitaryAreaClustersLayer({ surface = null, fetchImpl } 
 export function createIlDatacenterClustersLayer({ surface = null, fetchImpl } = {}) {
   return createIlFixedClustersLayer({
     id: IL_DATACENTER_CLUSTERS_ID,
-    name: 'Data centre clusters (IL)',
+    name: 'Data centre clusters',
     icon: '🖥',
     source: 'Intelligence layer · OpenStreetMap',
     kind: 'datacenters',
@@ -856,7 +856,7 @@ export function createIlDatacenterClustersLayer({ surface = null, fetchImpl } = 
 export function createIlDamClustersLayer({ surface = null, fetchImpl } = {}) {
   return createIlFixedClustersLayer({
     id: IL_DAM_CLUSTERS_ID,
-    name: 'Dam clusters (IL)',
+    name: 'Dam clusters',
     icon: '🌊',
     source: 'Intelligence layer · Open Infrastructure Map',
     kind: 'dams',
@@ -870,7 +870,7 @@ export function createIlDamClustersLayer({ surface = null, fetchImpl } = {}) {
 export function createIlLandingClustersLayer({ surface = null, fetchImpl } = {}) {
   return createIlFixedClustersLayer({
     id: IL_LANDING_CLUSTERS_ID,
-    name: 'Cable landing clusters (IL)',
+    name: 'Cable landing clusters',
     icon: '🔌',
     source: 'Intelligence layer · TeleGeography',
     kind: 'landings',
@@ -884,7 +884,7 @@ export function createIlLandingClustersLayer({ surface = null, fetchImpl } = {})
 export function createIlCameraClustersLayer({ surface = null, fetchImpl } = {}) {
   return createIlFixedClustersLayer({
     id: IL_CAMERA_CLUSTERS_ID,
-    name: 'Camera clusters (IL)',
+    name: 'Camera clusters',
     icon: '📷',
     source: 'Intelligence layer · GEV CCTV catalog',
     kind: 'cameras',
