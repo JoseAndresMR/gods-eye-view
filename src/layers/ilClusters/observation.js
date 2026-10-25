@@ -7,7 +7,11 @@ import {
   setOverlaySourceVisible,
 } from '../../overlays/worldOverlay.js';
 import {
-  IL_OBSERVATION_ID,
+  IL_SAT_FIRE_ID,
+  IL_SAT_IMAGING_ID,
+  IL_SAT_NAVIGATION_ID,
+  IL_SAT_RECEIVERS_ID,
+  IL_SAT_WEATHER_ID,
   boxCovers,
   clusterLabelEntry,
   distanceLabel,
@@ -17,17 +21,22 @@ import {
   satelliteEcf,
   satellitePosition,
 } from './model.js';
-import { describeObservation } from './describe.js';
+import {
+  describeFireSatellites,
+  describeImaging,
+  describeNavigation,
+  describeReceivers,
+  describeWeather,
+} from './describe.js';
 
-/** Overhead satellites are re-checked this often (they cross a footprint in ~2 min). */
+/** Satellites drawn with lines are re-checked this often (they cross a footprint in minutes). */
 const TICK_MS = 1000;
 /** Cards re-render at least this often so "in N min" counts down. */
 const CARD_REFRESH_MS = 30000;
 const MOVE_SETTLE_MS = 400;
 const RETRY_MS = 10000;
-const IMAGING_CSS = '#ffd166';
-/** Name tags of the drawn satellites, on the shared world-overlay host. */
-const TAG_SOURCE = 'il-observation-satellites';
+/** Line and dot colour per observed kind. */
+const KIND_CSS = Object.freeze({ optical: '#ffd166', radar: '#c792ea', fire: '#ff7b54' });
 /** Satellite names win label collisions against cluster counts. */
 const TAG_PRIORITY = 1e9;
 const LINE_WIDTH = 1.5;
@@ -37,26 +46,49 @@ const GROUND_LIFT_M = 20;
  * A place belongs to a cluster only if it is the cluster's centre (the IL
  * snaps centres to 0.05°): cluster ids restart when a tracker resumes, so an
  * id alone may name another cluster until the observability feed catches up.
+ * Moving clusters drift between the two computations, so they get more room.
  */
-const SAME_PLACE_DEG = 0.06;
+const SAME_PLACE_DEG = Object.freeze({ aircraft: 1, military: 1, vessels: 0.3 });
+const SAME_PLACE_DEFAULT_DEG = 0.06;
 
 /**
- * Which Earth-observation satellites see the clusters of the fixed-site layers
- * that are on (military areas, data centres, dams, cable landings), from the
- * intelligence layer's observability feed. Imaging satellites overhead right
- * now are drawn with a line to each cluster they see (re-checked every second
- * from their TLEs, so lines follow the pass); every cluster card gains lines
- * on what is overhead, the next imaging pass and the weather satellites in
- * view.
+ * Which satellites observe the clusters of other IL layers: one cross-layer
+ * relation of the intelligence layer's observability feed (imaging, fire,
+ * weather, receivers, navigation). Every card of the target layers that are
+ * on gains the relation's lines. For relations with `lineKinds`, satellites of
+ * those kinds observing a cluster right now are drawn, named, with a line to
+ * each cluster (re-checked every second from their TLEs and their elevation
+ * windows, so lines follow the pass).
  *
- * @param {object} options
- * @param {object[]} options.targets Fixed-site cluster layers (kind, isEnabled,
- *   getParams, setAnnotator, refreshCards, subscribeClusters).
- * @param {object|null} [options.surface] GEV surface (DEM anchors for line ends).
- * @param {Function} [options.fetchImpl]
+ * @param {object} config
+ * @param {string} config.id
+ * @param {string} config.name English layer name.
+ * @param {string} config.icon
+ * @param {string} config.relation IL relation name.
+ * @param {object[]} config.targets Cluster layers (kind, isEnabled, getParams,
+ *   setAnnotator, refreshCards, subscribeClusters).
+ * @param {string[]} [config.lineKinds] Observed kinds drawn live.
+ * @param {(o: object) => string[]} config.describe Card lines for one cluster.
+ * @param {string} config.offHint Row text while no target layer is on.
+ * @param {(o: {places: number, overhead: number}) => string} config.infoOf
+ * @param {object|null} [config.surface] GEV surface (DEM anchors for line ends).
+ * @param {Function} [config.fetchImpl]
  */
-export function createIlObservationLayer({ targets = [], surface = null, fetchImpl = globalThis.fetch } = {}) {
+export function createIlSatelliteRelationLayer({
+  id,
+  name,
+  icon,
+  relation,
+  targets = [],
+  lineKinds = [],
+  describe,
+  offHint,
+  infoOf,
+  surface = null,
+  fetchImpl = globalThis.fetch,
+}) {
   const groundAnchors = surface?.anchors ?? null;
+  const tagSource = `${id}:tags`;
   let _viewer = null;
   let _points = null;
   let _lines = null;
@@ -66,6 +98,7 @@ export function createIlObservationLayer({ targets = [], surface = null, fetchIm
   let _box = null;
   let _request = null;
   let _timer = null;
+  let _cardTimer = null;
   let _moveTimer = null;
   let _retryTimer = null;
   let _removeMoveEnd = null;
@@ -73,16 +106,16 @@ export function createIlObservationLayer({ targets = [], surface = null, fetchIm
   let _lastUpdate = null;
   let _lastError = null;
   let _rowListener = null;
-  // `${kind}|${km}|${clusterId}` -> names of imaging satellites overhead now.
+  // `${kind}|${km}|${clusterId}` -> satellites of lineKinds observing it now: [{name, kinds}].
   let _overhead = new Map();
   let _drawnKey = '';
-  let _cardsAt = 0;
   // satId -> Cartesian3 moved in place each tick, so the name tags follow it.
   let _satCarts = new Map();
   let _taggedKey = '';
 
   const notifyRow = () => _rowListener?.();
   const laneKey = (kind, km, clusterId) => `${kind}|${km}|${clusterId}`;
+  const drawn = (sat) => (sat?.kinds || []).some((k) => lineKinds.includes(k));
 
   function groundHeight(lat, lon) {
     const h = groundAnchors?.fireAnchorHeight?.(lat, lon);
@@ -99,13 +132,6 @@ export function createIlObservationLayer({ targets = [], surface = null, fetchIm
 
   const lanesSignature = (lanes) => lanes.map(({ kind, km }) => `${kind}:${distanceLabel(km)}`).join(',');
 
-  function groupOf(satId) {
-    const group = _doc?.satellites?.[satId]?.group;
-    return _doc?.meta?.groups?.[group] ? { name: group, ..._doc.meta.groups[group] } : null;
-  }
-
-  const isImaging = (satId) => Boolean(groupOf(satId)?.next_pass);
-
   /** Each lane's places: [{kind, km, clusterId, place}]. */
   function placesInView() {
     const out = [];
@@ -116,39 +142,42 @@ export function createIlObservationLayer({ targets = [], surface = null, fetchIm
     return out;
   }
 
-  /** Which imaging satellites are above their threshold over each cluster now; redraw if that changed. */
+  function refreshCards() {
+    for (const { layer } of _lanes) layer.refreshCards?.();
+  }
+
+  /** Which drawn-kind satellites observe each cluster now, inside their windows; redraw. */
   function tick() {
-    if (!_enabled || !_doc || !_points) return;
+    if (!_enabled || !_doc || !_points || !lineKinds.length) return;
     const nowSec = Date.now() / 1000;
+    const sats = _doc.satellites || {};
     const ecf = new Map();
     const where = (satId) => {
-      if (!ecf.has(satId)) ecf.set(satId, satelliteEcf(_doc.satellites[satId], nowSec));
+      if (!ecf.has(satId)) ecf.set(satId, satelliteEcf(sats[satId], nowSec));
       return ecf.get(satId);
     };
     const overhead = new Map();
     const pairs = [];
     for (const { kind, km, clusterId, place } of placesInView()) {
-      // Candidates: imaging satellites overhead at the last computation, and the next one due.
-      const candidates = new Set(place.now.map(([satId]) => satId).filter(isImaging));
-      if (place.next?.sat) candidates.add(place.next.sat);
-      const names = [];
+      // Candidates: drawn-kind satellites observing at the last computation, and the next ones due.
+      const candidates = new Set(place.now.map(([satId]) => satId).filter((satId) => drawn(sats[satId])));
+      for (const next of Object.values(place.next || {})) if (drawn(sats[next.sat])) candidates.add(next.sat);
+      const seen = [];
       for (const satId of candidates) {
-        const min = groupOf(satId)?.min_elevation_deg;
+        const sat = sats[satId];
         const elev = elevationDeg(where(satId), place.lat, place.lon);
-        if (elev === null || !Number.isFinite(min) || elev < min) continue;
-        names.push(_doc.satellites[satId].name);
+        if (elev === null || elev < sat.elev_min || elev > sat.elev_max) continue;
+        seen.push({ name: sat.name, kinds: sat.kinds });
         pairs.push({ satId, place });
       }
-      if (names.length) overhead.set(laneKey(kind, distanceLabel(km), clusterId), names.sort());
+      if (seen.length) overhead.set(laneKey(kind, distanceLabel(km), clusterId), seen.sort((a, b) => a.name.localeCompare(b.name)));
     }
     _overhead = overhead;
     draw(pairs, nowSec);
-    const key = [...overhead].map(([k, v]) => `${k}=${v.join('+')}`).join(';');
-    const changed = key !== _drawnKey;
-    _drawnKey = key;
-    if (changed || Date.now() - _cardsAt > CARD_REFRESH_MS) {
-      _cardsAt = Date.now();
-      for (const { layer } of _lanes) layer.refreshCards?.();
+    const key = [...overhead].map(([k, v]) => `${k}=${v.map((s) => s.name).join('+')}`).join(';');
+    if (key !== _drawnKey) {
+      _drawnKey = key;
+      refreshCards();
       notifyRow();
     }
   }
@@ -159,26 +188,30 @@ export function createIlObservationLayer({ targets = [], surface = null, fetchIm
     if (key === _taggedKey) return;
     _taggedKey = key;
     if (!satIds.length) {
-      clearOverlaySource(TAG_SOURCE);
+      clearOverlaySource(tagSource);
       return;
     }
     setOverlayEntries(
-      TAG_SOURCE,
+      tagSource,
       satIds.map((satId) => clusterLabelEntry({
         clusterId: `sat:${satId}`,
         count: TAG_PRIORITY,
         title: _doc.satellites[satId].name,
         position: _satCarts.get(satId),
-        color: IMAGING_CSS,
+        color: cssOf(_doc.satellites[satId]),
       })),
       { moving: true },
     );
   }
 
+  function cssOf(sat) {
+    const kind = (sat?.kinds || []).find((k) => KIND_CSS[k]);
+    return KIND_CSS[kind] || KIND_CSS.optical;
+  }
+
   function draw(pairs, nowSec) {
     _points.removeAll();
     _lines.removeAll();
-    const color = Cesium.Color.fromCssColorString(IMAGING_CSS);
     const satCart = new Map();
     for (const { satId } of pairs) {
       if (satCart.has(satId)) continue;
@@ -192,10 +225,10 @@ export function createIlObservationLayer({ targets = [], surface = null, fetchIm
       _satCarts.set(satId, cart);
       satCart.set(satId, cart);
       _points.add({
-        id: `${IL_OBSERVATION_ID}:${satId}`,
-        position: satCart.get(satId),
+        id: `${id}:${satId}`,
+        position: cart,
         pixelSize: 8,
-        color: color.withAlpha(0.9),
+        color: Cesium.Color.fromCssColorString(cssOf(_doc.satellites[satId])).withAlpha(0.9),
         outlineColor: Cesium.Color.BLACK.withAlpha(0.6),
         outlineWidth: 1,
       });
@@ -206,12 +239,14 @@ export function createIlObservationLayer({ targets = [], surface = null, fetchIm
       _lines.add({
         positions: [from, Cesium.Cartesian3.fromDegrees(place.lon, place.lat, groundHeight(place.lat, place.lon) + GROUND_LIFT_M)],
         width: LINE_WIDTH,
-        material: Cesium.Material.fromType('Color', { color: color.withAlpha(0.7) }),
+        material: Cesium.Material.fromType('Color', {
+          color: Cesium.Color.fromCssColorString(cssOf(_doc.satellites[satId])).withAlpha(0.7),
+        }),
       });
     }
     for (const satId of _satCarts.keys()) if (!satCart.get(satId)) _satCarts.delete(satId);
     tag([..._satCarts.keys()].sort());
-    governorRequestRender(IL_OBSERVATION_ID);
+    governorRequestRender(id);
   }
 
   /** Card lines for one cluster of one target layer. */
@@ -221,13 +256,14 @@ export function createIlObservationLayer({ targets = [], surface = null, fetchIm
     const place = _doc.targets?.[kind]?.[distanceLabel(km)]?.[clusterId];
     const centre = cluster?.summary?.centroid;
     if (!place || !centre) return [];
+    const room = SAME_PLACE_DEG[kind] ?? SAME_PLACE_DEFAULT_DEG;
     const dLon = Math.abs(((place.lon - centre.lon + 540) % 360) - 180);
-    if (Math.abs(place.lat - centre.lat) > SAME_PLACE_DEG || dLon > SAME_PLACE_DEG) return [];
-    const nextSat = place.next ? _doc.satellites[place.next.sat] : null;
-    return describeObservation({
+    if (Math.abs(place.lat - centre.lat) > room || dLon > room) return [];
+    return describe({
+      kind,
+      place,
+      satellites: _doc.satellites || {},
       overhead: _overhead.get(laneKey(kind, distanceLabel(km), clusterId)) || [],
-      next: nextSat ? { t: place.next.t, name: nextSat.name, day: place.next.day } : null,
-      weather: place.now.filter(([satId]) => !isImaging(satId)).length,
       horizonS: _doc.meta?.horizon_s || 0,
       nowSec: Date.now() / 1000,
     });
@@ -248,8 +284,8 @@ export function createIlObservationLayer({ targets = [], surface = null, fetchIm
     _lines?.removeAll();
     _satCarts = new Map();
     _taggedKey = '';
-    clearOverlaySource(TAG_SOURCE);
-    governorRequestRender(IL_OBSERVATION_ID);
+    clearOverlaySource(tagSource);
+    governorRequestRender(id);
   }
 
   async function refresh() {
@@ -267,21 +303,22 @@ export function createIlObservationLayer({ targets = [], surface = null, fetchIm
         return true;
       }
       const box = requestBox(viewRect());
-      const res = await fetchImpl(observationUrl(_lanes, box), { signal: request.signal, cache: 'no-store' });
+      const res = await fetchImpl(observationUrl(relation, _lanes, box), { signal: request.signal, cache: 'no-store' });
       const body = await res.json();
       if (stale()) return false;
       if (!res.ok) throw new Error(body?.error || `HTTP ${res.status}`);
       _doc = body;
       _box = box;
-      _drawnKey = null; // force a card refresh on the next tick
+      _drawnKey = null; // the next tick re-renders the cards
       _lastUpdate = Date.now();
       _lastError = null;
-      tick();
-      console.log(`[Data:IL] observability ${lanesSignature(_lanes)}: ${placesInView().length} clusters, ${Object.keys(body.satellites || {}).length} satellites`);
+      if (lineKinds.length) tick();
+      else refreshCards();
+      console.log(`[Data:IL] ${relation} observation ${lanesSignature(_lanes)}: ${placesInView().length} clusters, ${Object.keys(body.satellites || {}).length} satellites`);
       return true;
     } catch (e) {
       if (stale()) return false;
-      console.warn('[Data:IL] observability unavailable:', e);
+      console.warn(`[Data:IL] ${relation} observation unavailable:`, e);
       _lastError = e?.message || msg('Intelligence layer unavailable');
       clearTimeout(_retryTimer);
       _retryTimer = setTimeout(() => _enabled && refresh(), RETRY_MS);
@@ -307,19 +344,19 @@ export function createIlObservationLayer({ targets = [], surface = null, fetchIm
 
   function show(visible) {
     for (const collection of [_points, _lines]) if (collection) collection.show = visible;
-    setOverlaySourceVisible(TAG_SOURCE, visible);
+    setOverlaySourceVisible(tagSource, visible);
   }
 
   return {
-    id: IL_OBSERVATION_ID,
-    name: 'Satellite observation',
-    icon: '👁',
+    id,
+    name,
+    icon,
     source: 'Intelligence layer · CelesTrak',
-    kind: 'observability',
+    kind: `observability-${relation}`,
     updateInterval: 30000,
 
     init(viewer) {
-      if (_viewer) throw new Error(`${IL_OBSERVATION_ID} layer is already initialized`);
+      if (_viewer) throw new Error(`${id} layer is already initialized`);
       _viewer = viewer;
       _points = viewer.scene.primitives.add(new Cesium.PointPrimitiveCollection());
       _lines = viewer.scene.primitives.add(new Cesium.PolylineCollection());
@@ -329,12 +366,14 @@ export function createIlObservationLayer({ targets = [], surface = null, fetchIm
     enable() {
       _enabled = true;
       show(true);
-      for (const layer of targets) layer.setAnnotator?.((cluster, km) => annotate(layer.kind, cluster, km));
+      for (const layer of targets) layer.setAnnotator?.(id, (cluster, km) => annotate(layer.kind, cluster, km));
       _unsubscribers = targets.map((layer) => layer.subscribeClusters?.(onTargetsChanged) || (() => {}));
       _removeMoveEnd?.();
       _removeMoveEnd = _viewer?.camera?.moveEnd?.addEventListener?.(onMoveEnd) || null;
       clearInterval(_timer);
-      _timer = setInterval(tick, TICK_MS);
+      _timer = lineKinds.length ? setInterval(tick, TICK_MS) : null;
+      clearInterval(_cardTimer);
+      _cardTimer = setInterval(refreshCards, CARD_REFRESH_MS);
     },
 
     disable() {
@@ -343,13 +382,15 @@ export function createIlObservationLayer({ targets = [], surface = null, fetchIm
       _enabled = false;
       for (const unsubscribe of _unsubscribers) unsubscribe();
       _unsubscribers = [];
-      for (const layer of targets) layer.setAnnotator?.(null);
+      for (const layer of targets) layer.setAnnotator?.(id, null);
       _removeMoveEnd?.();
       _removeMoveEnd = null;
       clearTimeout(_moveTimer);
       clearTimeout(_retryTimer);
       clearInterval(_timer);
+      clearInterval(_cardTimer);
       _timer = null;
+      _cardTimer = null;
       clear();
       show(false);
     },
@@ -364,13 +405,9 @@ export function createIlObservationLayer({ targets = [], surface = null, fetchIm
 
     getRowControls() {
       let info = null;
-      if (_lastUpdate && !_lanes.length)
-        info = t('Switch on military area, data centre, dam or cable landing clusters to see which satellites observe them');
+      if (_lastUpdate && !_lanes.length) info = offHint();
       else if (_lastUpdate && _doc?.meta?.idle) info = t('Paused · no area of interest is enabled');
-      else if (_lastUpdate && _doc)
-        info = t('{clusters} clusters with an imaging satellite overhead now (amber lines) · next passes on the cluster cards', {
-          clusters: formatNumber(_overhead.size),
-        });
+      else if (_lastUpdate && _doc) info = infoOf({ places: placesInView().length, overhead: _overhead.size });
       return { chips: [], info };
     },
 
@@ -386,7 +423,95 @@ export function createIlObservationLayer({ targets = [], surface = null, fetchIm
     },
 
     getStats() {
-      return { count: _overhead.size, lastUpdate: _lastUpdate, error: _lastError };
+      return { count: _lanes.length ? placesInView().length : 0, lastUpdate: _lastUpdate, error: _lastError };
     },
   };
+}
+
+/** Optical and radar Earth observation over fixed sites, fires and vessels. */
+export function createIlImagingSatellitesLayer({ targets, surface, fetchImpl } = {}) {
+  return createIlSatelliteRelationLayer({
+    id: IL_SAT_IMAGING_ID,
+    name: 'Imaging satellites',
+    icon: '👁',
+    relation: 'imaging',
+    targets,
+    lineKinds: ['optical', 'radar'],
+    describe: describeImaging,
+    offHint: () => t('Switch on military area, data centre, dam, cable landing, fire or vessel clusters'),
+    infoOf: ({ overhead }) =>
+      t('{count} clusters under an imaging satellite now (amber optical, violet radar) · next passes on the cards', {
+        count: formatNumber(overhead),
+      }),
+    surface,
+    fetchImpl,
+  });
+}
+
+/** The satellites NASA FIRMS reads, over fire clusters. */
+export function createIlFireSatellitesLayer({ targets, surface, fetchImpl } = {}) {
+  return createIlSatelliteRelationLayer({
+    id: IL_SAT_FIRE_ID,
+    name: 'Fire-detecting satellites',
+    icon: '♨',
+    relation: 'fire',
+    targets,
+    lineKinds: ['fire'],
+    describe: describeFireSatellites,
+    offHint: () => t('Switch on fire clusters'),
+    infoOf: ({ overhead }) =>
+      t('{count} fire clusters under a FIRMS satellite now (orange lines) · next overpass on the cards', {
+        count: formatNumber(overhead),
+      }),
+    surface,
+    fetchImpl,
+  });
+}
+
+/** Geostationary and polar weather imagers over fixed sites and fires. */
+export function createIlWeatherSatellitesLayer({ targets, surface, fetchImpl } = {}) {
+  return createIlSatelliteRelationLayer({
+    id: IL_SAT_WEATHER_ID,
+    name: 'Weather satellites',
+    icon: '☁',
+    relation: 'weather',
+    targets,
+    describe: describeWeather,
+    offHint: () => t('Switch on military area, data centre, dam, cable landing or fire clusters'),
+    infoOf: ({ places }) => t('Weather satellites in view of {count} clusters, on their cards', { count: formatNumber(places) }),
+    surface,
+    fetchImpl,
+  });
+}
+
+/** Space AIS, ADS-B and distress-beacon receivers over vessel and aircraft clusters. */
+export function createIlReceiverSatellitesLayer({ targets, surface, fetchImpl } = {}) {
+  return createIlSatelliteRelationLayer({
+    id: IL_SAT_RECEIVERS_ID,
+    name: 'Space AIS / ADS-B receivers',
+    icon: '📶',
+    relation: 'receivers',
+    targets,
+    describe: describeReceivers,
+    offHint: () => t('Switch on vessel, aircraft or military aircraft clusters'),
+    infoOf: ({ places }) => t('Receivers in reach of {count} clusters, on their cards', { count: formatNumber(places) }),
+    surface,
+    fetchImpl,
+  });
+}
+
+/** GPS, Galileo and GLONASS geometry over GNSS zones. */
+export function createIlNavigationSatellitesLayer({ targets, surface, fetchImpl } = {}) {
+  return createIlSatelliteRelationLayer({
+    id: IL_SAT_NAVIGATION_ID,
+    name: 'Navigation geometry',
+    icon: '🧭',
+    relation: 'navigation',
+    targets,
+    describe: describeNavigation,
+    offHint: () => t('Switch on GNSS zones'),
+    infoOf: ({ places }) => t('Navigation satellites in view of {count} zones, on their cards', { count: formatNumber(places) }),
+    surface,
+    fetchImpl,
+  });
 }

@@ -52,16 +52,18 @@ test('anything else is refused', () => {
   }
 });
 
-test('observability reads only allowlisted fixed-site targets', () => {
+test('observability reads only allowlisted relations and cluster feeds', () => {
   assert.equal(
-    intelligenceLayerPath('GET', '/observability?targets=dams:10,military-areas:2&bbox=-10,35,5,45'),
-    '/api/observability?targets=dams:10,military-areas:2&bbox=-10,35,5,45',
+    intelligenceLayerPath('GET', '/observability/imaging?targets=dams:10,vessels:0.5&bbox=-10,35,5,45'),
+    '/api/observability/imaging?targets=dams:10,vessels:0.5&bbox=-10,35,5,45',
   );
-  assert.equal(intelligenceLayerPath('GET', '/observability'), '/api/observability?targets=');
-  assert.equal(intelligenceLayerPath('GET', '/observability?targets=cameras:1'), null);
-  assert.equal(intelligenceLayerPath('GET', '/observability?targets=dams:x'), null);
-  assert.equal(intelligenceLayerPath('GET', '/observability?targets=dams:10:1'), null);
-  assert.equal(intelligenceLayerPath('GET', '/observability?targets=dams:10&bbox=nope'), null);
-  assert.equal(intelligenceLayerPath('PUT', '/observability?targets=dams:10'), null);
-  assert.equal(intelligenceLayerPath('GET', '/observability/x'), null);
+  assert.equal(intelligenceLayerPath('GET', '/observability/navigation'), '/api/observability/navigation?targets=');
+  assert.equal(intelligenceLayerPath('GET', '/observability'), null);
+  assert.equal(intelligenceLayerPath('GET', '/observability/spy?targets=dams:10'), null);
+  assert.equal(intelligenceLayerPath('GET', '/observability/imaging?targets=areas:1'), null);
+  assert.equal(intelligenceLayerPath('GET', '/observability/imaging?targets=dams:x'), null);
+  assert.equal(intelligenceLayerPath('GET', '/observability/imaging?targets=dams:10:1'), null);
+  assert.equal(intelligenceLayerPath('GET', '/observability/imaging?targets=dams:10&bbox=nope'), null);
+  assert.equal(intelligenceLayerPath('PUT', '/observability/imaging?targets=dams:10'), null);
+  assert.equal(intelligenceLayerPath('GET', '/observability/imaging/x'), null);
 });

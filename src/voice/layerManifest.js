@@ -421,7 +421,11 @@ export const VOICE_OFF_LAYERS = Object.freeze({
   'il-dam-clusters': 'local intelligence-layer overlay, not a voice data source',
   'il-landing-clusters': 'local intelligence-layer overlay, not a voice data source',
   'il-camera-clusters': 'local intelligence-layer overlay, not a voice data source',
-  'il-satellite-observation': 'local intelligence-layer overlay, not a voice data source',
+  'il-sat-imaging': 'local intelligence-layer overlay, not a voice data source',
+  'il-sat-fire': 'local intelligence-layer overlay, not a voice data source',
+  'il-sat-weather': 'local intelligence-layer overlay, not a voice data source',
+  'il-sat-receivers': 'local intelligence-layer overlay, not a voice data source',
+  'il-sat-navigation': 'local intelligence-layer overlay, not a voice data source',
 });
 
 const TYPE_NAMES = Object.freeze({

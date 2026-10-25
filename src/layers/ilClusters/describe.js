@@ -155,39 +155,114 @@ export function describeCluster(cluster, kind) {
   return { title: `${cluster?.id ?? ''} · ${spec.members(size)}`, lines: lines.filter(Boolean) };
 }
 
-/** Imaging satellites named on one card line before "+N". */
-const OVERHEAD_NAMES = 3;
+/** Satellites named on one card line before "+N". */
+const NAMES_SHOWN = 3;
+
+function names(list) {
+  const shown = list.slice(0, NAMES_SHOWN).join(', ');
+  const more = list.length - NAMES_SHOWN;
+  return more > 0 ? `${shown} +${formatNumber(more)}` : shown;
+}
+
+const minutesUntil = (t, nowSec) => formatNumber(Math.max(1, Math.round((t - nowSec) / 60)));
+const satName = (satellites, id) => satellites[id]?.name || `NORAD ${id}`;
 
 /**
- * Card lines on which satellites observe a cluster.
- * @param {object} o
- * @param {string[]} o.overhead Imaging satellites above their threshold right now.
- * @param {{t: number, name: string, day: boolean}|null} o.next Next imaging pass (Unix s).
- * @param {number} o.weather Weather satellites in view.
- * @param {number} o.horizonS How far ahead passes were searched.
- * @param {number} o.nowSec
- * @returns {string[]}
+ * Each relation's card lines take:
+ * @typedef {object} ObservationContext
+ * @property {string} kind Target cluster kind (vessels, fires, …).
+ * @property {{now: Array<[string, number]>, counts: Object<string, number>, next: Object<string, {t: number, sat: string, day: boolean}>, pdop?: number, pdop_gps?: number}} place
+ * @property {Object<string, {name: string, kinds: string[]}>} satellites By NORAD id.
+ * @property {Array<{name: string, kinds: string[]}>} overhead Drawn satellites observing it right now.
+ * @property {number} horizonS How far ahead passes were searched.
+ * @property {number} nowSec
  */
-export function describeObservation({ overhead, next, weather, horizonS, nowSec }) {
+
+/** @param {ObservationContext} o */
+export function describeImaging({ place, satellites, overhead, horizonS, nowSec }) {
   const lines = [];
-  if (overhead.length) {
-    const shown = overhead.slice(0, OVERHEAD_NAMES).join(', ');
-    const more = overhead.length - OVERHEAD_NAMES;
-    lines.push(t('Imaging satellites overhead: {names}', {
-      names: more > 0 ? `${shown} +${formatNumber(more)}` : shown,
+  const optical = overhead.filter((s) => s.kinds.includes('optical')).map((s) => s.name);
+  const radar = overhead.filter((s) => s.kinds.includes('radar')).map((s) => s.name);
+  if (optical.length) lines.push(t('Optical satellites overhead: {names}', { names: names(optical) }));
+  if (radar.length) lines.push(t('Radar satellites overhead: {names}', { names: names(radar) }));
+  const hours = round(horizonS / 3600, 1);
+  const nextOptical = place.next?.optical;
+  if (nextOptical && nextOptical.t > nowSec)
+    lines.push(t('Next daylight optical pass in {minutes} min · {name}', {
+      minutes: minutesUntil(nextOptical.t, nowSec), name: satName(satellites, nextOptical.sat),
     }));
-  }
-  if (next && next.t > nowSec) {
-    const minutes = Math.max(1, Math.round((next.t - nowSec) / 60));
-    lines.push(next.day
-      ? t('Next imaging pass in {minutes} min · {name} · daylight', { minutes: formatNumber(minutes), name: next.name })
-      : t('Next imaging pass in {minutes} min · {name} · night', { minutes: formatNumber(minutes), name: next.name }));
-  } else if (!overhead.length && !next) {
-    lines.push(t('No imaging pass in the next {hours} h', { hours: round(horizonS / 3600, 1) }));
-  }
-  if (weather > 0)
-    lines.push(tn(weather, '{count} weather satellite in view', '{count} weather satellites in view', {
-      count: formatNumber(weather),
+  else if (!nextOptical && !optical.length) lines.push(t('No daylight optical pass in the next {hours} h', { hours }));
+  const nextRadar = place.next?.radar;
+  if (nextRadar && nextRadar.t > nowSec)
+    lines.push(t('Next radar pass in {minutes} min · {name}', {
+      minutes: minutesUntil(nextRadar.t, nowSec), name: satName(satellites, nextRadar.sat),
     }));
+  else if (!nextRadar && !radar.length) lines.push(t('No radar pass in the next {hours} h', { hours }));
+  return lines;
+}
+
+/** @param {ObservationContext} o */
+export function describeFireSatellites({ place, satellites, overhead, horizonS, nowSec }) {
+  const lines = [];
+  if (overhead.length)
+    lines.push(t('Fire-detecting satellites overhead: {names}', { names: names(overhead.map((s) => s.name)) }));
+  const next = place.next?.fire;
+  if (next && next.t > nowSec)
+    lines.push(t('Next fire-detection overpass in {minutes} min · {name}', {
+      minutes: minutesUntil(next.t, nowSec), name: satName(satellites, next.sat),
+    }));
+  else if (!next && !overhead.length)
+    lines.push(t('No fire-detection overpass in the next {hours} h', { hours: round(horizonS / 3600, 1) }));
+  return lines;
+}
+
+/** @param {ObservationContext} o */
+export function describeWeather({ place, satellites }) {
+  const count = place.counts?.weather || 0;
+  if (!count) return [t('No weather satellite in view')];
+  const [best, elevation] = place.now?.[0] || [];
+  return [tn(count, '{count} weather satellite in view · highest {name} ({elevation}°)',
+    '{count} weather satellites in view · highest {name} ({elevation}°)', {
+      count: formatNumber(count), name: satName(satellites, best), elevation: round(elevation),
+    })];
+}
+
+/** @param {ObservationContext} o */
+export function describeReceivers({ kind, place, satellites, nowSec }) {
+  const lines = [];
+  const receiver = kind === 'vessels' ? 'ais' : 'adsb';
+  const count = place.counts?.[receiver] || 0;
+  const next = place.next?.[receiver];
+  if (count)
+    lines.push(receiver === 'ais'
+      ? tn(count, '{count} space AIS receiver in reach', '{count} space AIS receivers in reach', { count: formatNumber(count) })
+      : tn(count, '{count} space ADS-B receiver in reach', '{count} space ADS-B receivers in reach', { count: formatNumber(count) }));
+  else if (next && next.t > nowSec) {
+    const values = { minutes: minutesUntil(next.t, nowSec), name: satName(satellites, next.sat) };
+    lines.push(receiver === 'ais'
+      ? t('No space AIS receiver in reach · next in {minutes} min · {name}', values)
+      : t('No space ADS-B receiver in reach · next in {minutes} min · {name}', values));
+  } else
+    lines.push(receiver === 'ais' ? t('No space AIS receiver in reach') : t('No space ADS-B receiver in reach'));
+  const sar = place.counts?.sar || 0;
+  if (sar)
+    lines.push(tn(sar, '{count} search-and-rescue satellite in reach', '{count} search-and-rescue satellites in reach', {
+      count: formatNumber(sar),
+    }));
+  return lines;
+}
+
+/** @param {ObservationContext} o */
+export function describeNavigation({ place }) {
+  const c = place.counts || {};
+  const lines = [t('In view: {gps} GPS · {galileo} Galileo · {glonass} GLONASS', {
+    gps: formatNumber(c.gps || 0), galileo: formatNumber(c.galileo || 0), glonass: formatNumber(c.glonass || 0),
+  })];
+  if (finite(place.pdop))
+    lines.push(finite(place.pdop_gps)
+      ? t('Satellite geometry: PDOP {pdop} all · {gps} GPS alone (lower is better)', {
+          pdop: round(place.pdop, 1), gps: round(place.pdop_gps, 1),
+        })
+      : t('Satellite geometry: PDOP {pdop} all · too few GPS satellites alone', { pdop: round(place.pdop, 1) }));
   return lines;
 }

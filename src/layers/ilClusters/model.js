@@ -21,7 +21,12 @@ export const IL_DATACENTER_CLUSTERS_ID = 'il-datacenter-clusters';
 export const IL_DAM_CLUSTERS_ID = 'il-dam-clusters';
 export const IL_LANDING_CLUSTERS_ID = 'il-landing-clusters';
 export const IL_CAMERA_CLUSTERS_ID = 'il-camera-clusters';
-export const IL_OBSERVATION_ID = 'il-satellite-observation';
+// Cross-layer: satellites observing the clusters of other IL layers.
+export const IL_SAT_IMAGING_ID = 'il-sat-imaging';
+export const IL_SAT_FIRE_ID = 'il-sat-fire';
+export const IL_SAT_WEATHER_ID = 'il-sat-weather';
+export const IL_SAT_RECEIVERS_ID = 'il-sat-receivers';
+export const IL_SAT_NAVIGATION_ID = 'il-sat-navigation';
 
 /** Every intelligence-layer overlay, in the order the Intelligence panel lists them. */
 export const IL_LAYER_IDS = Object.freeze([
@@ -36,7 +41,11 @@ export const IL_LAYER_IDS = Object.freeze([
   IL_DAM_CLUSTERS_ID,
   IL_LANDING_CLUSTERS_ID,
   IL_CAMERA_CLUSTERS_ID,
-  IL_OBSERVATION_ID,
+  IL_SAT_IMAGING_ID,
+  IL_SAT_FIRE_ID,
+  IL_SAT_WEATHER_ID,
+  IL_SAT_RECEIVERS_ID,
+  IL_SAT_NAVIGATION_ID,
 ]);
 
 const EARTH_RADIUS_M = 6371008.8;
@@ -77,13 +86,14 @@ export function clustersUrl(kind, km, box = null) {
 }
 
 /**
- * Which satellites see the clusters of the given lanes.
+ * Which satellites of one relation observe the clusters of the given lanes.
+ * @param {string} relation imaging | fire | weather | receivers | navigation
  * @param {Array<{kind: string, km: number}>} lanes
  * @param {{west:number, south:number, east:number, north:number}|null} [box]
  */
-export function observationUrl(lanes, box = null) {
+export function observationUrl(relation, lanes, box = null) {
   const targets = lanes.map(({ kind, km }) => `${kind}:${distanceLabel(km)}`).join(',');
-  const base = `/api/il/observability?targets=${targets}`;
+  const base = `/api/il/observability/${relation}?targets=${targets}`;
   if (!box) return base;
   const edges = [box.west, box.south, box.east, box.north].map((v) => Number(v.toFixed(3)));
   return `${base}&bbox=${edges.join(',')}`;

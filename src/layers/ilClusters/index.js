@@ -42,7 +42,13 @@ import { describeCluster } from './describe.js';
 import { GNSS_LEVEL_COLORS } from '../gnss/records.js';
 export * from './model.js';
 export { describeCluster, CLUSTER_KINDS } from './describe.js';
-export { createIlObservationLayer } from './observation.js';
+export {
+  createIlFireSatellitesLayer,
+  createIlImagingSatellitesLayer,
+  createIlNavigationSatellitesLayer,
+  createIlReceiverSatellitesLayer,
+  createIlWeatherSatellitesLayer,
+} from './observation.js';
 
 const REPOSITION_MS = 250;
 const LINK_WIDTH = 1.5;
@@ -164,8 +170,8 @@ export function createIlClustersLayer({
   let _lastUpdate = null;
   let _lastError = null;
   let _rowListener = null;
-  // Extra card lines from another layer (satellite observation), by cluster id.
-  let _annotator = null;
+  // Extra card lines from cross-layer relations, by relation layer id, in registration order.
+  const _annotators = new Map();
   const _clusterListeners = new Set();
 
   const notifyRow = () => _rowListener?.();
@@ -653,11 +659,13 @@ export function createIlClustersLayer({
         .sort((a, b) => (b.summary.size ?? b.size) - (a.summary.size ?? a.size))
         .map((c) => {
           const card = describeCluster(c, kind);
-          let extra = [];
-          try {
-            extra = _annotator?.(c, _distanceKm) || [];
-          } catch (error) {
-            console.warn(`[Data:IL] ${kind} card annotation failed:`, error);
+          const extra = [];
+          for (const annotate of _annotators.values()) {
+            try {
+              extra.push(...(annotate(c, _distanceKm) || []));
+            } catch (error) {
+              console.warn(`[Data:IL] ${kind} card annotation failed:`, error);
+            }
           }
           return {
             id: c.id,
@@ -675,11 +683,13 @@ export function createIlClustersLayer({
     },
 
     /**
+     * @param {string} source Relation layer id.
      * @param {((cluster: object, km: number) => string[])|null} annotator
      *   Extra card lines per cluster (as the IL lists it); null removes them.
      */
-    setAnnotator(annotator) {
-      _annotator = typeof annotator === 'function' ? annotator : null;
+    setAnnotator(source, annotator) {
+      if (typeof annotator === 'function') _annotators.set(source, annotator);
+      else _annotators.delete(source);
       notifyClusters();
     },
 

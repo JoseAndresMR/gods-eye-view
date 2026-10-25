@@ -3066,16 +3066,58 @@
   "Dam clusters": "Grupos de presas",
   "Cable landing clusters": "Grupos de amarres de cable",
   "Camera clusters": "Grupos de cámaras",
-  "Satellite observation": "Observación por satélite",
-  "Imaging satellites overhead: {names}": "Satélites de imagen encima: {names}",
-  "Next imaging pass in {minutes} min · {name} · daylight": "Próximo paso de imagen en {minutes} min · {name} · de día",
-  "Next imaging pass in {minutes} min · {name} · night": "Próximo paso de imagen en {minutes} min · {name} · de noche",
-  "No imaging pass in the next {hours} h": "Ningún paso de imagen en las próximas {hours} h",
-  "{count} weather satellites in view": {
-    "one": "{count} satélite meteorológico a la vista",
-    "many": "{count} de satélites meteorológicos a la vista",
-    "other": "{count} satélites meteorológicos a la vista"
+  "Optical satellites overhead: {names}": "Satélites ópticos encima: {names}",
+  "Radar satellites overhead: {names}": "Satélites radar encima: {names}",
+  "Next daylight optical pass in {minutes} min · {name}": "Próximo paso óptico de día en {minutes} min · {name}",
+  "No daylight optical pass in the next {hours} h": "Ningún paso óptico de día en las próximas {hours} h",
+  "Next radar pass in {minutes} min · {name}": "Próximo paso radar en {minutes} min · {name}",
+  "No radar pass in the next {hours} h": "Ningún paso radar en las próximas {hours} h",
+  "Fire-detecting satellites overhead: {names}": "Satélites detectores de incendios encima: {names}",
+  "Next fire-detection overpass in {minutes} min · {name}": "Próximo paso de detección de incendios en {minutes} min · {name}",
+  "No fire-detection overpass in the next {hours} h": "Ningún paso de detección de incendios en las próximas {hours} h",
+  "No weather satellite in view": "Ningún satélite meteorológico a la vista",
+  "{count} weather satellites in view · highest {name} ({elevation}°)": {
+    "one": "{count} satélite meteorológico a la vista · más alto {name} ({elevation}°)",
+    "many": "{count} de satélites meteorológicos a la vista · más alto {name} ({elevation}°)",
+    "other": "{count} satélites meteorológicos a la vista · más alto {name} ({elevation}°)"
   },
-  "Switch on military area, data centre, dam or cable landing clusters to see which satellites observe them": "Activa los grupos de zonas militares, centros de datos, presas o aterrajes de cables para ver qué satélites los observan",
-  "{clusters} clusters with an imaging satellite overhead now (amber lines) · next passes on the cluster cards": "{clusters} grupos con un satélite de imagen encima ahora (líneas ámbar) · próximos pasos en las tarjetas de los grupos"
+  "{count} space AIS receivers in reach": {
+    "one": "{count} receptor AIS espacial al alcance",
+    "many": "{count} de receptores AIS espaciales al alcance",
+    "other": "{count} receptores AIS espaciales al alcance"
+  },
+  "{count} space ADS-B receivers in reach": {
+    "one": "{count} receptor ADS-B espacial al alcance",
+    "many": "{count} de receptores ADS-B espaciales al alcance",
+    "other": "{count} receptores ADS-B espaciales al alcance"
+  },
+  "No space AIS receiver in reach · next in {minutes} min · {name}": "Ningún receptor AIS espacial al alcance · el próximo en {minutes} min · {name}",
+  "No space ADS-B receiver in reach · next in {minutes} min · {name}": "Ningún receptor ADS-B espacial al alcance · el próximo en {minutes} min · {name}",
+  "No space AIS receiver in reach": "Ningún receptor AIS espacial al alcance",
+  "No space ADS-B receiver in reach": "Ningún receptor ADS-B espacial al alcance",
+  "{count} search-and-rescue satellites in reach": {
+    "one": "{count} satélite de búsqueda y salvamento al alcance",
+    "many": "{count} de satélites de búsqueda y salvamento al alcance",
+    "other": "{count} satélites de búsqueda y salvamento al alcance"
+  },
+  "In view: {gps} GPS · {galileo} Galileo · {glonass} GLONASS": "A la vista: {gps} GPS · {galileo} Galileo · {glonass} GLONASS",
+  "Satellite geometry: PDOP {pdop} all · {gps} GPS alone (lower is better)": "Geometría de satélites: PDOP {pdop} todos · {gps} solo GPS (menor es mejor)",
+  "Satellite geometry: PDOP {pdop} all · too few GPS satellites alone": "Geometría de satélites: PDOP {pdop} todos · pocos satélites GPS por sí solos",
+  "Switch on military area, data centre, dam, cable landing, fire or vessel clusters": "Activa grupos de zonas militares, centros de datos, presas, aterrajes de cables, incendios o buques",
+  "{count} clusters under an imaging satellite now (amber optical, violet radar) · next passes on the cards": "{count} grupos bajo un satélite de imagen ahora (ámbar óptico, violeta radar) · próximos pasos en las tarjetas",
+  "Switch on fire clusters": "Activa los grupos de incendios",
+  "{count} fire clusters under a FIRMS satellite now (orange lines) · next overpass on the cards": "{count} grupos de incendios bajo un satélite de FIRMS ahora (líneas naranjas) · próximo paso en las tarjetas",
+  "Switch on military area, data centre, dam, cable landing or fire clusters": "Activa grupos de zonas militares, centros de datos, presas, aterrajes de cables o incendios",
+  "Weather satellites in view of {count} clusters, on their cards": "Satélites meteorológicos a la vista de {count} grupos, en sus tarjetas",
+  "Switch on vessel, aircraft or military aircraft clusters": "Activa grupos de buques, aeronaves o aeronaves militares",
+  "Receivers in reach of {count} clusters, on their cards": "Receptores al alcance de {count} grupos, en sus tarjetas",
+  "Switch on GNSS zones": "Activa las zonas GNSS",
+  "Navigation satellites in view of {count} zones, on their cards": "Satélites de navegación a la vista de {count} zonas, en sus tarjetas",
+  "Imaging satellites": "Satélites de imagen",
+  "Fire-detecting satellites": "Satélites detectores de incendios",
+  "Weather satellites": "Satélites meteorológicos",
+  "Space AIS / ADS-B receivers": "Receptores AIS / ADS-B espaciales",
+  "Navigation geometry": "Geometría de navegación",
+  "Single-layer": "Una capa",
+  "Cross-layer": "Entre capas"
 }

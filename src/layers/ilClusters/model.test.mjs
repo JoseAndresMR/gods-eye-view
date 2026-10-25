@@ -178,10 +178,10 @@ test('cluster labels show the count in the cluster colour, larger clusters first
 
 test('observation url lists the lanes and the box', () => {
   assert.equal(
-    observationUrl([{ kind: 'dams', km: 10 }, { kind: 'datacenters', km: 0.5 }], { west: -10, south: 35.12345, east: 5, north: 45 }),
-    '/api/il/observability?targets=dams:10,datacenters:0.5&bbox=-10,35.123,5,45',
+    observationUrl('imaging', [{ kind: 'dams', km: 10 }, { kind: 'datacenters', km: 0.5 }], { west: -10, south: 35.12345, east: 5, north: 45 }),
+    '/api/il/observability/imaging?targets=dams:10,datacenters:0.5&bbox=-10,35.123,5,45',
   );
-  assert.equal(observationUrl([{ kind: 'landings', km: 25 }]), '/api/il/observability?targets=landings:25');
+  assert.equal(observationUrl('receivers', [{ kind: 'vessels', km: 0.5 }]), '/api/il/observability/receivers?targets=vessels:0.5');
 });
 
 test('a satellite is near 90° elevation over its own ground point and below the horizon opposite', () => {

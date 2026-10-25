@@ -107,8 +107,13 @@ const PANEL_GROUPS = [
       'il-dam-clusters',
       'il-landing-clusters',
       'il-camera-clusters',
-      'il-satellite-observation',
     ],
+  },
+  // Cross-layer relations: satellites observing the clusters above.
+  {
+    label: msg('Satellites'),
+    hostId: 'intel-cross-toggles',
+    ids: ['il-sat-imaging', 'il-sat-fire', 'il-sat-weather', 'il-sat-receivers', 'il-sat-navigation'],
   },
 ];
 const PANEL_ORDER = PANEL_GROUPS.flatMap(({ label, ids, hostId }) =>

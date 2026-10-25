@@ -43,7 +43,11 @@ import {
   createIlDamClustersLayer,
   createIlLandingClustersLayer,
   createIlCameraClustersLayer,
-  createIlObservationLayer,
+  createIlFireSatellitesLayer,
+  createIlImagingSatellitesLayer,
+  createIlNavigationSatellitesLayer,
+  createIlReceiverSatellitesLayer,
+  createIlWeatherSatellitesLayer,
   createIlMilitaryClustersLayer,
   createIlSatelliteClustersLayer,
   createIlVesselClustersLayer,
@@ -118,7 +122,12 @@ export function createApplicationCatalog({
       surface,
       source: sources.installations,
     });
-    // Fixed-site clusters, and the satellite observation layer that annotates them.
+    // Intelligence-layer clusters that the cross-layer satellite rows annotate.
+    const ilAircraft = createIlAircraftClustersLayer({ flights });
+    const ilMilitary = createIlMilitaryClustersLayer({ military });
+    const ilVessels = createIlVesselClustersLayer({ vessels });
+    const ilFires = createIlFireClustersLayer({ surface });
+    const ilGnss = createIlGnssZonesLayer({ surface });
     const ilFixedSites = [
       createIlMilitaryAreaClustersLayer({ surface }),
       createIlDatacenterClustersLayer({ surface }),
@@ -142,8 +151,8 @@ export function createApplicationCatalog({
           displayParams: () => flights.getParams(),
           ...(resolveAsset ? { resolveAsset } : {}),
         }),
-        createIlAircraftClustersLayer({ flights }),
-        createIlMilitaryClustersLayer({ military }),
+        ilAircraft,
+        ilMilitary,
         createApplicationEarthquakes({ source: sources.earthquakes }),
         createApplicationAirQuality({ source: sources['air-quality'] }),
         createApplicationFirePerimeters({
@@ -169,7 +178,7 @@ export function createApplicationCatalog({
         createApplicationDirections({ source: sources.directions }),
         createApplicationRecentImagery({ source: sources['recent-imagery'] }),
         vessels,
-        createIlVesselClustersLayer({ vessels }),
+        ilVessels,
         installations,
         createApplicationAwareness({
           flights,
@@ -204,11 +213,15 @@ export function createApplicationCatalog({
           source: 'NASA FIRMS · LIVE',
           feed: sources.firms,
         }),
-        createIlFireClustersLayer({ surface }),
-        createIlGnssZonesLayer({ surface }),
+        ilFires,
+        ilGnss,
         ...ilFixedSites,
         createIlCameraClustersLayer({ surface }),
-        createIlObservationLayer({ targets: ilFixedSites, surface }),
+        createIlImagingSatellitesLayer({ targets: [...ilFixedSites, ilFires, ilVessels], surface }),
+        createIlFireSatellitesLayer({ targets: [ilFires], surface }),
+        createIlWeatherSatellitesLayer({ targets: [...ilFixedSites, ilFires], surface }),
+        createIlReceiverSatellitesLayer({ targets: [ilVessels, ilAircraft, ilMilitary], surface }),
+        createIlNavigationSatellitesLayer({ targets: [ilGnss], surface }),
       ],
       metadata,
     );

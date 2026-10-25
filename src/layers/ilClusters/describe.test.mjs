@@ -1,6 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { describeObservation, describeCluster } from './describe.js';
+import {
+  describeCluster,
+  describeFireSatellites,
+  describeImaging,
+  describeNavigation,
+  describeReceivers,
+  describeWeather,
+} from './describe.js';
 
 test('a vessel cluster reads as size, spread, motion, make-up and age', () => {
   const { title, lines } = describeCluster(
@@ -46,28 +53,50 @@ test('docked satellites, fires and GNSS zones get their own facts', () => {
   assert.ok(zone.lines.includes('9 of 20 aircraft reported low navigation accuracy'));
 });
 
-test('observation lines: overhead, next pass with daylight, weather in view', () => {
-  const lines = describeObservation({
-    overhead: ['LANDSAT 9', 'SENTINEL-2B', 'WORLDVIEW-3', 'GAOFEN-1'],
-    next: { t: 1000 + 23 * 60, name: 'SENTINEL-1A', day: false },
-    weather: 3,
+const SATS = { 1: { name: 'SENTINEL-1A' }, 2: { name: 'LANDSAT 9' }, 3: { name: 'GOES 19' }, 4: { name: 'NOAA 21 (JPSS-2)' }, 5: { name: 'LEMUR-2-X' } };
+
+test('imaging lines: optical and radar overhead, then the next of each', () => {
+  const lines = describeImaging({
+    place: { now: [], counts: {}, next: { optical: { t: 1000 + 23 * 60, sat: '2', day: true } } },
+    satellites: SATS,
+    overhead: [
+      { name: 'WORLDVIEW-3', kinds: ['optical'] }, { name: 'PLEIADES NEO 3', kinds: ['optical'] },
+      { name: 'SKYSAT-C5', kinds: ['optical'] }, { name: 'SPOT 7', kinds: ['optical'] },
+      { name: 'SENTINEL-1A', kinds: ['radar'] },
+    ],
     horizonS: 10800,
     nowSec: 1000,
   });
   assert.deepEqual(lines, [
-    'Imaging satellites overhead: LANDSAT 9, SENTINEL-2B, WORLDVIEW-3 +1',
-    'Next imaging pass in 23 min · SENTINEL-1A · night',
-    '3 weather satellites in view',
+    'Optical satellites overhead: WORLDVIEW-3, PLEIADES NEO 3, SKYSAT-C5 +1',
+    'Radar satellites overhead: SENTINEL-1A',
+    'Next daylight optical pass in 23 min · LANDSAT 9',
   ]);
+  assert.deepEqual(
+    describeImaging({ place: { now: [], counts: {}, next: {} }, satellites: SATS, overhead: [], horizonS: 10800, nowSec: 1 }),
+    ['No daylight optical pass in the next 3 h', 'No radar pass in the next 3 h'],
+  );
 });
 
-test('observation lines: a pass already begun is not "next"; none within the horizon says so', () => {
+test('fire, weather, receivers and navigation lines', () => {
   assert.deepEqual(
-    describeObservation({ overhead: [], next: { t: 900, name: 'X', day: true }, weather: 1, horizonS: 10800, nowSec: 1000 }),
-    ['1 weather satellite in view'],
+    describeFireSatellites({ place: { next: { fire: { t: 1000 + 600, sat: '4' } } }, satellites: SATS, overhead: [], horizonS: 10800, nowSec: 1000 }),
+    ['Next fire-detection overpass in 10 min · NOAA 21 (JPSS-2)'],
   );
   assert.deepEqual(
-    describeObservation({ overhead: [], next: null, weather: 0, horizonS: 10800, nowSec: 1000 }),
-    ['No imaging pass in the next 3 h'],
+    describeWeather({ place: { now: [['3', 48.4]], counts: { weather: 4 } }, satellites: SATS }),
+    ['4 weather satellites in view · highest GOES 19 (48°)'],
+  );
+  assert.deepEqual(
+    describeReceivers({ kind: 'vessels', place: { counts: { ais: 2, sar: 1 }, next: {} }, satellites: SATS, nowSec: 0 }),
+    ['2 space AIS receivers in reach', '1 search-and-rescue satellite in reach'],
+  );
+  assert.deepEqual(
+    describeReceivers({ kind: 'aircraft', place: { counts: {}, next: { adsb: { t: 400, sat: '5' } } }, satellites: SATS, nowSec: 100 }),
+    ['No space ADS-B receiver in reach · next in 5 min · LEMUR-2-X'],
+  );
+  assert.deepEqual(
+    describeNavigation({ place: { counts: { gps: 9, galileo: 7, glonass: 8 }, pdop: 1.02, pdop_gps: 1.84 } }),
+    ['In view: 9 GPS · 7 Galileo · 8 GLONASS', 'Satellite geometry: PDOP 1 all · 1.8 GPS alone (lower is better)'],
   );
 });
