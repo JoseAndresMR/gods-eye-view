@@ -3,6 +3,11 @@ import { formatNumber, msg, t } from '../../i18n/index.js';
 import { governorRequestRender } from '../../renderGovernor.js';
 import { nearFarScalarValueAtDistance } from '../../data/focusDeemphasis.js';
 import {
+  clearOverlaySource,
+  setOverlayEntries,
+  setOverlaySourceVisible,
+} from '../../overlays/worldOverlay.js';
+import {
   IL_AIRCRAFT_CLUSTERS_ID,
   IL_FIRE_CLUSTERS_ID,
   IL_GNSS_ZONES_ID,
@@ -14,6 +19,7 @@ import {
   IL_MILITARY_CLUSTERS_ID,
   IL_SATELLITE_CLUSTERS_ID,
   IL_VESSEL_CLUSTERS_ID,
+  CLUSTER_LABEL_LIMIT,
   aircraftMotion,
   boxCovers,
   requestBox,
@@ -22,6 +28,7 @@ import {
   clustersUrl,
   cellCorners,
   circleRing,
+  clusterLabelEntry,
   densifyRing,
   distanceLabel,
   framingHeightM,
@@ -52,8 +59,9 @@ const RETRY_MS = 10000;
  * surface feeds) each cluster's footprint outline. Rings sit where the anchor
  * layer draws each contact (its detection anchors); contacts it isn't drawing
  * are placed from the intelligence layer's report (dead reckoning, or SGP4 for
- * satellites). The link distance is chosen with the row chips; the
- * Intelligence panel lists each cluster's synthesized summary.
+ * satellites). Each cluster is labelled with its member count at its centre.
+ * The link distance is chosen with the row chips; the Intelligence panel
+ * lists each cluster's synthesized summary.
  *
  * @param {object} config
  * @param {string} config.id Layer id.
@@ -146,6 +154,9 @@ export function createIlClustersLayer({
   let _truncated = null;
   let _summaryOnly = [];
   let _summaryPoints = [];
+  // Count labels: one per cluster, at the centre of its placed members.
+  let _labels = [];
+  let _labelsShown = false;
   let _removeMoveEnd = null;
   let _moveTimer = null;
   let _retryTimer = null;
@@ -164,6 +175,7 @@ export function createIlClustersLayer({
       }
     }
   };
+  const labelSource = `il-clusters:${kind}`;
   const scratchNormal = new Cesium.Cartesian3();
   const placeOf =
     positionOf ||
@@ -236,6 +248,7 @@ export function createIlClustersLayer({
     }
     // Summary rings ignore depth too, so hide those beyond the horizon.
     for (const point of _summaryPoints) point.show = occluder ? occluder.isPointVisible(point.position) : true;
+    placeLabels(where);
     const height = _viewer?.camera?.positionCartographic?.height;
     const width = scaleByDistance && Number.isFinite(height)
       ? Math.max(1, LINK_WIDTH * nearFarScalarValueAtDistance(scaleByDistance, height))
@@ -248,6 +261,75 @@ export function createIlClustersLayer({
       if (line.width !== width) line.width = width;
     }
     governorRequestRender(id);
+  }
+
+  /**
+   * Move each label to the centre of its members' current places: their mean
+   * direction from the Earth's centre at their mean distance, so a label stays
+   * at the members' height even for clusters wrapped around the globe.
+   */
+  function placeLabels(where) {
+    for (const label of _labels) {
+      if (!label.members) continue;
+      let x = 0, y = 0, z = 0, r = 0, n = 0;
+      for (const nodeId of label.members) {
+        const cart = where.get(nodeId);
+        if (!cart) continue;
+        x += cart.x;
+        y += cart.y;
+        z += cart.z;
+        r += Cesium.Cartesian3.magnitude(cart);
+        n++;
+      }
+      const len = Math.hypot(x, y, z);
+      if (!n || !len) continue; // nothing placed yet: keep the last place
+      const scale = r / n / len;
+      label.position.x = x * scale;
+      label.position.y = y * scale;
+      label.position.z = z * scale;
+    }
+  }
+
+  /** One count label per cluster, largest clusters first. */
+  function publishLabels() {
+    const membersOf = new Map();
+    for (const node of _nodes) {
+      if (!membersOf.has(node.cluster_id)) membersOf.set(node.cluster_id, []);
+      membersOf.get(node.cluster_id).push(node.id);
+    }
+    _labels = [];
+    for (const cluster of _clusters) {
+      const members = membersOf.get(cluster.id) || null;
+      const summaryPoint = cluster.drawn === false ? _summaryPoints.find((p) => p.id === `${id}:${cluster.id}`) : null;
+      if (!members && !summaryPoint) continue;
+      // Satellites may hide some members (Starlink without DENSE): count what is shown.
+      const count = members && includeNode ? members.length : cluster.summary?.size ?? cluster.size;
+      _labels.push({
+        clusterId: cluster.id,
+        count,
+        members,
+        position: summaryPoint ? Cesium.Cartesian3.clone(summaryPoint.position) : new Cesium.Cartesian3(),
+      });
+    }
+    _labels.sort((a, b) => b.count - a.count);
+    _labels = _labels.slice(0, CLUSTER_LABEL_LIMIT);
+    setOverlayEntries(
+      labelSource,
+      _labels.map((label) => clusterLabelEntry({
+        ...label,
+        title: formatNumber(label.count),
+        color: footprintColor || clusterColorCss(label.clusterId),
+      })),
+      { cohortLimit: CLUSTER_LABEL_LIMIT, moving: !staticPositions },
+    );
+    _labelsShown = true;
+  }
+
+  function hideLabels() {
+    if (!_labelsShown) return;
+    _labelsShown = false;
+    _labels = [];
+    clearOverlaySource(labelSource);
   }
 
   /** A [lon, lat] ring as a polyline on the ground. */
@@ -291,6 +373,8 @@ export function createIlClustersLayer({
         drawRing(_lines, densifyRing(areaOf(node)), css ? Cesium.Color.fromCssColorString(css) : color(node.cluster_id), FOOTPRINT_WIDTH);
       }
       drawFootprints(color);
+      publishLabels();
+      reposition();
       return;
     }
     for (const node of _nodes) {
@@ -339,6 +423,7 @@ export function createIlClustersLayer({
       }));
     }
     drawFootprints(color);
+    publishLabels();
     reposition();
   }
 
@@ -459,6 +544,7 @@ export function createIlClustersLayer({
 
   function show(visible) {
     for (const collection of [_points, _lines, _outlines]) if (collection) collection.show = visible;
+    setOverlaySourceVisible(labelSource, visible);
   }
 
   return {
@@ -614,6 +700,8 @@ export function createIlClustersLayer({
       _drawnPoints = new Map();
       _drawnLines = [];
       _summaryPoints = [];
+      hideLabels();
+      setOverlaySourceVisible(labelSource, false);
       _staticWhere = new Map();
       _clusterCount = 0;
       _lastUpdate = null;

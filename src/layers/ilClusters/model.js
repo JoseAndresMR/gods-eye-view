@@ -325,3 +325,32 @@ export function circleRing(lat, lon, radiusKm, steps = 72) {
   }
   return ring;
 }
+
+/** Most cluster count labels one layer hands the world overlay; larger clusters first. */
+export const CLUSTER_LABEL_LIMIT = 256;
+
+/**
+ * The world-overlay label that shows how many members a cluster has, at its
+ * centre and in its colour. Larger clusters win label collisions.
+ * @param {{clusterId: string, count: number, title: string, position: object, color: string}} input
+ *   `position` is a Cartesian3 the layer keeps updating while members move.
+ */
+export function clusterLabelEntry({ clusterId, count, title, position, color }) {
+  return {
+    id: String(clusterId),
+    position,
+    variant: 'label',
+    title,
+    accent: color,
+    priority: count,
+    collisionGroup: 'ambient-label',
+    paintLane: 'ambient-label',
+    interactive: false,
+    edgeFade: 'keyhole',
+    horizonCull: true,
+    terrainOcclusion: false,
+    gapPx: 14,
+    verticalOnly: true,
+    placement: 'above',
+  };
+}

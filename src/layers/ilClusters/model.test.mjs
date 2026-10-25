@@ -6,6 +6,7 @@ import {
   requestBox,
   cellCorners,
   circleRing,
+  clusterLabelEntry,
   densifyRing,
   framingHeightM,
   militaryMotion,
@@ -158,4 +159,16 @@ test('a request box covers views inside it', () => {
   assert.equal(boxCovers(box, null), false);
   const across = { west: 170, south: -10, east: -170, north: 10 };
   assert.equal(boxCovers(across, { west: 175, south: -5, east: -175, north: 5 }), true);
+});
+
+test('cluster labels show the count in the cluster colour, larger clusters first', () => {
+  const position = { x: 1, y: 2, z: 3 };
+  const entry = clusterLabelEntry({ clusterId: 'c7', count: 12, title: '12', position, color: '#ff0000' });
+  assert.equal(entry.id, 'c7');
+  assert.equal(entry.title, '12');
+  assert.equal(entry.accent, '#ff0000');
+  assert.equal(entry.variant, 'label');
+  assert.equal(entry.position, position); // the layer moves it in place
+  assert.ok(entry.priority > clusterLabelEntry({ clusterId: 'c8', count: 3, title: '3', position, color: '#fff' }).priority);
+  assert.equal(entry.horizonCull, true);
 });
