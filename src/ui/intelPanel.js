@@ -1,11 +1,14 @@
 /**
  * INTELLIGENCE panel (right rail): the synthesized summary of every cluster
  * the enabled intelligence-layer overlays show, largest first, one card each.
- * Clicking a card opens it and flies the camera over that cluster. The
- * layers' own rows (toggle, distance chips) are placed above by LayerPanel.
+ * Clicking a card opens it, selects that cluster (its members and edges show
+ * on the map) and flies the camera over it; a selected satellite gets a card
+ * of its own at the top. The layers' own rows (toggle, chips) are placed
+ * above by LayerPanel.
  */
 import { formatNumber, t } from '../i18n/index.js';
 import { localizeLayerName } from './layerNames.js';
+import { clearSelection, getSelection, subscribeSelection } from '../layers/ilClusters/selection.js';
 
 /** Cards listed per layer; the rest are counted in the section note. */
 export const MAX_CARDS_PER_LAYER = 8;
@@ -26,7 +29,8 @@ export function mountIntelPanel({ container, count = null, layers }) {
     const key = `${layer.id}:${cluster.id}`;
     const el = container.ownerDocument.createElement('button');
     el.type = 'button';
-    el.className = `rail-card intel-cluster${open.has(key) ? ' is-open' : ''}`;
+    if (cluster.selected) open.add(key);
+    el.className = `rail-card intel-cluster${open.has(key) ? ' is-open' : ''}${cluster.selected ? ' is-selected' : ''}`;
     el.dataset.layerId = layer.id;
     el.dataset.clusterId = cluster.id;
     el.setAttribute('aria-expanded', String(open.has(key)));
@@ -55,11 +59,40 @@ export function mountIntelPanel({ container, count = null, layers }) {
     return el;
   }
 
+  /** The selected satellite, as the relation layers that know it describe it. */
+  function satelliteCard(doc, satId) {
+    const parts = layers.map((layer) => layer.describeSatellite?.(satId)).filter(Boolean);
+    if (!parts.length) return null;
+    const heading = doc.createElement('h3');
+    heading.className = 'data-layer-group-heading';
+    heading.textContent = t('Selected satellite');
+    const el = doc.createElement('button');
+    el.type = 'button';
+    el.className = 'rail-card intel-cluster is-open is-selected';
+    el.dataset.satelliteId = satId;
+    el.title = t('Clear the selection (Esc)');
+    const title = doc.createElement('span');
+    title.className = 'rail-card-title rail-card-nowrap';
+    title.textContent = parts[0].name;
+    const lines = doc.createElement('span');
+    lines.className = 'rail-card-lines';
+    for (const text of [...new Set(parts.flatMap((part) => part.lines))]) {
+      const line = doc.createElement('span');
+      line.className = 'rail-card-line';
+      line.textContent = text;
+      lines.appendChild(line);
+    }
+    el.append(title, lines);
+    return [heading, el];
+  }
+
   function render() {
     frame = null;
     const doc = container.ownerDocument;
     container.textContent = '';
     let total = 0;
+    const selection = getSelection();
+    if (selection?.type === 'satellite') container.append(...(satelliteCard(doc, selection.satId) || []));
     for (const layer of layers) {
       let clusters = [];
       try {
@@ -80,8 +113,11 @@ export function mountIntelPanel({ container, count = null, layers }) {
         total: formatNumber(clusters.length),
       });
       container.appendChild(note);
-      for (const cluster of clusters.slice(0, MAX_CARDS_PER_LAYER))
-        container.appendChild(card(layer, cluster));
+      const listed = clusters.slice(0, MAX_CARDS_PER_LAYER);
+      // The selected cluster always has its card, even when it isn't among the largest.
+      const selected = clusters.find((c) => c.selected);
+      if (selected && !listed.includes(selected)) listed.unshift(selected);
+      for (const cluster of listed) container.appendChild(card(layer, cluster));
     }
     if (!total) {
       const empty = doc.createElement('div');
@@ -100,15 +136,27 @@ export function mountIntelPanel({ container, count = null, layers }) {
   function onClick(event) {
     const el = event.target?.closest?.('.intel-cluster');
     if (!el || !container.contains(el)) return;
+    if (el.dataset.satelliteId) {
+      clearSelection();
+      return;
+    }
     const key = `${el.dataset.layerId}:${el.dataset.clusterId}`;
-    if (open.has(key)) open.delete(key);
-    else open.add(key);
-    layers.find((l) => l.id === el.dataset.layerId)?.focusCluster?.(el.dataset.clusterId);
+    // A selected card closes and clears the selection; any other opens, selects and flies.
+    if (el.classList.contains('is-selected')) {
+      open.delete(key);
+      clearSelection();
+    } else {
+      open.add(key);
+      layers.find((l) => l.id === el.dataset.layerId)?.focusCluster?.(el.dataset.clusterId);
+    }
     schedule();
   }
 
   container.addEventListener('click', onClick);
-  const unsubscribers = layers.map((layer) => layer.subscribeClusters?.(schedule) || (() => {}));
+  const unsubscribers = [
+    ...layers.map((layer) => layer.subscribeClusters?.(schedule) || (() => {})),
+    subscribeSelection(schedule),
+  ];
   render();
   return () => {
     if (frame !== null) cancelAnimationFrame(frame);

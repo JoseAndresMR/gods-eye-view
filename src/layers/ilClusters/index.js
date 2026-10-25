@@ -39,6 +39,13 @@ import {
   vesselMotion,
 } from './model.js';
 import { describeCluster } from './describe.js';
+import {
+  clusterPickId,
+  isClusterSelected,
+  select,
+  subscribeSelection,
+  useIlPicking,
+} from './selection.js';
 import { GNSS_LEVEL_COLORS } from '../gnss/records.js';
 export * from './model.js';
 export { describeCluster, CLUSTER_KINDS } from './describe.js';
@@ -61,14 +68,16 @@ const RETRY_MS = 10000;
 
 /**
  * Proximity clusters computed by the local intelligence layer, drawn over the
- * GEV layer that shows the same contacts: a ring per clustered contact and
- * the shortest links that join each cluster, coloured by cluster, plus (for
- * surface feeds) each cluster's footprint outline. Rings sit where the anchor
- * layer draws each contact (its detection anchors); contacts it isn't drawing
- * are placed from the intelligence layer's report (dead reckoning, or SGP4 for
- * satellites). Each cluster is labelled with its member count at its centre.
- * The link distance is chosen with the row chips; the Intelligence panel
- * lists each cluster's synthesized summary.
+ * GEV layer that shows the same contacts. Each cluster is one graph node at
+ * the centre of its members, tagged with its member count; cross-layer edges
+ * end at it. Its members (a ring per contact and the shortest links joining
+ * them, coloured by cluster) show for every cluster with the Members chip, or
+ * for the selected cluster (click its node or its card). Surface feeds also
+ * draw each cluster's footprint outline. Rings sit where the anchor layer
+ * draws each contact (its detection anchors); contacts it isn't drawing are
+ * placed from the intelligence layer's report (dead reckoning, or SGP4 for
+ * satellites). The link distance is chosen with the row chips; the
+ * Intelligence panel lists each cluster's synthesized summary.
  *
  * @param {object} config
  * @param {string} config.id Layer id.
@@ -160,10 +169,17 @@ export function createIlClustersLayer({
   let _idle = false;
   let _truncated = null;
   let _summaryOnly = [];
-  let _summaryPoints = [];
-  // Count labels: one per cluster, at the centre of its placed members.
-  let _labels = [];
+  // One node per cluster, at the centre of its placed members (or at its summary
+  // centre when the feed listed it without members). Count tags and cross-layer
+  // edges attach to the same positions.
+  // [{clusterId, count, members: string[]|null, position: Cartesian3, point}]
+  let _anchors = [];
   let _labelsShown = false;
+  // Members (rings and links) of every cluster, or only of the selected one.
+  let _showMembers = false;
+  let _selectedHere = null;
+  let _releasePicking = null;
+  let _unsubscribeSelection = null;
   let _removeMoveEnd = null;
   let _moveTimer = null;
   let _retryTimer = null;
@@ -255,9 +271,7 @@ export function createIlClustersLayer({
       point.position = cart;
       point.show = occluder ? occluder.isPointVisible(cart) : true;
     }
-    // Summary rings ignore depth too, so hide those beyond the horizon.
-    for (const point of _summaryPoints) point.show = occluder ? occluder.isPointVisible(point.position) : true;
-    placeLabels(where);
+    placeAnchors(where, occluder);
     const height = _viewer?.camera?.positionCartographic?.height;
     const width = scaleByDistance && Number.isFinite(height)
       ? Math.max(1, LINK_WIDTH * nearFarScalarValueAtDistance(scaleByDistance, height))
@@ -273,15 +287,21 @@ export function createIlClustersLayer({
   }
 
   /**
-   * Move each label to the centre of its members' current places: their mean
-   * direction from the Earth's centre at their mean distance, so a label stays
-   * at the members' height even for clusters wrapped around the globe.
+   * Move each cluster node to the centre of its members' current places: their
+   * mean direction from the Earth's centre at their mean distance, so it stays
+   * at the members' height even for clusters wrapped around the globe. Nodes
+   * ignore depth like the rings, so those beyond the horizon are hidden.
    */
-  function placeLabels(where) {
-    for (const label of _labels) {
-      if (!label.members) continue;
+  function placeAnchors(where, occluder) {
+    for (const anchor of _anchors) {
+      const visible = () =>
+        Cesium.Cartesian3.magnitude(anchor.position) > 0 && (!occluder || occluder.isPointVisible(anchor.position));
+      if (!anchor.members) {
+        anchor.point.show = visible();
+        continue;
+      }
       let x = 0, y = 0, z = 0, r = 0, n = 0;
-      for (const nodeId of label.members) {
+      for (const nodeId of anchor.members) {
         const cart = where.get(nodeId);
         if (!cart) continue;
         x += cart.x;
@@ -291,40 +311,59 @@ export function createIlClustersLayer({
         n++;
       }
       const len = Math.hypot(x, y, z);
-      if (!n || !len) continue; // nothing placed yet: keep the last place
-      const scale = r / n / len;
-      label.position.x = x * scale;
-      label.position.y = y * scale;
-      label.position.z = z * scale;
+      if (n && len) {
+        const scale = r / n / len;
+        anchor.position.x = x * scale;
+        anchor.position.y = y * scale;
+        anchor.position.z = z * scale;
+        anchor.point.position = anchor.position;
+      } // else nothing placed yet: keep the last place
+      anchor.point.show = visible();
     }
   }
 
-  /** One count label per cluster, largest clusters first. */
-  function publishLabels() {
+  /** One node per cluster (pickable: selecting it shows its members and edges). */
+  function buildAnchors(color) {
     const membersOf = new Map();
     for (const node of _nodes) {
       if (!membersOf.has(node.cluster_id)) membersOf.set(node.cluster_id, []);
       membersOf.get(node.cluster_id).push(node.id);
     }
-    _labels = [];
+    _anchors = [];
     for (const cluster of _clusters) {
       const members = membersOf.get(cluster.id) || null;
-      const summaryPoint = cluster.drawn === false ? _summaryPoints.find((p) => p.id === `${id}:${cluster.id}`) : null;
-      if (!members && !summaryPoint) continue;
+      const centre = cluster.summary?.centroid;
+      if (!members && !centre) continue;
       // Satellites may hide some members (Starlink without DENSE): count what is shown.
       const count = members && includeNode ? members.length : cluster.summary?.size ?? cluster.size;
-      _labels.push({
-        clusterId: cluster.id,
-        count,
-        members,
-        position: summaryPoint ? Cesium.Cartesian3.clone(summaryPoint.position) : new Cesium.Cartesian3(),
+      let position = new Cesium.Cartesian3();
+      if (!members) {
+        const alt = staticPositions ? groundHeight(centre.lat, centre.lon) : Number.isFinite(centre.alt_m) ? centre.alt_m : 0;
+        position = Cesium.Cartesian3.fromDegrees(centre.lon, centre.lat, alt + liftM);
+      }
+      const c = footprintColor ? Cesium.Color.fromCssColorString(footprintColor) : color(cluster.id);
+      const selected = isClusterSelected(id, cluster.id);
+      const point = _points.add({
+        id: clusterPickId(id, cluster.id),
+        position,
+        pixelSize: ringPixels * (selected ? 2.2 : 1.6),
+        color: c.withAlpha(selected ? 0.55 : 0.35),
+        outlineColor: selected ? Cesium.Color.WHITE : c,
+        outlineWidth: 3,
+        show: false,
+        ...(scaleByDistance ? { scaleByDistance } : {}),
+        ...(alwaysOnTop ? { disableDepthTestDistance: Number.POSITIVE_INFINITY } : {}),
       });
+      _anchors.push({ clusterId: cluster.id, count, members, position, point });
     }
-    _labels.sort((a, b) => b.count - a.count);
-    _labels = _labels.slice(0, CLUSTER_LABEL_LIMIT);
+  }
+
+  /** One count tag per cluster node, largest clusters first. */
+  function publishLabels() {
+    const labelled = _anchors.slice().sort((a, b) => b.count - a.count).slice(0, CLUSTER_LABEL_LIMIT);
     setOverlayEntries(
       labelSource,
-      _labels.map((label) => clusterLabelEntry({
+      labelled.map((label) => clusterLabelEntry({
         ...label,
         title: formatNumber(label.count),
         color: footprintColor || clusterColorCss(label.clusterId),
@@ -337,7 +376,6 @@ export function createIlClustersLayer({
   function hideLabels() {
     if (!_labelsShown) return;
     _labelsShown = false;
-    _labels = [];
     clearOverlaySource(labelSource);
   }
 
@@ -368,7 +406,7 @@ export function createIlClustersLayer({
     _lines.removeAll();
     _drawnPoints = new Map();
     _drawnLines = [];
-    _summaryPoints = [];
+    _anchors = [];
     const colorOf = new Map();
     const color = (clusterId) => {
       if (!colorOf.has(clusterId))
@@ -376,17 +414,14 @@ export function createIlClustersLayer({
       return colorOf.get(clusterId);
     };
     if (staticPositions) placeStatic();
+    const shown = _nodes.filter((n) => _showMembers || n.cluster_id === _selectedHere);
     if (areaOf) {
-      for (const node of _nodes) {
+      for (const node of shown) {
         const css = areaColorOf?.(node);
         drawRing(_lines, densifyRing(areaOf(node)), css ? Cesium.Color.fromCssColorString(css) : color(node.cluster_id), FOOTPRINT_WIDTH);
       }
-      drawFootprints(color);
-      publishLabels();
-      reposition();
-      return;
     }
-    for (const node of _nodes) {
+    for (const node of areaOf ? [] : shown) {
       const c = color(node.cluster_id);
       _drawnPoints.set(node.id, _points.add({
         id: `${id}:${node.id}`,
@@ -400,7 +435,7 @@ export function createIlClustersLayer({
         ...(alwaysOnTop ? { disableDepthTestDistance: Number.POSITIVE_INFINITY } : {}),
       }));
     }
-    const clusterOf = new Map(_nodes.map((n) => [n.id, n.cluster_id]));
+    const clusterOf = new Map((areaOf ? [] : shown).map((n) => [n.id, n.cluster_id]));
     for (const edge of _edges) {
       if (!clusterOf.has(edge.a) || !clusterOf.has(edge.b)) continue;
       const line = _lines.add({
@@ -413,27 +448,19 @@ export function createIlClustersLayer({
       });
       _drawnLines.push({ line, a: edge.a, b: edge.b });
     }
-    // Clusters listed without members (zoomed out, or over the node budget)
-    // are drawn by their summary: a larger ring at their centre.
-    for (const cluster of _summaryOnly) {
-      const centre = cluster.summary?.centroid;
-      if (!centre) continue;
-      const alt = staticPositions ? groundHeight(centre.lat, centre.lon) : Number.isFinite(centre.alt_m) ? centre.alt_m : 0;
-      const c = color(cluster.id);
-      _summaryPoints.push(_points.add({
-        id: `${id}:${cluster.id}`,
-        position: Cesium.Cartesian3.fromDegrees(centre.lon, centre.lat, alt + liftM),
-        pixelSize: ringPixels * 1.6,
-        color: c.withAlpha(0.35),
-        outlineColor: c,
-        outlineWidth: 3,
-        ...(scaleByDistance ? { scaleByDistance } : {}),
-        ...(alwaysOnTop ? { disableDepthTestDistance: Number.POSITIVE_INFINITY } : {}),
-      }));
-    }
+    buildAnchors(color);
     drawFootprints(color);
     publishLabels();
     reposition();
+  }
+
+  /** Rebuild when the selection enters, leaves or moves within this layer. */
+  function onSelection(selection) {
+    const here = selection?.type === 'cluster' && selection.layerId === id ? selection.clusterId : null;
+    if (here === _selectedHere) return;
+    _selectedHere = here;
+    if (_enabled && _points) rebuild();
+    notifyClusters();
   }
 
   /** The view rectangle in degrees, or null when the camera sees no ground. */
@@ -576,6 +603,10 @@ export function createIlClustersLayer({
     enable() {
       _enabled = true;
       show(true);
+      _releasePicking?.();
+      _releasePicking = useIlPicking(_viewer);
+      _unsubscribeSelection?.();
+      _unsubscribeSelection = subscribeSelection(onSelection);
       _removeMoveEnd?.();
       _removeMoveEnd = _viewer?.camera?.moveEnd?.addEventListener?.(onMoveEnd) || null;
       clearInterval(_timer);
@@ -586,6 +617,12 @@ export function createIlClustersLayer({
       _request?.abort();
       _request = null;
       _enabled = false;
+      _unsubscribeSelection?.();
+      _unsubscribeSelection = null;
+      if (_selectedHere) select(null);
+      _selectedHere = null;
+      _releasePicking?.();
+      _releasePicking = null;
       _removeMoveEnd?.();
       _removeMoveEnd = null;
       clearTimeout(_moveTimer);
@@ -602,6 +639,11 @@ export function createIlClustersLayer({
     },
 
     setParams(params = {}) {
+      if (params.members !== undefined && Boolean(params.members) !== _showMembers) {
+        _showMembers = Boolean(params.members);
+        notifyRow();
+        if (_enabled && _points) rebuild();
+      }
       if (params.distanceKm === undefined) return true;
       const km = Number(params.distanceKm);
       if (!Number.isFinite(km) || km <= 0) return false;
@@ -614,7 +656,7 @@ export function createIlClustersLayer({
     },
 
     getParams() {
-      return { distanceKm: _distanceKm };
+      return { distanceKm: _distanceKm, members: _showMembers };
     },
 
     setRowControlsListener(listener) {
@@ -629,7 +671,13 @@ export function createIlClustersLayer({
           active: km === _distanceKm,
           params: { distanceKm: km },
           title: chipTitle(formatNumber(km)),
-        })),
+        })).concat({
+          id: 'members',
+          label: t('Members'),
+          active: _showMembers,
+          params: { members: !_showMembers },
+          title: t('Show every member of every cluster; otherwise one node per cluster, and the members of the selected one'),
+        }),
         info: !_lastUpdate
           ? null
           : _idle
@@ -671,6 +719,7 @@ export function createIlClustersLayer({
             id: c.id,
             color: footprintColor || clusterColorCss(c.id),
             size: c.summary.size ?? c.size,
+            selected: isClusterSelected(id, c.id),
             ...card,
             // After the first line, so a collapsed card still shows them.
             lines: [...card.lines.slice(0, 1), ...extra, ...card.lines.slice(1)],
@@ -705,11 +754,18 @@ export function createIlClustersLayer({
       return () => _clusterListeners.delete(listener);
     },
 
-    /** Fly the camera over one cluster. */
+    /** Where a cluster's node is drawn now (cross-layer edges end there), or null. */
+    clusterNodePosition(clusterId) {
+      const anchor = _anchors.find((a) => a.clusterId === clusterId);
+      return anchor && Cesium.Cartesian3.magnitude(anchor.position) > 0 ? anchor.position : null;
+    },
+
+    /** Select one cluster and fly the camera over it. */
     focusCluster(clusterId) {
       const cluster = _clusters.find((c) => c.id === clusterId);
       const centre = cluster?.summary?.centroid;
       if (!_viewer || !centre) return false;
+      select({ type: 'cluster', layerId: id, clusterId });
       const alt = Number.isFinite(centre.alt_m) ? centre.alt_m : 0;
       _viewer.camera.flyTo({
         destination: Cesium.Cartesian3.fromDegrees(centre.lon, centre.lat, alt + framingHeightM(cluster.summary.radius_km, cluster.summary.area_km2)),
@@ -741,7 +797,11 @@ export function createIlClustersLayer({
       _clusters = [];
       _drawnPoints = new Map();
       _drawnLines = [];
-      _summaryPoints = [];
+      _anchors = [];
+      _unsubscribeSelection?.();
+      _unsubscribeSelection = null;
+      _releasePicking?.();
+      _releasePicking = null;
       hideLabels();
       setOverlaySourceVisible(labelSource, false);
       _staticWhere = new Map();

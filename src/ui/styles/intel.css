@@ -157,3 +157,8 @@ input.intel-area-name {
   text-transform: uppercase;
   color: var(--text-dim);
 }
+/* The selected node of the intelligence-layer graph. */
+.intel-cluster.is-selected {
+  border-color: #ffffff;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35);
+}

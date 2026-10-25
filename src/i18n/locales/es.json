@@ -3120,5 +3120,20 @@
   "{min}–{max} weather satellites in view of each of the {count} clusters around the view · each card below names the highest": "{min}–{max} satélites meteorológicos a la vista de cada uno de los {count} grupos en la vista y alrededores · cada tarjeta de abajo nombra el más alto",
   "{reached} of {count} clusters around the view have a space AIS / ADS-B receiver in reach now · each card below gives how many, or when the next comes": "{reached} de {count} grupos en la vista y alrededores tienen un receptor AIS / ADS-B espacial al alcance ahora · cada tarjeta de abajo da cuántos, o cuándo llega el próximo",
   "PDOP {best}–{worst} over the {count} zones around the view (lower is better) · each card below gives the satellites in view": "PDOP {best}–{worst} en las {count} zonas de la vista y alrededores (menor es mejor) · cada tarjeta de abajo da los satélites a la vista",
-  "{count} zones around the view · each card below gives the satellites in view": "{count} zonas en la vista y alrededores · cada tarjeta de abajo da los satélites a la vista"
+  "{count} zones around the view · each card below gives the satellites in view": "{count} zonas en la vista y alrededores · cada tarjeta de abajo da los satélites a la vista",
+  "Members": "Miembros",
+  "Show every member of every cluster; otherwise one node per cluster, and the members of the selected one": "Muestra todos los miembros de cada grupo; si no, un nodo por grupo y los miembros del seleccionado",
+  "Draw every {kind} edge; a selected cluster or satellite always shows all of its edges": "Dibuja todas las aristas {kind}; un grupo o satélite seleccionado siempre muestra todas sus aristas",
+  "Observes {count} clusters in view now · from {low}° to {high}° elevation": "Observa {count} grupos a la vista ahora · de {low}° a {high}° de elevación",
+  "Optical": "Óptico",
+  "Radar": "Radar",
+  "Fire": "Incendio",
+  "AIS": "AIS",
+  "ADS-B": "ADS-B",
+  "Search and rescue": "Búsqueda y salvamento",
+  "GPS": "GPS",
+  "Galileo": "Galileo",
+  "GLONASS": "GLONASS",
+  "Selected satellite": "Satélite seleccionado",
+  "Clear the selection (Esc)": "Quitar la selección (Esc)"
 }

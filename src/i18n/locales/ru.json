@@ -3202,5 +3202,20 @@
   "{min}–{max} weather satellites in view of each of the {count} clusters around the view · each card below names the highest": "Метеоспутников в зоне видимости каждой из {count} групп в зоне обзора и рядом: {min}–{max} · самый высокий — в карточках ниже",
   "{reached} of {count} clusters around the view have a space AIS / ADS-B receiver in reach now · each card below gives how many, or when the next comes": "Групп в зоне обзора и рядом с космическим приёмником AIS / ADS-B в зоне досягаемости сейчас: {reached} из {count} · сколько их или когда следующий — в карточках ниже",
   "PDOP {best}–{worst} over the {count} zones around the view (lower is better) · each card below gives the satellites in view": "PDOP {best}–{worst} по {count} зонам в зоне обзора и рядом (меньше — лучше) · спутники в зоне видимости — в карточках ниже",
-  "{count} zones around the view · each card below gives the satellites in view": "Зон в зоне обзора и рядом: {count} · спутники в зоне видимости — в карточках ниже"
+  "{count} zones around the view · each card below gives the satellites in view": "Зон в зоне обзора и рядом: {count} · спутники в зоне видимости — в карточках ниже",
+  "Members": "Участники",
+  "Show every member of every cluster; otherwise one node per cluster, and the members of the selected one": "Показать всех участников каждой группы; иначе — один узел на группу и участников выбранной",
+  "Draw every {kind} edge; a selected cluster or satellite always shows all of its edges": "Рисовать все рёбра «{kind}»; у выбранной группы или спутника всегда видны все рёбра",
+  "Observes {count} clusters in view now · from {low}° to {high}° elevation": "Наблюдает групп в зоне видимости сейчас: {count} · угол места от {low}° до {high}°",
+  "Optical": "Оптика",
+  "Radar": "Радар",
+  "Fire": "Пожар",
+  "AIS": "AIS",
+  "ADS-B": "ADS-B",
+  "Search and rescue": "Поиск и спасание",
+  "GPS": "GPS",
+  "Galileo": "Galileo",
+  "GLONASS": "ГЛОНАСС",
+  "Selected satellite": "Выбранный спутник",
+  "Clear the selection (Esc)": "Снять выбор (Esc)"
 }
