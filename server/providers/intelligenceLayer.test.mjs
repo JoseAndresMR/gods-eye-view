@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { alprTileUrl, imageryRequest, intelligenceLayerPath, slimGranules } from './intelligenceLayer.js';
+import { alprTileUrl, ilCelestrakGroup, imageryRequest, intelligenceLayerPath, slimGranules } from './intelligenceLayer.js';
 
 test('index, per-distance and box reads are allowed for each kind', () => {
   assert.equal(intelligenceLayerPath('GET', '/aircraft/index'), '/api/aircraft/index');
@@ -124,4 +124,11 @@ test('overflights may name the aircraft lanes on show', () => {
   );
   assert.equal(intelligenceLayerPath('GET', '/observability/overflights?targets=dams:10&observers=vessels:1'), null);
   assert.equal(intelligenceLayerPath('GET', '/observability/overflights?targets=dams:10&observers=aircraft:x'), null);
+});
+
+test('celestrak serves only the groups the IL reads beyond GEV\'s own', () => {
+  for (const group of ['resource', 'planet', 'weather', 'spire', 'orbcomm', 'iridium-NEXT', 'sarsat'])
+    assert.equal(ilCelestrakGroup(`/celestrak/${group}`), group);
+  for (const bad of ['/celestrak/stations', '/celestrak/active', '/celestrak/resource/x', '/celestrak/', '/celestrak/../x', '/celestraks/resource'])
+    assert.equal(ilCelestrakGroup(bad), null, bad);
 });

@@ -1,10 +1,16 @@
 // Read-only bridge to the local intelligence layer (a separate process on this
 // machine), plus saving its areas of interest. Only allowlisted resources are
 // forwarded, so this route can never be used to reach anything else.
-// Also the intelligence layer's windows onto public data GEV's layers fetch
-// from the browser: NASA's granule catalog (CMR), which HLS scenes (Sentinel-2,
+// Also the intelligence layer's windows onto public data GEV doesn't serve
+// itself: NASA's granule catalog (CMR), which HLS scenes (Sentinel-2,
 // Landsat 8/9) were acquired over a box, as the Recent Imagery layer searches;
-// and DeFlock's hourly licence-plate-reader tiles, as the ALPR layer reads.
+// DeFlock's hourly licence-plate-reader tiles, as the ALPR layer reads; and
+// the CelesTrak groups the IL's satellite relations need beyond the ones GEV's
+// own /api/celestrak allows (upstream bounds that route to its layers' groups).
+import fsp from 'node:fs/promises';
+import path from 'node:path';
+import { celestrakTleUrl } from '../../src/data/spaceProviderRequests.js';
+import { providerCooldownMs } from './space/cooldown.js';
 
 const IL_API_BASE = (process.env.IL_API_BASE || 'http://127.0.0.1:8700').replace(/\/+$/, '');
 const IL_TIMEOUT_MS = 5000;
@@ -47,6 +53,14 @@ const ALPR_CACHE_MS = 60 * 60 * 1000;
 const ALPR_CACHE_MAX = 2000;
 const ALPR_TIMEOUT_MS = 20000;
 const ALPR_MAX_BYTES = 2 * 1024 * 1024;
+
+/** CelesTrak groups only the IL reads (GEV's /api/celestrak serves its own layers' groups). */
+const IL_CELESTRAK_GROUPS = new Set(['resource', 'planet', 'weather', 'spire', 'orbcomm', 'iridium-NEXT', 'sarsat']);
+/** CelesTrak asks for no more than one fetch per group every ~2 h; GEV's own route keeps 6 h. */
+const IL_TLE_TTL_MS = 6 * 3600_000;
+const IL_TLE_TIMEOUT_MS = 20000;
+const IL_TLE_MAX_BYTES = 16 * 1024 * 1024;
+const IL_TLE_CACHE_DIR = path.join(process.cwd(), '.gev-cache');
 
 function sendJson(res, status, body) {
   res.statusCode = status;
@@ -185,6 +199,78 @@ async function serveAlprTile(res, url) {
   res.end(bytes.length ? bytes : undefined);
 }
 
+/** The CelesTrak group of a TLE read, or null when it isn't one the IL may read. GET /celestrak/<group> */
+export function ilCelestrakGroup(url) {
+  const { pathname } = new URL(url || '', 'http://localhost');
+  const match = /^\/celestrak\/([A-Za-z-]{1,32})$/.exec(pathname);
+  return match && IL_CELESTRAK_GROUPS.has(match[1]) ? match[1] : null;
+}
+
+const _tleMem = new Map(); // group -> { at, body }
+const _tleInflight = new Map(); // group -> Promise<{ at, body }>
+let _tleCooldownUntil = 0;
+const tleDiskPath = (group) => path.join(IL_TLE_CACHE_DIR, `il-celestrak-${group}.json`);
+
+async function fetchTleGroup(group) {
+  const res = await fetch(celestrakTleUrl(group).toString(), {
+    signal: AbortSignal.timeout(IL_TLE_TIMEOUT_MS),
+    // As GEV's own route: CelesTrak refuses bulk groups without a descriptive User-Agent.
+    headers: { 'User-Agent': 'gods-eye-view-intelligence-layer/1.0 (+https://github.com/JoseAndresMR/gods-eye-view)' },
+  });
+  if (!res.ok) {
+    _tleCooldownUntil = Math.max(_tleCooldownUntil, Date.now() + providerCooldownMs(res));
+    void res.body?.cancel().catch(() => {});
+    throw new Error(`HTTP ${res.status}`);
+  }
+  const body = await res.text();
+  if (body.length > IL_TLE_MAX_BYTES || !/^1 /m.test(body)) throw new Error('no TLE lines in response');
+  const entry = { at: Date.now(), body };
+  try {
+    await fsp.mkdir(IL_TLE_CACHE_DIR, { recursive: true });
+    await fsp.writeFile(tleDiskPath(group), JSON.stringify(entry), 'utf8');
+  } catch {
+    // a missing disk cache only costs a refetch after restart
+  }
+  return entry;
+}
+
+/** One group's TLEs: fresh cache, else one upstream fetch per group at a time, else a stale copy. */
+async function serveTleGroup(res, group) {
+  let entry = _tleMem.get(group);
+  if (!entry) {
+    try {
+      entry = JSON.parse(await fsp.readFile(tleDiskPath(group), 'utf8'));
+      if (typeof entry?.body !== 'string' || !Number.isFinite(entry?.at)) entry = null;
+      else _tleMem.set(group, entry);
+    } catch {
+      entry = null;
+    }
+  }
+  const sendTle = (e, cache) => {
+    res.statusCode = 200;
+    res.setHeader('Content-Type', 'text/plain');
+    res.setHeader('Cache-Control', 'no-store');
+    res.setHeader('x-tle-cache', cache);
+    res.setHeader('X-TLE-Cached-At', new Date(e.at).toISOString());
+    res.end(e.body);
+  };
+  if (entry && Date.now() - entry.at < IL_TLE_TTL_MS) return sendTle(entry, 'HIT');
+  if (Date.now() < _tleCooldownUntil) {
+    if (entry) return sendTle(entry, 'STALE');
+    res.setHeader('Retry-After', String(Math.ceil((_tleCooldownUntil - Date.now()) / 1000)));
+    return sendJson(res, 503, { error: 'CelesTrak cooling down' });
+  }
+  try {
+    if (!_tleInflight.has(group)) _tleInflight.set(group, fetchTleGroup(group).finally(() => _tleInflight.delete(group)));
+    const fresh = await _tleInflight.get(group);
+    _tleMem.set(group, fresh);
+    return sendTle(fresh, 'MISS');
+  } catch {
+    if (entry) return sendTle(entry, 'STALE');
+    return sendJson(res, 502, { error: 'CelesTrak not reachable' });
+  }
+}
+
 function ringOf(points) {
   return (points || [])
     .map((p) => [Number(p?.Longitude), Number(p?.Latitude)])
@@ -261,11 +347,18 @@ async function readBody(req, limit) {
 /**
  * Vite plugin: /api/il/* → the intelligence layer's localhost API
  * (cluster feeds, their satellite observation, areas of interest), and
- * /api/il/imagery → NASA CMR (HLS scenes over a box), /api/il/alpr → DeFlock tiles.
+ * /api/il/imagery → NASA CMR (HLS scenes over a box), /api/il/alpr → DeFlock tiles,
+ * /api/il/celestrak/<group> → CelesTrak TLE groups only the IL reads.
  */
 export function intelligenceLayerProxy() {
   function install(middlewares) {
     middlewares.use('/api/il', async (req, res) => {
+      if (req.method === 'GET' && new URL(req.url || '', 'http://localhost').pathname.startsWith('/celestrak/')) {
+        const group = ilCelestrakGroup(req.url);
+        if (group) await serveTleGroup(res, group);
+        else sendJson(res, 400, { error: 'celestrak groups here are ' + [...IL_CELESTRAK_GROUPS].join(', ') });
+        return;
+      }
       if (req.method === 'GET' && new URL(req.url || '', 'http://localhost').pathname.startsWith('/alpr/')) {
         const url = alprTileUrl(req.url);
         if (url) await serveAlprTile(res, url);
