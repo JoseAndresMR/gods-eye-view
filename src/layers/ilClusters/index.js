@@ -11,6 +11,7 @@ import {
   IL_AIRCRAFT_CLUSTERS_ID,
   IL_FIRE_CLUSTERS_ID,
   IL_GNSS_ZONES_ID,
+  IL_EVENT_CLUSTERS_ID,
   IL_MILITARY_AREA_CLUSTERS_ID,
   IL_DATACENTER_CLUSTERS_ID,
   IL_DAM_CLUSTERS_ID,
@@ -932,6 +933,28 @@ export function createIlFireClustersLayer({ surface = null, fetchImpl } = {}) {
     alwaysOnTop: true,
     chipTitle: (distance) =>
       t('Link fire detections closer than {distance} km along the surface', { distance }),
+    fetchImpl,
+  });
+}
+
+/** Conflict and unrest event clusters: GDELT events, a lone event being a cluster of one. */
+export function createIlEventClustersLayer({ surface = null, fetchImpl } = {}) {
+  return createIlClustersLayer({
+    id: IL_EVENT_CLUSTERS_ID,
+    name: 'Event clusters',
+    icon: '✸',
+    source: 'Intelligence layer · GDELT',
+    kind: 'events',
+    staticPositions: true,
+    groundAnchors: surface?.anchors ?? null,
+    footprints: true,
+    // GEV refreshes its free GDELT feed every 15 min; the IL re-reads it as often.
+    updateInterval: 300000,
+    ringPixels: 12,
+    liftM: 20,
+    alwaysOnTop: true,
+    chipTitle: (distance) =>
+      t('Link conflict events closer than {distance} km along the surface', { distance }),
     fetchImpl,
   });
 }

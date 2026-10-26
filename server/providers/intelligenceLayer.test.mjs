@@ -9,6 +9,8 @@ test('index, per-distance and box reads are allowed for each kind', () => {
   assert.equal(intelligenceLayerPath('GET', '/military?km=20'), '/api/military?km=20');
   assert.equal(intelligenceLayerPath('GET', '/satellites/index'), '/api/satellites/index');
   assert.equal(intelligenceLayerPath('GET', '/gnss?km=100'), '/api/gnss?km=100');
+  assert.equal(intelligenceLayerPath('GET', '/events/index'), '/api/events/index');
+  assert.equal(intelligenceLayerPath('GET', '/events?km=25'), '/api/events?km=25');
   assert.equal(
     intelligenceLayerPath('GET', '/fires?km=2&bbox=110,-40.123456,155,-10'),
     '/api/fires?km=2&bbox=110,-40.1235,155,-10',

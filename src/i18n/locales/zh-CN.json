@@ -3054,5 +3054,14 @@
   "Violence against civilians": "针对平民的暴力",
   "Riots": "骚乱",
   "Protests": "抗议",
-  "Strategic developments": "战略动态"
+  "Strategic developments": "战略动态",
+  "{count} conflict events": {
+    "other": "{count} 起冲突事件"
+  },
+  "Mostly in {value} ({count})": "主要在 {value}({count})",
+  "{count} news mentions": "{count} 次新闻提及",
+  "{count} reported by both GDELT sources": "{count} 起同时被两个 GDELT 来源报道",
+  "Latest event {date}": "最新事件 {date}",
+  "Link conflict events closer than {distance} km along the surface": "按地表距离小于 {distance} 公里连接冲突事件",
+  "Event clusters": "事件集群"
 }

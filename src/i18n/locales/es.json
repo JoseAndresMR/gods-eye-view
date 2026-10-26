@@ -3228,5 +3228,16 @@
   "Violence against civilians": "Violencia contra civiles",
   "Riots": "Disturbios",
   "Protests": "Protestas",
-  "Strategic developments": "Acontecimientos estratégicos"
+  "Strategic developments": "Acontecimientos estratégicos",
+  "{count} conflict events": {
+    "one": "{count} evento de conflicto",
+    "many": "{count} de eventos de conflicto",
+    "other": "{count} eventos de conflicto"
+  },
+  "Mostly in {value} ({count})": "Principalmente en {value} ({count})",
+  "{count} news mentions": "{count} menciones en noticias",
+  "{count} reported by both GDELT sources": "{count} notificados por ambas fuentes de GDELT",
+  "Latest event {date}": "Último evento {date}",
+  "Link conflict events closer than {distance} km along the surface": "Une eventos de conflicto a menos de {distance} km sobre la superficie",
+  "Event clusters": "Grupos de eventos"
 }

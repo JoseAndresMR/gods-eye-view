@@ -417,6 +417,7 @@ export const VOICE_OFF_LAYERS = Object.freeze({
   'il-satellite-clusters': 'local intelligence-layer overlay, not a voice data source',
   'il-fire-clusters': 'local intelligence-layer overlay, not a voice data source',
   'il-gnss-zones': 'local intelligence-layer overlay, not a voice data source',
+  'il-event-clusters': 'local intelligence-layer overlay, not a voice data source',
   'il-military-area-clusters': 'local intelligence-layer overlay, not a voice data source',
   'il-datacenter-clusters': 'local intelligence-layer overlay, not a voice data source',
   'il-dam-clusters': 'local intelligence-layer overlay, not a voice data source',

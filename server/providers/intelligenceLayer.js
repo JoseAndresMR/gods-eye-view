@@ -19,7 +19,7 @@ const MAX_AREAS_BODY = 64 * 1024;
 const DISTANCE_KM = /^(?:[1-9]\d{0,3}(?:\.\d{1,3})?|0\.\d{0,2}[1-9])$/;
 const KINDS = new Set([
   'aircraft', 'vessels', 'military', 'satellites', 'fires', 'gnss',
-  'military-areas', 'datacenters', 'dams', 'landings', 'cameras',
+  'military-areas', 'datacenters', 'dams', 'landings', 'cameras', 'events',
 ]);
 /** Cross-layer satellite relations; each names the cluster feeds it observes. */
 const RELATIONS = new Set([

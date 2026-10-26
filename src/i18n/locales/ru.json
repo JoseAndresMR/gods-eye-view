@@ -3315,5 +3315,17 @@
   "Violence against civilians": "Насилие против гражданского населения",
   "Riots": "Беспорядки",
   "Protests": "Протесты",
-  "Strategic developments": "Стратегические события"
+  "Strategic developments": "Стратегические события",
+  "{count} conflict events": {
+    "one": "{count} конфликтное событие",
+    "few": "{count} конфликтных события",
+    "many": "{count} конфликтных событий",
+    "other": "{count} конфликтного события"
+  },
+  "Mostly in {value} ({count})": "В основном в стране: {value} ({count})",
+  "{count} news mentions": "упоминаний в новостях: {count}",
+  "{count} reported by both GDELT sources": "{count} сообщили оба источника GDELT",
+  "Latest event {date}": "Последнее событие {date}",
+  "Link conflict events closer than {distance} km along the surface": "Связывать конфликтные события ближе {distance} км по поверхности",
+  "Event clusters": "Кластеры событий"
 }

@@ -44,6 +44,10 @@ export const CLUSTER_KINDS = Object.freeze({
     members: (n) => tn(n, '{count} fire detection', '{count} fire detections', { count: formatNumber(n) }),
     composition: [],
   },
+  events: {
+    members: (n) => tn(n, '{count} conflict event', '{count} conflict events', { count: formatNumber(n) }),
+    composition: [{ key: 'country', line: msg('Mostly in {value} ({count})') }],
+  },
   gnss: {
     members: (n) => tn(n, '{count} low-accuracy cell', '{count} low-accuracy cells', { count: formatNumber(n) }),
     composition: [],
@@ -112,6 +116,34 @@ function fireLines(s) {
   return lines;
 }
 
+/** English family labels, kept here so describe.js stays free of layer imports. */
+const EVENT_FAMILY_LABELS = Object.freeze({
+  battles: msg('Battles'),
+  explosions: msg('Explosions / remote violence'),
+  civilians: msg('Violence against civilians'),
+  riots: msg('Riots'),
+  protests: msg('Protests'),
+  strategic: msg('Strategic developments'),
+});
+
+function eventLines(s) {
+  const e = s.events;
+  if (!e) return [];
+  const lines = [];
+  const top = s.composition?.family?.[0];
+  if (top && EVENT_FAMILY_LABELS[top.value])
+    lines.push(t('Mostly {value} ({count})', { value: t(EVENT_FAMILY_LABELS[top.value]), count: formatNumber(top.count) }));
+  if (finite(e.fatalities_total) && e.fatalities_total > 0)
+    lines.push(t('Reported fatalities: {count}', { count: formatNumber(e.fatalities_total) }));
+  if (finite(e.mentions_total) && e.mentions_total > 0)
+    lines.push(t('{count} news mentions', { count: formatNumber(e.mentions_total) }));
+  if (finite(e.corroborated) && e.corroborated > 0)
+    lines.push(t('{count} reported by both GDELT sources', { count: formatNumber(e.corroborated) }));
+  if (finite(e.last_date))
+    lines.push(t('Latest event {date}', { date: formatDate(e.last_date * 1000, { dateStyle: 'medium', timeZone: 'UTC' }) }));
+  return lines;
+}
+
 function gnssLines(s) {
   const g = s.gnss;
   if (!g) return [];
@@ -141,7 +173,7 @@ export function describeCluster(cluster, kind) {
   const spec = CLUSTER_KINDS[kind] || CLUSTER_KINDS.aircraft;
   const s = cluster?.summary || {};
   const size = finite(s.size) ? s.size : cluster?.size || 0;
-  const lines = [spreadLine(s), heightLine(s), motionLine(s), ...fireLines(s), ...gnssLines(s)];
+  const lines = [spreadLine(s), heightLine(s), motionLine(s), ...fireLines(s), ...eventLines(s), ...gnssLines(s)];
   for (const { key, line } of spec.composition) {
     const top = s.composition?.[key]?.[0];
     if (top && top.count > 1) lines.push(t(line, { value: String(top.value), count: formatNumber(top.count) }));

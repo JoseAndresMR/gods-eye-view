@@ -39,6 +39,7 @@ import {
   createIlAircraftClustersLayer,
   createIlFireClustersLayer,
   createIlGnssZonesLayer,
+  createIlEventClustersLayer,
   createIlMilitaryAreaClustersLayer,
   createIlDatacenterClustersLayer,
   createIlDamClustersLayer,
@@ -137,6 +138,7 @@ export function createApplicationCatalog({
     const ilVessels = createIlVesselClustersLayer({ vessels });
     const ilFires = createIlFireClustersLayer({ surface });
     const ilGnss = createIlGnssZonesLayer({ surface });
+    const ilEvents = createIlEventClustersLayer({ surface });
     const ilFixedSites = [
       createIlMilitaryAreaClustersLayer({ surface }),
       createIlDatacenterClustersLayer({ surface }),
@@ -225,6 +227,7 @@ export function createApplicationCatalog({
         }),
         ilFires,
         ilGnss,
+        ilEvents,
         ...ilFixedSites,
         createIlCameraClustersLayer({ surface }),
         createIlImagingSatellitesLayer({ targets: [...ilFixedSites, ilFires, ilVessels], surface }),

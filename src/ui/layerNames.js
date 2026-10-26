@@ -37,6 +37,7 @@ export const LAYER_NAME_KEYS = Object.freeze({
   'il-satellite-clusters': msg('Satellite clusters'),
   'il-fire-clusters': msg('Fire clusters'),
   'il-gnss-zones': msg('GNSS zones'),
+  'il-event-clusters': msg('Event clusters'),
   'il-military-area-clusters': msg('Military area clusters'),
   'il-datacenter-clusters': msg('Data centre clusters'),
   'il-dam-clusters': msg('Dam clusters'),
