@@ -27,6 +27,7 @@ import { createApplicationEarthquakes } from './layers/earthquakes.js';
 import { createApplicationAirQuality } from './layers/airQuality.js';
 import { createApplicationFirePerimeters } from './layers/perimeters.js';
 import { createApplicationGnssIntegrity } from './layers/gnss.js';
+import { createApplicationGdeltEvents } from './layers/gdeltEvents.js';
 import { createApplicationCables } from './layers/submarineCables.js';
 import { createApplicationStreetLevel } from './layers/streetLevel.js';
 import { createInfrastructureLayers } from '../data/infrastructure.js';
@@ -64,6 +65,9 @@ import {
  */
 export const LOCAL_ONLY_LAYER_METADATA = Object.freeze([
   Object.freeze({ id: 'local-adsb', disposition: 'local-only' }),
+  // Reads the key and cache of this machine's GEV server; no share-link token
+  // so a link never depends on the viewer having GDELT access.
+  Object.freeze({ id: 'gdelt-events', disposition: 'local-only' }),
   // Read the intelligence layer process running on this machine.
   ...IL_LAYER_IDS.map((id) => Object.freeze({ id, disposition: 'local-only' })),
 ]);
@@ -166,6 +170,7 @@ export function createApplicationCatalog({
         createApplicationGnssIntegrity({
           source: sources['gnss-integrity'],
         }),
+        createApplicationGdeltEvents({ source: sources['gdelt-events'] }),
         createApplicationAlpr({ surface, source: sources.alpr }),
         createApplicationStreetLevel({
           surface,

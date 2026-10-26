@@ -3294,5 +3294,26 @@
     "many": "Под наблюдением {count} общественных камер: {names}",
     "other": "Под наблюдением {count} общественных камер: {names}"
   },
-  "Within 100 m of {count} clusters in view": "В пределах 100 м от групп в зоне видимости: {count}"
+  "Within 100 m of {count} clusters in view": "В пределах 100 м от групп в зоне видимости: {count}",
+  "Conflict event": "Конфликтное событие",
+  "Close": "Закрыть",
+  "Reported fatalities: {count}": "Сообщено о погибших: {count}",
+  "{count} mentions": "упоминаний: {count}",
+  "GDELT events source unavailable": "Источник событий GDELT недоступен",
+  "Free GDELT Project feed: last 24 h": "Бесплатный поток GDELT Project: последние 24 ч",
+  "Free feed off": "Бесплатный поток выключен",
+  "GDELT Cloud: no key": "GDELT Cloud: нет ключа",
+  "GDELT Cloud: monthly budget used": "GDELT Cloud: месячный лимит исчерпан",
+  "GDELT Cloud: {used} of {cap} calls this month": "GDELT Cloud: {used} из {cap} вызовов в этом месяце",
+  "Free feed": "Бесплатный поток",
+  "Include the free GDELT Project events (noisier, refreshed every 15 minutes). Off shows only the daily GDELT Cloud top events.": "Включить бесплатные события GDELT Project (шумнее, обновляются каждые 15 минут). В выключенном состоянии показываются только ежедневные главные события GDELT Cloud.",
+  "GDELT Cloud is metered (free plan: 50 calls a month), so the server fetches its top events once a day. Machine-coded news events can be wrong or duplicated; locations are where the story places the event.": "GDELT Cloud тарифицируется (бесплатный план: 50 вызовов в месяц), поэтому сервер запрашивает главные события раз в сутки. Автоматически закодированные новостные события могут быть неверными или дублироваться; место — то, которое указано в публикации.",
+  "Top conflict and unrest events (free plan: 50 calls a month)": "Главные события конфликтов и беспорядков (бесплатный план: 50 вызовов в месяц)",
+  "GDELT Events": "События GDELT",
+  "Battles": "Бои",
+  "Explosions / remote violence": "Взрывы / дистанционное насилие",
+  "Violence against civilians": "Насилие против гражданского населения",
+  "Riots": "Беспорядки",
+  "Protests": "Протесты",
+  "Strategic developments": "Стратегические события"
 }

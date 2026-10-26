@@ -1,6 +1,8 @@
 /* INTELLIGENCE: right-rail panel for the local intelligence-layer overlays.
    Laid out by the rail like RECENT IMAGERY; only the body scrolls. Rows reuse
    the Data Layers row styles, cluster cards the rail-card rules in weather.css. */
+@import './conflictEvents.css';
+
 #right-context-rail > #intel-panel {
   position: relative;
   inset: auto;

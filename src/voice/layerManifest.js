@@ -410,6 +410,7 @@ const layers = [
 export const VOICE_OFF_LAYERS = Object.freeze({
   'bhote-koshi-2026': 'scene-driven event layer (control_scene)',
   'bhote-koshi-locator': 'scene-driven event layer (control_scene)',
+  'gdelt-events': 'metered conflict-event feed, not a voice data source',
   'il-aircraft-clusters': 'local intelligence-layer overlay, not a voice data source',
   'il-vessel-clusters': 'local intelligence-layer overlay, not a voice data source',
   'il-military-clusters': 'local intelligence-layer overlay, not a voice data source',

@@ -1,0 +1,79 @@
+/* GDELT events: detail card for the selected event (bottom left of the globe). */
+.gdelt-event-card {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  z-index: 40;
+  width: min(360px, calc(100vw - 32px));
+  box-sizing: border-box;
+  padding: 12px 14px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--panel-radius);
+  background: var(--glass-bg);
+  backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  pointer-events: auto;
+  font-size: 12px;
+  line-height: 1.4;
+}
+.gdelt-event-card[hidden] {
+  display: none;
+}
+.gdelt-event-card__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.gdelt-event-card__dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+.gdelt-event-card__family {
+  flex: 1 1 auto;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  opacity: 0.75;
+}
+.gdelt-event-card__close {
+  flex: 0 0 auto;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+.gdelt-event-card__title {
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+.gdelt-event-card__meta {
+  opacity: 0.8;
+}
+.gdelt-event-card__fatalities {
+  margin-top: 4px;
+  font-weight: 600;
+}
+.gdelt-event-card__summary {
+  margin: 6px 0 0;
+  max-height: 7.5em;
+  overflow-y: auto;
+}
+.gdelt-event-card__sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  margin-top: 8px;
+}
+.gdelt-event-card__source {
+  color: inherit;
+  opacity: 0.9;
+}
+a.gdelt-event-card__source {
+  text-decoration: underline;
+}

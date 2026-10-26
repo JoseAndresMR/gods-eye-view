@@ -206,6 +206,14 @@ export const DATA_CREDITS = [
       '(location-matched article links; publisher terms apply)',
   },
   {
+    key: 'gdelt-events',
+    html:
+      'Conflict and unrest events: ' +
+      '<a href="https://www.gdeltproject.org/about.html" target="_blank" rel="noopener">GDELT Project</a> ' +
+      'and <a href="https://gdeltcloud.com" target="_blank" rel="noopener">GDELT Cloud</a> ' +
+      '(machine-coded from news; article links belong to their publishers)',
+  },
+  {
     key: 'austin-cctv',
     html:
       'CCTV cameras &amp; frames: City of Austin, TX — ' +

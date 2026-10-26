@@ -3033,5 +3033,26 @@
   "Watched by {count} public cameras: {names}": {
     "other": "受 {count} 个公共摄像头监视：{names}"
   },
-  "Within 100 m of {count} clusters in view": "距视野内 {count} 个集群 100 m 以内"
+  "Within 100 m of {count} clusters in view": "距视野内 {count} 个集群 100 m 以内",
+  "Conflict event": "冲突事件",
+  "Close": "关闭",
+  "Reported fatalities: {count}": "报告死亡人数:{count}",
+  "{count} mentions": "{count} 次提及",
+  "GDELT events source unavailable": "GDELT 事件数据源不可用",
+  "Free GDELT Project feed: last 24 h": "免费 GDELT Project 数据源:过去 24 小时",
+  "Free feed off": "免费数据源已关闭",
+  "GDELT Cloud: no key": "GDELT Cloud:无密钥",
+  "GDELT Cloud: monthly budget used": "GDELT Cloud:本月额度已用完",
+  "GDELT Cloud: {used} of {cap} calls this month": "GDELT Cloud:本月已调用 {used}/{cap} 次",
+  "Free feed": "免费数据源",
+  "Include the free GDELT Project events (noisier, refreshed every 15 minutes). Off shows only the daily GDELT Cloud top events.": "包含免费的 GDELT Project 事件(噪声较大,每 15 分钟刷新)。关闭后仅显示 GDELT Cloud 每日热门事件。",
+  "GDELT Cloud is metered (free plan: 50 calls a month), so the server fetches its top events once a day. Machine-coded news events can be wrong or duplicated; locations are where the story places the event.": "GDELT Cloud 按调用计量(免费计划:每月 50 次),因此服务器每天只获取一次热门事件。机器编码的新闻事件可能有误或重复;位置取自报道中事件发生的地点。",
+  "Top conflict and unrest events (free plan: 50 calls a month)": "热门冲突与动乱事件(免费计划:每月 50 次调用)",
+  "GDELT Events": "GDELT 事件",
+  "Battles": "战斗",
+  "Explosions / remote violence": "爆炸/远程暴力",
+  "Violence against civilians": "针对平民的暴力",
+  "Riots": "骚乱",
+  "Protests": "抗议",
+  "Strategic developments": "战略动态"
 }

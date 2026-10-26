@@ -90,6 +90,16 @@ export const KEY_SETUP_KEYS = Object.freeze([
     tier: 'free',
   }),
   Object.freeze({
+    id: 'gdelt-cloud',
+    title: 'GDELT CLOUD', // i18n-ignore: provider product name
+    unlocks: msg(
+      'Top conflict and unrest events (free plan: 50 calls a month)',
+    ),
+    getUrl: 'https://gdeltcloud.com',
+    envVars: Object.freeze(['GDELT_API_KEY']),
+    tier: 'free',
+  }),
+  Object.freeze({
     id: 'tomtom',
     title: 'TOMTOM', // i18n-ignore: provider product name
     unlocks: msg('Real live traffic (keyless runs a simulation)'),

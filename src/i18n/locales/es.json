@@ -3207,5 +3207,26 @@
     "many": "Vigilado por {count} de cámaras públicas: {names}",
     "other": "Vigilado por {count} cámaras públicas: {names}"
   },
-  "Within 100 m of {count} clusters in view": "A menos de 100 m de {count} grupos a la vista"
+  "Within 100 m of {count} clusters in view": "A menos de 100 m de {count} grupos a la vista",
+  "Conflict event": "Evento de conflicto",
+  "Close": "Cerrar",
+  "Reported fatalities: {count}": "Víctimas mortales notificadas: {count}",
+  "{count} mentions": "{count} menciones",
+  "GDELT events source unavailable": "Fuente de eventos GDELT no disponible",
+  "Free GDELT Project feed: last 24 h": "Feed gratuito de GDELT Project: últimas 24 h",
+  "Free feed off": "Feed gratuito desactivado",
+  "GDELT Cloud: no key": "GDELT Cloud: sin clave",
+  "GDELT Cloud: monthly budget used": "GDELT Cloud: presupuesto mensual agotado",
+  "GDELT Cloud: {used} of {cap} calls this month": "GDELT Cloud: {used} de {cap} llamadas este mes",
+  "Free feed": "Feed gratuito",
+  "Include the free GDELT Project events (noisier, refreshed every 15 minutes). Off shows only the daily GDELT Cloud top events.": "Incluye los eventos gratuitos de GDELT Project (más ruidosos, se actualizan cada 15 minutos). Desactivado muestra solo los eventos principales diarios de GDELT Cloud.",
+  "GDELT Cloud is metered (free plan: 50 calls a month), so the server fetches its top events once a day. Machine-coded news events can be wrong or duplicated; locations are where the story places the event.": "GDELT Cloud tiene cuota (plan gratuito: 50 llamadas al mes), así que el servidor obtiene sus eventos principales una vez al día. Los eventos de noticias codificados automáticamente pueden ser erróneos o duplicados; la ubicación es la que la noticia asigna al evento.",
+  "Top conflict and unrest events (free plan: 50 calls a month)": "Principales eventos de conflicto y disturbios (plan gratuito: 50 llamadas al mes)",
+  "GDELT Events": "Eventos GDELT",
+  "Battles": "Batallas",
+  "Explosions / remote violence": "Explosiones / violencia a distancia",
+  "Violence against civilians": "Violencia contra civiles",
+  "Riots": "Disturbios",
+  "Protests": "Protestas",
+  "Strategic developments": "Acontecimientos estratégicos"
 }
