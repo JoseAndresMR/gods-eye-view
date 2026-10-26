@@ -641,7 +641,7 @@ export function createIlImagingSatellitesLayer({ targets, surface, fetchImpl } =
     ],
     lineKinds: ['optical', 'radar'],
     describe: describeImaging,
-    offHint: () => t('Switch on military area, data centre, dam, cable landing, fire or vessel clusters'),
+    offHint: () => t('Switch on military area, data centre, dam, cable landing, fire, event or vessel clusters'),
     infoOf: ({ rows, overhead }) =>
       t('{overhead} of {count} clusters around the view have an imaging satellite overhead now (amber optical, violet radar) · each card below gives the next passes', {
         overhead: formatNumber(overhead),
@@ -684,7 +684,7 @@ export function createIlWeatherSatellitesLayer({ targets, surface, fetchImpl } =
     targets,
     edgeKinds: [{ kind: 'weather', label: msg('Weather'), on: false }],
     describe: describeWeather,
-    offHint: () => t('Switch on military area, data centre, dam, cable landing or fire clusters'),
+    offHint: () => t('Switch on military area, data centre, dam, cable landing, fire or event clusters'),
     infoOf: ({ rows }) => {
       const counts = rows.map(({ place }) => place.counts?.weather || 0);
       return t('{min}–{max} weather satellites in view of each of the {count} clusters around the view · each card below names the highest', {
@@ -770,7 +770,7 @@ export function createIlImagedSatellitesLayer({ targets, surface, fetchImpl } = 
     describe: describeImaged,
     // Each edge is a scene: it ends where the satellite was when it took the image.
     edgeTime: (hoursAgo, meta) => (meta.t || Date.now() / 1000) - hoursAgo * 3600,
-    offHint: () => t('Switch on military area, data centre, dam, cable landing or fire clusters'),
+    offHint: () => t('Switch on military area, data centre, dam, cable landing, fire or event clusters'),
     infoOf: ({ rows }) => {
       const checked = rows.filter(({ place }) => !place.pending);
       return t('{imaged} of {count} clusters around the view were imaged in the last days, {clear} with a clear image · {pending} still being checked · each card below gives the latest', {

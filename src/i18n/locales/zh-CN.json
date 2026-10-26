@@ -2954,9 +2954,7 @@
   "In view: {gps} GPS · {galileo} Galileo · {glonass} GLONASS": "视野内：{gps} 颗 GPS · {galileo} 颗 Galileo · {glonass} 颗 GLONASS",
   "Satellite geometry: PDOP {pdop} all · {gps} GPS alone (lower is better)": "卫星几何：全部 PDOP {pdop} · 仅 GPS {gps}（越低越好）",
   "Satellite geometry: PDOP {pdop} all · too few GPS satellites alone": "卫星几何：全部 PDOP {pdop} · 仅 GPS 卫星数量不足",
-  "Switch on military area, data centre, dam, cable landing, fire or vessel clusters": "请开启军事区域、数据中心、水坝、海缆登陆点、火点或船舶集群",
   "Switch on fire clusters": "请开启火点集群",
-  "Switch on military area, data centre, dam, cable landing or fire clusters": "请开启军事区域、数据中心、水坝、海缆登陆点或火点集群",
   "Switch on vessel, aircraft or military aircraft clusters": "请开启船舶、航空器或军用航空器集群",
   "Switch on GNSS zones": "请开启 GNSS 区域",
   "Imaging satellites": "成像卫星",
@@ -3063,5 +3061,7 @@
   "{count} reported by both GDELT sources": "{count} 起同时被两个 GDELT 来源报道",
   "Latest event {date}": "最新事件 {date}",
   "Link conflict events closer than {distance} km along the surface": "按地表距离小于 {distance} 公里连接冲突事件",
-  "Event clusters": "事件集群"
+  "Event clusters": "事件集群",
+  "Switch on military area, data centre, dam, cable landing, fire, event or vessel clusters": "请开启军事区域、数据中心、水坝、海缆登陆点、火情、事件或船舶集群",
+  "Switch on military area, data centre, dam, cable landing, fire or event clusters": "请开启军事区域、数据中心、水坝、海缆登陆点、火情或事件集群"
 }

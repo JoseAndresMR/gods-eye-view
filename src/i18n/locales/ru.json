@@ -3200,9 +3200,7 @@
   "In view: {gps} GPS · {galileo} Galileo · {glonass} GLONASS": "В зоне видимости: {gps} GPS · {galileo} Galileo · {glonass} ГЛОНАСС",
   "Satellite geometry: PDOP {pdop} all · {gps} GPS alone (lower is better)": "Геометрия спутников: PDOP {pdop} все · {gps} только GPS (меньше — лучше)",
   "Satellite geometry: PDOP {pdop} all · too few GPS satellites alone": "Геометрия спутников: PDOP {pdop} все · слишком мало спутников только GPS",
-  "Switch on military area, data centre, dam, cable landing, fire or vessel clusters": "Включите группы военных объектов, ЦОД, плотин, точек выхода кабелей, пожаров или судов",
   "Switch on fire clusters": "Включите группы пожаров",
-  "Switch on military area, data centre, dam, cable landing or fire clusters": "Включите группы военных объектов, ЦОД, плотин, точек выхода кабелей или пожаров",
   "Switch on vessel, aircraft or military aircraft clusters": "Включите группы судов, воздушных судов или военных воздушных судов",
   "Switch on GNSS zones": "Включите зоны GNSS",
   "Imaging satellites": "Съёмочные спутники",
@@ -3327,5 +3325,7 @@
   "{count} reported by both GDELT sources": "{count} сообщили оба источника GDELT",
   "Latest event {date}": "Последнее событие {date}",
   "Link conflict events closer than {distance} km along the surface": "Связывать конфликтные события ближе {distance} км по поверхности",
-  "Event clusters": "Кластеры событий"
+  "Event clusters": "Кластеры событий",
+  "Switch on military area, data centre, dam, cable landing, fire, event or vessel clusters": "Включите кластеры военных районов, дата-центров, плотин, кабельных выходов, пожаров, событий или судов",
+  "Switch on military area, data centre, dam, cable landing, fire or event clusters": "Включите кластеры военных районов, дата-центров, плотин, кабельных выходов, пожаров или событий"
 }

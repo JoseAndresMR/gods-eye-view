@@ -3118,9 +3118,7 @@
   "In view: {gps} GPS · {galileo} Galileo · {glonass} GLONASS": "A la vista: {gps} GPS · {galileo} Galileo · {glonass} GLONASS",
   "Satellite geometry: PDOP {pdop} all · {gps} GPS alone (lower is better)": "Geometría de satélites: PDOP {pdop} todos · {gps} solo GPS (menor es mejor)",
   "Satellite geometry: PDOP {pdop} all · too few GPS satellites alone": "Geometría de satélites: PDOP {pdop} todos · pocos satélites GPS por sí solos",
-  "Switch on military area, data centre, dam, cable landing, fire or vessel clusters": "Activa grupos de zonas militares, centros de datos, presas, aterrajes de cables, incendios o buques",
   "Switch on fire clusters": "Activa los grupos de incendios",
-  "Switch on military area, data centre, dam, cable landing or fire clusters": "Activa grupos de zonas militares, centros de datos, presas, aterrajes de cables o incendios",
   "Switch on vessel, aircraft or military aircraft clusters": "Activa grupos de buques, aeronaves o aeronaves militares",
   "Switch on GNSS zones": "Activa las zonas GNSS",
   "Imaging satellites": "Satélites de imagen",
@@ -3239,5 +3237,7 @@
   "{count} reported by both GDELT sources": "{count} notificados por ambas fuentes de GDELT",
   "Latest event {date}": "Último evento {date}",
   "Link conflict events closer than {distance} km along the surface": "Une eventos de conflicto a menos de {distance} km sobre la superficie",
-  "Event clusters": "Grupos de eventos"
+  "Event clusters": "Grupos de eventos",
+  "Switch on military area, data centre, dam, cable landing, fire, event or vessel clusters": "Activa los grupos de zonas militares, centros de datos, presas, amarres de cables, incendios, eventos o buques",
+  "Switch on military area, data centre, dam, cable landing, fire or event clusters": "Activa los grupos de zonas militares, centros de datos, presas, amarres de cables, incendios o eventos"
 }
