@@ -29,7 +29,8 @@ import { readFirstZipEntry } from './common/zip.js';
  *   GET /api/gdelt-events[?free=0]  → {fetchedAt, free, cloud, count, events}
  *   GET /api/gdelt-events/status    → {free, cloud} (no upstream traffic)
  *
- * `free=0` leaves the free feed out of `events` (the UI's switch); Cloud
+ * `cloud=cached` never makes a Cloud call (read-only consumers). `free=0` leaves
+ * the free feed out of `events` (the UI's switch); Cloud
  * events are always included when there are any. Without a key Cloud reports
  * `no_key` and the free feed still works. Never log the key.
  *
@@ -355,7 +356,11 @@ export function gdeltEventsProxy({
           return;
         }
         const [subPath, query = ''] = String(req.url || '').split('?');
-        const wantFree = new URLSearchParams(query).get('free') !== '0';
+        const params = new URLSearchParams(query);
+        const wantFree = params.get('free') !== '0';
+        // `cloud=cached` serves whatever GDELT Cloud data is cached and never
+        // spends a call (the intelligence layer reads this way).
+        const cloudCached = params.get('cloud') === 'cached';
         await loadOnce();
         if (subPath === '/status') {
           sendJson(200, meta(now(), wantFree));
@@ -365,7 +370,10 @@ export function gdeltEventsProxy({
           sendJson(404, { error: 'not_found' });
           return;
         }
-        await Promise.all([wantFree ? ensureFree() : null, ensureCloud()]);
+        await Promise.all([
+          wantFree ? ensureFree() : null,
+          cloudCached ? null : ensureCloud(),
+        ]);
         const at = now();
         const state = meta(at, wantFree);
         const cloudEvents = cloud.events;

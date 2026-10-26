@@ -221,3 +221,25 @@ test('status makes no upstream requests; other paths 404', async () => {
     await h.done();
   }
 });
+
+test('cloud=cached never spends a cloud call and serves the cache that exists', async () => {
+  const h = await harness();
+  try {
+    const cold = await h.get('/?cloud=cached');
+    assert.equal(cold.status, 200);
+    assert.equal(h.calls.cloud, 0);
+    assert.equal(cold.body.cloud.budget.used, 0);
+    assert.ok(
+      cold.body.events.every((e) =>
+        e.sources.every((s) => s === 'gdelt-project'),
+      ),
+    );
+    await h.get('/');
+    assert.equal(h.calls.cloud, 1);
+    const warm = await h.get('/?cloud=cached');
+    assert.equal(h.calls.cloud, 1);
+    assert.ok(warm.body.events.some((e) => e.sources.includes('gdelt-cloud')));
+  } finally {
+    await h.done();
+  }
+});
