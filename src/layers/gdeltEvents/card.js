@@ -20,11 +20,18 @@ function el(doc, tag, className, text) {
  * http(s) and opened with rel=noopener.
  */
 export function createEventCard({ doc = globalThis.document, onClose } = {}) {
-  const root = el(doc, 'aside', 'gdelt-event-card');
+  // Dock in the right rail with the other cards; the rail lays out around it,
+  // so nothing paints over the card. Without a rail it floats bottom left.
+  const rail = doc.getElementById?.('right-context-rail');
+  const root = el(
+    doc,
+    'aside',
+    rail ? 'gdelt-event-card gdelt-event-card--docked' : 'gdelt-event-card',
+  );
   root.hidden = true;
   root.setAttribute('role', 'dialog');
   root.setAttribute('aria-label', t('Conflict event'));
-  doc.body.appendChild(root);
+  (rail || doc.body).appendChild(root);
 
   function show(event) {
     root.replaceChildren();

@@ -43,7 +43,10 @@ export function createGdeltEventsLayer({
     throw new TypeError('GDELT events require a snapshot source');
   let _viewer = null;
   let _request = null;
-  let _dataSource = null;
+  let _points = null;
+  let _removePreRender = null;
+  let _cullAt = 0;
+  let _cullKey = '';
   let _clickHandler = null;
   let _card = null;
   let _enabled = false;
@@ -68,7 +71,7 @@ export function createGdeltEventsLayer({
     _clickHandler.setInputAction((click) => {
       if (!isPointerFree() || !_enabled) return;
       const picked = _viewer.scene.pick(click.position);
-      const id = picked?.id?.__gdeltEventId;
+      const id = typeof picked?.id === 'string' ? picked.id : null;
       if (id && eventById.has(id)) {
         selectEvent(id === _selectedId ? null : eventById.get(id));
         return;
@@ -78,9 +81,25 @@ export function createGdeltEventsLayer({
     }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
   }
 
+  /** Hide points beyond the horizon; they would otherwise show through the planet. */
+  function applyHorizonCull(force = false) {
+    if (!_points || !_viewer || !_points.length) return;
+    const camera = _viewer.camera;
+    const at = camera?.positionWC;
+    if (!at) return;
+    const key = `${at.x.toFixed(0)},${at.y.toFixed(0)},${at.z.toFixed(0)}`;
+    if (!force && key === _cullKey) return;
+    _cullKey = key;
+    const occluder = new Cesium.EllipsoidalOccluder(Cesium.Ellipsoid.WGS84, at);
+    for (let i = 0; i < _points.length; i++) {
+      const point = _points.get(i);
+      point.show = occluder.isPointVisible(point.position);
+    }
+  }
+
   function render() {
-    if (!_dataSource) return;
-    const entities = [];
+    if (!_points) return;
+    _points.removeAll();
     eventById.clear();
     for (const event of _events) {
       eventById.set(event.id, event);
@@ -88,29 +107,23 @@ export function createGdeltEventsLayer({
         CONFLICT_FAMILIES[event.family]?.color || '#8d8d8d',
       );
       const merged = event.sources.length > 1;
-      const entity = new Cesium.Entity({
-        id: `gdelt-event:${event.id}`,
+      _points.add({
+        id: event.id,
         position: Cesium.Cartesian3.fromDegrees(event.lon, event.lat),
-        point: {
-          pixelSize: eventPixelSize(event),
-          color: color.withAlpha(
-            event.sources[0] === 'gdelt-project' ? 0.75 : 0.95,
-          ),
-          outlineColor: merged
-            ? Cesium.Color.WHITE
-            : Cesium.Color.BLACK.withAlpha(0.6),
-          outlineWidth: merged ? 2 : 1,
-          heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
-          disableDepthTestDistance: 0,
-        },
+        pixelSize: eventPixelSize(event),
+        color: color.withAlpha(
+          event.sources[0] === 'gdelt-project' ? 0.75 : 0.95,
+        ),
+        outlineColor: merged
+          ? Cesium.Color.WHITE
+          : Cesium.Color.BLACK.withAlpha(0.6),
+        outlineWidth: merged ? 2 : 1,
+        // Points are drawn over terrain and 3D tiles; the horizon cull above
+        // is what keeps the far side of the globe hidden.
+        disableDepthTestDistance: Number.POSITIVE_INFINITY,
       });
-      entity.__gdeltEventId = event.id;
-      entities.push(entity);
     }
-    _dataSource.entities.suspendEvents();
-    _dataSource.entities.removeAll();
-    for (const entity of entities) _dataSource.entities.add(entity);
-    _dataSource.entities.resumeEvents();
+    applyHorizonCull(true);
     if (_selectedId && !eventById.has(_selectedId)) selectEvent(null);
   }
 
@@ -124,9 +137,16 @@ export function createGdeltEventsLayer({
     init(viewer) {
       if (_viewer) throw new Error('GDELT events layer is already initialized');
       _viewer = viewer;
-      _dataSource = new Cesium.CustomDataSource('gdelt-events');
-      _dataSource.show = false;
-      viewer.dataSources.add(_dataSource);
+      _points = new Cesium.PointPrimitiveCollection();
+      _points.show = false;
+      viewer.scene.primitives.add(_points);
+      // Re-cull as the camera moves; the check skips frames where it has not.
+      _removePreRender = viewer.scene.preRender.addEventListener(() => {
+        const now = performance.now();
+        if (now - _cullAt < 100) return;
+        _cullAt = now;
+        applyHorizonCull();
+      });
       _card = createEventCard({ doc, onClose: () => selectEvent(null) });
       _events = [];
       _meta = null;
@@ -137,7 +157,8 @@ export function createGdeltEventsLayer({
 
     enable() {
       _enabled = true;
-      if (_dataSource) _dataSource.show = true;
+      if (_points) _points.show = true;
+      applyHorizonCull(true);
       installClick();
     },
 
@@ -146,11 +167,11 @@ export function createGdeltEventsLayer({
       _request = null;
       _enabled = false;
       selectEvent(null);
-      if (_dataSource) _dataSource.show = false;
+      if (_points) _points.show = false;
     },
 
     async update() {
-      if (!_enabled || !_dataSource) return false;
+      if (!_enabled || !_points) return false;
       _request?.abort();
       const request = new AbortController();
       _request = request;
@@ -184,9 +205,11 @@ export function createGdeltEventsLayer({
       _clickHandler = null;
       _card?.destroy();
       _card = null;
-      if (_dataSource) {
-        viewer?.dataSources.remove(_dataSource, true);
-        _dataSource = null;
+      _removePreRender?.();
+      _removePreRender = null;
+      if (_points) {
+        viewer?.scene.primitives.remove(_points);
+        _points = null;
       }
       eventById.clear();
       _events = [];
