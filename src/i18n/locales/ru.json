@@ -3327,5 +3327,7 @@
   "Link conflict events closer than {distance} km along the surface": "Связывать конфликтные события ближе {distance} км по поверхности",
   "Event clusters": "Кластеры событий",
   "Switch on military area, data centre, dam, cable landing, fire, event or vessel clusters": "Включите кластеры военных районов, дата-центров, плотин, кабельных выходов, пожаров, событий или судов",
-  "Switch on military area, data centre, dam, cable landing, fire or event clusters": "Включите кластеры военных районов, дата-центров, плотин, кабельных выходов, пожаров или событий"
+  "Switch on military area, data centre, dam, cable landing, fire or event clusters": "Включите кластеры военных районов, дата-центров, плотин, кабельных выходов, пожаров или событий",
+  "Hide": "Скрыть",
+  "Stop drawing this layer's clusters. It stays on and computed, so cross-layer edges still end at its nodes; a selected cluster is still drawn": "Не рисовать кластеры этого слоя. Он остаётся включённым и рассчитывается, поэтому межслойные связи по-прежнему ведут к его узлам; выбранный кластер по-прежнему рисуется"
 }

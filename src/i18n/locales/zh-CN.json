@@ -3063,5 +3063,7 @@
   "Link conflict events closer than {distance} km along the surface": "按地表距离小于 {distance} 公里连接冲突事件",
   "Event clusters": "事件集群",
   "Switch on military area, data centre, dam, cable landing, fire, event or vessel clusters": "请开启军事区域、数据中心、水坝、海缆登陆点、火情、事件或船舶集群",
-  "Switch on military area, data centre, dam, cable landing, fire or event clusters": "请开启军事区域、数据中心、水坝、海缆登陆点、火情或事件集群"
+  "Switch on military area, data centre, dam, cable landing, fire or event clusters": "请开启军事区域、数据中心、水坝、海缆登陆点、火情或事件集群",
+  "Hide": "隐藏",
+  "Stop drawing this layer's clusters. It stays on and computed, so cross-layer edges still end at its nodes; a selected cluster is still drawn": "停止绘制此图层的集群。图层保持开启并继续计算,因此跨图层连线仍指向其节点;已选中的集群仍会绘制"
 }

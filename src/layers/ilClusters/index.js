@@ -183,6 +183,9 @@ export function createIlClustersLayer({
   let _labelsShown = false;
   // Members (rings and links) of every cluster, or only of the selected one.
   let _showMembers = false;
+  // Hidden: the layer stays on and computed (cross-layer edges still end at its nodes),
+  // but only the selected cluster is drawn.
+  let _hidden = false;
   let _selectedHere = null;
   let _releasePicking = null;
   let _unsubscribeSelection = null;
@@ -298,12 +301,14 @@ export function createIlClustersLayer({
    * at the members' height even for clusters wrapped around the globe. Nodes
    * ignore depth like the rings, so those beyond the horizon are hidden.
    */
+  const drawnAnchor = (anchor) => !_hidden || isClusterSelected(id, anchor.clusterId);
+
   function placeAnchors(where, occluder) {
     for (const anchor of _anchors) {
       const visible = () =>
         Cesium.Cartesian3.magnitude(anchor.position) > 0 && (!occluder || occluder.isPointVisible(anchor.position));
       if (!anchor.members) {
-        anchor.point.show = visible();
+        anchor.point.show = visible() && drawnAnchor(anchor);
         continue;
       }
       let x = 0, y = 0, z = 0, r = 0, n = 0;
@@ -324,7 +329,7 @@ export function createIlClustersLayer({
         anchor.position.z = z * scale;
         anchor.point.position = anchor.position;
       } // else nothing placed yet: keep the last place
-      anchor.point.show = visible();
+      anchor.point.show = visible() && drawnAnchor(anchor);
     }
   }
 
@@ -366,7 +371,7 @@ export function createIlClustersLayer({
 
   /** One count tag per cluster node, largest clusters first. */
   function publishLabels() {
-    const labelled = _anchors.slice().sort((a, b) => b.count - a.count).slice(0, CLUSTER_LABEL_LIMIT);
+    const labelled = _anchors.filter(drawnAnchor).sort((a, b) => b.count - a.count).slice(0, CLUSTER_LABEL_LIMIT);
     setOverlayEntries(
       labelSource,
       labelled.map((label) => clusterLabelEntry({
@@ -399,11 +404,12 @@ export function createIlClustersLayer({
 
   function drawFootprints(color) {
     _outlines.removeAll();
+    if (_hidden && !_selectedHere) return;
     for (const c of contextOf?.(_meta) || [])
       drawRing(_outlines, densifyRing(c.ring), Cesium.Color.fromCssColorString(c.css), c.width);
     if (!footprints) return;
     const fixed = footprintColor ? Cesium.Color.fromCssColorString(footprintColor) : null;
-    for (const cluster of _clusters)
+    for (const cluster of _clusters.filter((c) => !_hidden || c.id === _selectedHere))
       drawRing(_outlines, densifyRing(cluster.summary?.hull), (fixed || color(cluster.id)).withAlpha(0.85), FOOTPRINT_WIDTH);
   }
 
@@ -420,7 +426,7 @@ export function createIlClustersLayer({
       return colorOf.get(clusterId);
     };
     if (staticPositions) placeStatic();
-    const shown = _nodes.filter((n) => _showMembers || n.cluster_id === _selectedHere);
+    const shown = _nodes.filter((n) => (_showMembers && !_hidden) || n.cluster_id === _selectedHere);
     if (areaOf) {
       for (const node of shown) {
         const css = areaColorOf?.(node);
@@ -650,6 +656,11 @@ export function createIlClustersLayer({
         notifyRow();
         if (_enabled && _points) rebuild();
       }
+      if (params.hidden !== undefined && Boolean(params.hidden) !== _hidden) {
+        _hidden = Boolean(params.hidden);
+        notifyRow();
+        if (_enabled && _points) rebuild();
+      }
       if (params.distanceKm === undefined) return true;
       const km = Number(params.distanceKm);
       if (!Number.isFinite(km) || km <= 0) return false;
@@ -662,7 +673,7 @@ export function createIlClustersLayer({
     },
 
     getParams() {
-      return { distanceKm: _distanceKm, members: _showMembers };
+      return { distanceKm: _distanceKm, members: _showMembers, hidden: _hidden };
     },
 
     setRowControlsListener(listener) {
@@ -683,6 +694,12 @@ export function createIlClustersLayer({
           active: _showMembers,
           params: { members: !_showMembers },
           title: t('Show every member of every cluster; otherwise one node per cluster, and the members of the selected one'),
+        }).concat({
+          id: 'hidden',
+          label: t('Hide'),
+          active: _hidden,
+          params: { hidden: !_hidden },
+          title: t('Stop drawing this layer\'s clusters. It stays on and computed, so cross-layer edges still end at its nodes; a selected cluster is still drawn'),
         }),
         info: !_lastUpdate
           ? null

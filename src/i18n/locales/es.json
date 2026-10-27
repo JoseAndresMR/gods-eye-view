@@ -3239,5 +3239,7 @@
   "Link conflict events closer than {distance} km along the surface": "Une eventos de conflicto a menos de {distance} km sobre la superficie",
   "Event clusters": "Grupos de eventos",
   "Switch on military area, data centre, dam, cable landing, fire, event or vessel clusters": "Activa los grupos de zonas militares, centros de datos, presas, amarres de cables, incendios, eventos o buques",
-  "Switch on military area, data centre, dam, cable landing, fire or event clusters": "Activa los grupos de zonas militares, centros de datos, presas, amarres de cables, incendios o eventos"
+  "Switch on military area, data centre, dam, cable landing, fire or event clusters": "Activa los grupos de zonas militares, centros de datos, presas, amarres de cables, incendios o eventos",
+  "Hide": "Ocultar",
+  "Stop drawing this layer's clusters. It stays on and computed, so cross-layer edges still end at its nodes; a selected cluster is still drawn": "Deja de dibujar los clústeres de esta capa. Sigue activa y calculada, así que las aristas entre capas siguen terminando en sus nodos; un clúster seleccionado se sigue dibujando"
 }
