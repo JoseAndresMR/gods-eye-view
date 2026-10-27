@@ -74,6 +74,7 @@ const PANEL_GROUPS = [
       'fire-perimeters',
       'gnss-integrity',
       'gdelt-events',
+      's2-ghostmaps',
     ],
   },
   {

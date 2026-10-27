@@ -28,6 +28,7 @@ import { createApplicationAirQuality } from './layers/airQuality.js';
 import { createApplicationFirePerimeters } from './layers/perimeters.js';
 import { createApplicationGnssIntegrity } from './layers/gnss.js';
 import { createApplicationGdeltEvents } from './layers/gdeltEvents.js';
+import { createApplicationGhostMaps } from './layers/ghostMaps.js';
 import { createApplicationCables } from './layers/submarineCables.js';
 import { createApplicationStreetLevel } from './layers/streetLevel.js';
 import { createInfrastructureLayers } from '../data/infrastructure.js';
@@ -179,6 +180,7 @@ export function createApplicationCatalog({
           source: sources['gnss-integrity'],
         }),
         createApplicationGdeltEvents({ source: sources['gdelt-events'] }),
+        createApplicationGhostMaps({ source: sources['s2-ghostmaps'] }),
         createApplicationAlpr({ surface, source: sources.alpr }),
         createApplicationStreetLevel({
           surface,
