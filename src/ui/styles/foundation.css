@@ -5,15 +5,15 @@
 
 :root {
   --bg-dark: #0a0a0f;
-  --glass-bg: rgba(12, 12, 20, 0.72);
-  --glass-border: rgba(255, 255, 255, 0.08);
-  --glass-border-hover: rgba(255, 255, 255, 0.15);
+  --glass-bg: rgba(10, 13, 22, 0.88);
+  --glass-border: rgba(150, 205, 235, 0.22);
+  --glass-border-hover: rgba(150, 205, 235, 0.4);
   --accent: #00d4ff;
   --accent-dim: rgba(0, 212, 255, 0.15);
   --accent-glow: rgba(0, 212, 255, 0.4);
-  --text-primary: #e8eaed;
-  --text-secondary: rgba(232, 234, 237, 0.5);
-  --text-dim: rgba(232, 234, 237, 0.3);
+  --text-primary: #f1f4f7;
+  --text-secondary: rgba(232, 238, 244, 0.78);
+  --text-dim: rgba(232, 238, 244, 0.58);
   /* Opaque surface for browser-painted menus, which cannot use --glass-bg. */
   --menu-bg: #12121c;
   --font-mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;

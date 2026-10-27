@@ -69,6 +69,8 @@ export {
   createIlWeatherSatellitesLayer,
 } from './observation.js';
 
+/** Dark keyline around every node, so it reads over bright imagery and next to its neighbours. */
+const nodeEdge = () => Cesium.Color.fromCssColorString('#05080e').withAlpha(0.85);
 const REPOSITION_MS = 250;
 const LINK_WIDTH = 1.5;
 const FOOTPRINT_WIDTH = 2;
@@ -363,10 +365,10 @@ export function createIlClustersLayer({
       const point = _points.add({
         id: clusterPickId(id, cluster.id),
         position,
-        pixelSize: ringPixels * (selected ? 2.2 : 1.6),
-        color: c.withAlpha(selected ? 0.55 : 0.35),
-        outlineColor: selected ? Cesium.Color.WHITE : c,
-        outlineWidth: 3,
+        pixelSize: ringPixels * (selected ? 1.3 : 0.85),
+        color: c.withAlpha(0.92),
+        outlineColor: selected ? Cesium.Color.WHITE : nodeEdge(),
+        outlineWidth: selected ? 3 : 2,
         show: false,
         ...(scaleByDistance ? { scaleByDistance } : {}),
         ...(alwaysOnTop ? { disableDepthTestDistance: Number.POSITIVE_INFINITY } : {}),
@@ -444,10 +446,10 @@ export function createIlClustersLayer({
       _drawnPoints.set(node.id, _points.add({
         id: `${id}:${node.id}`,
         position: Cesium.Cartesian3.ZERO,
-        pixelSize: ringPixels,
-        color: c.withAlpha(0.15),
-        outlineColor: c,
-        outlineWidth: 2,
+        pixelSize: ringPixels * 0.55,
+        color: c.withAlpha(0.7),
+        outlineColor: nodeEdge(),
+        outlineWidth: 1.5,
         show: false,
         ...(scaleByDistance ? { scaleByDistance } : {}),
         ...(alwaysOnTop ? { disableDepthTestDistance: Number.POSITIVE_INFINITY } : {}),

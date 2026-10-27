@@ -77,11 +77,11 @@ const EARTH_RADIUS_M = 6371008.8;
 const KNOT_MPS = 0.514444;
 
 export const CLUSTER_PALETTE = Object.freeze([
-  '#e6194b', '#3cb44b', '#4363d8', '#f58231', '#911eb4', '#42d4f4',
-  '#f032e6', '#9a6324', '#469990', '#808000', '#000075', '#bfef45',
+  '#33d6ff', '#ffb454', '#6ee7b0', '#b895ff', '#ff6f91', '#6b9fff',
+  '#f2dc6e', '#3fe0c5', '#ff9466', '#a9c1ff', '#e48cff', '#a3e65c',
 ]);
 
-/** Stable colour per tracked cluster id ("C12"), matching the IL's own pages. */
+/** Stable colour per tracked cluster id ("C12"): bright, harmonised tones that read on dark imagery. */
 export function clusterColorCss(clusterId) {
   const n = Number.parseInt(String(clusterId || '').slice(1), 10);
   return Number.isFinite(n) ? CLUSTER_PALETTE[n % CLUSTER_PALETTE.length] : '#9a9a94';

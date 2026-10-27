@@ -433,10 +433,10 @@ export function createIlSatelliteRelationLayer({
     _points.add({
       id: clusterPickId(layerId, clusterId),
       position,
-      pixelSize: selected ? 14 : 10,
-      color: c.withAlpha(selected ? 0.55 : 0.35),
-      outlineColor: selected ? Cesium.Color.WHITE : c,
-      outlineWidth: 2,
+      pixelSize: selected ? 13 : 9,
+      color: c.withAlpha(0.92),
+      outlineColor: selected ? Cesium.Color.WHITE : Cesium.Color.fromCssColorString('#05080e').withAlpha(0.85),
+      outlineWidth: selected ? 3 : 2,
       disableDepthTestDistance: Number.POSITIVE_INFINITY,
     });
   }

@@ -25,7 +25,9 @@
   padding: 14px;
   border: 1px solid var(--glass-border);
   border-radius: var(--panel-radius);
-  background: var(--glass-bg);
+  background:
+    linear-gradient(180deg, rgba(0, 212, 255, 0.07), transparent 72px),
+    var(--glass-bg);
   backdrop-filter: blur(24px) saturate(1.4);
   -webkit-backdrop-filter: blur(24px) saturate(1.4);
   box-shadow:
@@ -150,6 +152,9 @@ input.intel-area-name {
 /* Single-layer / Cross-layer sections, and the relation families inside cross-layer. */
 .intel-section-heading {
   color: var(--text-primary);
+  letter-spacing: 1.6px;
+  border-left: 2px solid var(--accent);
+  padding-left: 8px;
 }
 .intel-subheading {
   margin: 4px 10px 2px;
@@ -157,7 +162,7 @@ input.intel-area-name {
   font-weight: 500;
   letter-spacing: 1.4px;
   text-transform: uppercase;
-  color: var(--text-dim);
+  color: rgba(150, 205, 235, 0.8);
 }
 /* The selected node of the intelligence-layer graph. */
 .intel-cluster.is-selected {
