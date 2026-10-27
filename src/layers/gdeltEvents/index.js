@@ -267,6 +267,19 @@ export function createGdeltEventsLayer({
       };
     },
 
+    /**
+     * Select one event by its id (`<source>:<upstream id>`) and show its card,
+     * as a click on it would. Used by the intelligence layer to open the raw
+     * event behind an event-cluster member.
+     * @returns {boolean} Whether the event is loaded.
+     */
+    selectById(eventId) {
+      const event = eventById.get(String(eventId ?? ''));
+      if (!event) return false;
+      selectEvent(event);
+      return true;
+    },
+
     getStats() {
       return {
         count: _events.length,

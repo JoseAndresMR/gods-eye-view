@@ -43,6 +43,8 @@ import { describeCluster } from './describe.js';
 import {
   clusterPickId,
   isClusterSelected,
+  isMemberSelected,
+  memberPickId,
   select,
   subscribeSelection,
   useIlPicking,
@@ -50,6 +52,7 @@ import {
 import { GNSS_LEVEL_COLORS } from '../gnss/records.js';
 import { spriteBillboard } from './sprites.js';
 import { lodAlpha, lodShown, markerDim, pixelsAcross, usableHull } from './lod.js';
+import { ELEMENT_OWNERS, elementFields, elementTitle, matchFireRecord, openInGev } from './element.js';
 export * from './model.js';
 export { describeCluster, CLUSTER_KINDS } from './describe.js';
 export {
@@ -204,6 +207,10 @@ export function createIlClustersLayer({
   // but only the selected cluster is drawn.
   let _hidden = false;
   let _selectedHere = null;
+  // The selected member (raw element) of the selected cluster, and how opening it in GEV went.
+  let _memberHere = null;
+  let _memberOpen = null;
+  let _dataManager = null;
   let _releasePicking = null;
   let _unsubscribeSelection = null;
   let _removeMoveEnd = null;
@@ -409,9 +416,10 @@ export function createIlClustersLayer({
   }
 
   /** A [lon, lat] ring as a polyline on the ground. */
-  function drawRing(collection, ring, color, width) {
+  function drawRing(collection, ring, color, width, pickId = undefined) {
     if (ring.length < 2) return;
     collection.add({
+      ...(pickId ? { id: pickId } : {}),
       positions: ring.map(([lon, lat]) =>
         Cesium.Cartesian3.fromDegrees(lon, lat, groundHeight(lat, lon) + liftM),
       ),
@@ -545,15 +553,17 @@ export function createIlClustersLayer({
     if (areaOf) {
       for (const node of shown) {
         const css = areaColorOf?.(node);
-        drawRing(_lines, densifyRing(areaOf(node)), css ? Cesium.Color.fromCssColorString(css) : color(node.cluster_id), FOOTPRINT_WIDTH);
+        const chosen = isMemberSelected(id, node.id);
+        const ringColor = chosen ? Cesium.Color.WHITE : css ? Cesium.Color.fromCssColorString(css) : color(node.cluster_id);
+        drawRing(_lines, densifyRing(areaOf(node)), ringColor, chosen ? FOOTPRINT_WIDTH + 1 : FOOTPRINT_WIDTH, memberPickId(id, node.cluster_id, node.id));
       }
     }
     for (const node of areaOf ? [] : shown) {
       _drawnPoints.set(node.id, _points.add({
-        // A member picks as its cluster: clicking it keeps (or makes) that cluster the selection.
-        id: clusterPickId(id, node.cluster_id),
+        // A member picks as itself: clicking it opens its raw element, its cluster stays selected.
+        id: memberPickId(id, node.cluster_id, node.id),
         position: Cesium.Cartesian3.ZERO,
-        ...spriteBillboard({ css: clusterColorCss(node.cluster_id), style: 'member', corePx: ringPixels * 0.5 }),
+        ...spriteBillboard({ css: clusterColorCss(node.cluster_id), style: 'member', selected: isMemberSelected(id, node.id), corePx: ringPixels * 0.5 }),
         show: false,
         ...(scaleByDistance ? { scaleByDistance } : {}),
         ...(alwaysOnTop ? { disableDepthTestDistance: Number.POSITIVE_INFINITY } : {}),
@@ -587,11 +597,41 @@ export function createIlClustersLayer({
 
   /** Rebuild when the selection enters, leaves or moves within this layer. */
   function onSelection(selection) {
-    const here = selection?.type === 'cluster' && selection.layerId === id ? selection.clusterId : null;
-    if (here === _selectedHere) return;
+    const mine = (selection?.type === 'cluster' || selection?.type === 'member') && selection.layerId === id;
+    const here = mine ? selection.clusterId : null;
+    const member = mine && selection.type === 'member' ? selection.nodeId : null;
+    if (here === _selectedHere && member === _memberHere) return;
     _selectedHere = here;
+    if (member !== _memberHere) {
+      _memberHere = member;
+      // Open the element in the GEV layer that owns it, with that layer's own select API.
+      const node = member ? _nodes.find((n) => String(n.id) === member) : null;
+      _memberOpen = node ? openInGev(_dataManager, kind, node) : null;
+    }
     if (_enabled && _points) rebuild();
     notifyClusters();
+  }
+
+  /** FIRMS facts (time, FRP, confidence, satellite) of a fire member, from GEV's FIRMS layer when it is on. */
+  function fireFacts(node) {
+    // The fire tiles carry these fields themselves (since IL publish_fields); older ones don't.
+    if (kind !== 'fires' || node.frp != null || !_dataManager?.isEnabled?.('local-firms')) return null;
+    const firms = _dataManager.layers?.get?.('local-firms')?.module;
+    let records = [];
+    try {
+      records = firms?.getAnalystRecords?.(Number.MAX_SAFE_INTEGER) || [];
+    } catch (error) {
+      console.warn('[Data:IL] FIRMS records failed:', error);
+    }
+    const r = matchFireRecord(records, node);
+    if (!r) return null;
+    return {
+      acquired: Number.isFinite(r.acqTime) ? new Date(r.acqTime).toISOString().replace(':00.000Z', 'Z') : null,
+      frp_mw: r.frp,
+      confidence: Number.isFinite(r.confidence) ? Math.round(r.confidence * 100) / 100 : null,
+      satellite: r.satellite,
+      sensor: r.sensor,
+    };
   }
 
   /** The view rectangle in degrees, or null when the camera sees no ground. */
@@ -672,6 +712,12 @@ export function createIlClustersLayer({
         nodes = nodes.filter((n) => shown.get(n.cluster_id) >= 2);
       }
       _nodes = nodes;
+      // A member opened before its GEV layer had it (or while that layer was
+      // off) gets another try on each refresh, until it opens.
+      if (_memberHere && _memberOpen && !_memberOpen.opened && _memberOpen.reason !== 'none') {
+        const node = _nodes.find((n) => String(n.id) === _memberHere);
+        if (node) _memberOpen = openInGev(_dataManager, kind, node);
+      }
       const nodeIds = new Set(_nodes.map((n) => n.id));
       const clusterIds = new Set(_nodes.map((n) => n.cluster_id));
       _edges = (body.edges || [])
@@ -755,6 +801,8 @@ export function createIlClustersLayer({
       _unsubscribeSelection = null;
       if (_selectedHere) select(null);
       _selectedHere = null;
+      _memberHere = null;
+      _memberOpen = null;
       _releasePicking?.();
       _releasePicking = null;
       _removeMoveEnd?.();
@@ -912,6 +960,33 @@ export function createIlClustersLayer({
     clusterNodeDrawn(clusterId) {
       const anchor = _enabled ? _anchors.find((a) => a.clusterId === clusterId) : null;
       return Boolean(anchor) && Cesium.Cartesian3.magnitude(anchor.position) > 0 && drawnAnchor(anchor);
+    },
+
+    /** GEV's layer lifecycle: used to open a member's raw element in the layer that owns it. */
+    attachDataManager(dataManager) {
+      _dataManager = dataManager || null;
+    },
+
+    /**
+     * The selected member's raw element for the INTELLIGENCE panel: its
+     * title, its feed fields, and the GEV layer that owns it (whether it was
+     * opened there). Null when the member isn't in the current feed.
+     */
+    describeElement(nodeId) {
+      const node = _nodes.find((n) => String(n.id) === String(nodeId));
+      if (!node) return null;
+      const facts = fireFacts(node);
+      const owner = ELEMENT_OWNERS[kind] || null;
+      return {
+        kind,
+        clusterId: node.cluster_id,
+        color: footprintColor || clusterColorCss(node.cluster_id),
+        title: elementTitle(kind, node),
+        fields: elementFields({ ...node, ...(facts || {}) }),
+        owner: owner ? { layerId: owner.layerId } : null,
+        open: isMemberSelected(id, node.id) ? _memberOpen : null,
+        firms: kind === 'fires' && node.frp == null ? Boolean(facts) : null,
+      };
     },
 
     /** Select one cluster and fly the camera over it. */

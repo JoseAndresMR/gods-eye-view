@@ -50,3 +50,17 @@ test('a click selects an IL node and clears on anything else', () => {
   assert.equal(selectionAfterClick(null), null);
   assert.equal(selectionAfterClick('a1b2c3'), null);
 });
+
+test('a member selects its raw element and keeps its cluster selected', async () => {
+  const m = await import('./selection.js');
+  const pick = m.memberPickId('il-x', 'C1', 'w37|9');
+  assert.deepEqual(m.selectionFromPickId(pick), { type: 'member', layerId: 'il-x', clusterId: 'C1', nodeId: 'w37|9' });
+  assert.equal(m.selectionFromPickId('il-member|il-x|C1'), null);
+  m.select(m.selectionFromPickId(pick));
+  assert.equal(m.isClusterSelected('il-x', 'C1'), true);
+  assert.equal(m.isMemberSelected('il-x', 'w37|9'), true);
+  assert.deepEqual(m.clusterOfSelection(), { type: 'cluster', layerId: 'il-x', clusterId: 'C1' });
+  m._test.onKeyDown({ key: 'Escape' });
+  assert.equal(m.getSelection(), null);
+  assert.equal(m.clusterOfSelection(), null);
+});

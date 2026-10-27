@@ -3,12 +3,13 @@
  * the enabled intelligence-layer overlays show, largest first, one card each.
  * Clicking a card opens it, selects that cluster (its members and edges show
  * on the map) and flies the camera over it; a selected satellite gets a card
- * of its own at the top. The layers' own rows (toggle, chips) are placed
+ * of its own at the top, and so does a selected member (the raw element it
+ * stands for, also opened in the GEV layer that owns it). The layers' own rows (toggle, chips) are placed
  * above by LayerPanel.
  */
 import { formatNumber, t } from '../i18n/index.js';
-import { localizeLayerName } from './layerNames.js';
-import { clearSelection, getSelection, subscribeSelection } from '../layers/ilClusters/selection.js';
+import { layerNameForId, localizeLayerName } from './layerNames.js';
+import { clearSelection, clusterOfSelection, getSelection, select, subscribeSelection } from '../layers/ilClusters/selection.js';
 
 /** Cards listed per layer; the rest are counted in the section note. */
 export const MAX_CARDS_PER_LAYER = 8;
@@ -76,6 +77,83 @@ export function mountIntelPanel({ container, count = null, layers }) {
     return el;
   }
 
+  /** The status line of an element card: where in GEV it opened, or how to open it there. */
+  function elementStatus(element) {
+    const owner = element.owner ? layerNameForId(element.owner.layerId) || element.owner.layerId : null;
+    if (element.open?.opened) return t('Opened in {layer}', { layer: owner });
+    if (element.open?.reason === 'off') return t('Turn on {layer} to open it there', { layer: owner });
+    if (element.open?.reason === 'not-found' || element.open?.reason === 'missing')
+      return t('{layer} does not list it now', { layer: owner });
+    if (element.firms === false) return t('Turn on {layer} for its time, FRP and confidence', { layer: layerNameForId('local-firms') });
+    return null;
+  }
+
+  /**
+   * The selected member: the raw element behind it, with its feed fields, a
+   * way back to its cluster and the × that clears.
+   */
+  function elementCard(doc, selection) {
+    const layer = layers.find((l) => l.id === selection.layerId);
+    let element = null;
+    try {
+      element = layer?.describeElement?.(selection.nodeId) || null;
+    } catch (error) {
+      console.warn(`[Data:IL] ${selection.layerId} element failed:`, error);
+    }
+    if (!element) return null;
+    const heading = doc.createElement('h3');
+    heading.className = 'data-layer-group-heading';
+    heading.textContent = t('Selected element');
+    const el = doc.createElement('div');
+    el.className = 'rail-card intel-cluster intel-element is-open is-selected';
+    el.dataset.elementOf = selection.layerId;
+    el.style.setProperty('--cluster', element.color);
+    const head = doc.createElement('span');
+    head.className = 'rail-card-heading';
+    const swatch = doc.createElement('span');
+    swatch.className = 'intel-cluster-swatch is-member';
+    swatch.setAttribute('aria-hidden', 'true');
+    const title = doc.createElement('span');
+    title.className = 'rail-card-title rail-card-nowrap';
+    title.textContent = element.title;
+    const back = doc.createElement('button');
+    back.type = 'button';
+    back.className = 'intel-cluster-clear intel-element-back';
+    back.textContent = '↩';
+    back.title = t('Back to the cluster');
+    back.setAttribute('aria-label', t('Back to the cluster'));
+    const clear = doc.createElement('button');
+    clear.type = 'button';
+    clear.className = 'intel-cluster-clear';
+    clear.textContent = '×';
+    clear.title = t('Clear selection');
+    clear.setAttribute('aria-label', t('Clear selection'));
+    head.append(swatch, title, back, clear);
+    const lines = doc.createElement('span');
+    lines.className = 'rail-card-lines';
+    const status = elementStatus(element);
+    if (status) {
+      const line = doc.createElement('span');
+      line.className = 'rail-card-line intel-element-status';
+      line.textContent = status;
+      lines.appendChild(line);
+    }
+    for (const [key, value] of element.fields) {
+      const line = doc.createElement('span');
+      line.className = 'rail-card-line intel-element-field';
+      const k = doc.createElement('span');
+      k.className = 'intel-element-key';
+      k.textContent = key;
+      const v = doc.createElement('span');
+      v.className = 'intel-element-value';
+      v.textContent = value;
+      line.append(k, v);
+      lines.appendChild(line);
+    }
+    el.append(head, lines);
+    return [heading, el];
+  }
+
   /** The selected satellite, as the relation layers that know it describe it. */
   function satelliteCard(doc, satId) {
     const parts = layers.map((layer) => layer.describeSatellite?.(satId)).filter(Boolean);
@@ -116,6 +194,7 @@ export function mountIntelPanel({ container, count = null, layers }) {
     let total = 0;
     const selection = getSelection();
     if (selection?.type === 'satellite') container.append(...(satelliteCard(doc, selection.satId) || []));
+    if (selection?.type === 'member') container.append(...(elementCard(doc, selection) || []));
     for (const layer of layers) {
       let clusters = [];
       try {
@@ -157,6 +236,14 @@ export function mountIntelPanel({ container, count = null, layers }) {
   }
 
   function onClick(event) {
+    if (event.target?.closest?.('.intel-element-back')) {
+      select(clusterOfSelection());
+      return;
+    }
+    if (event.target?.closest?.('.intel-element')) {
+      if (event.target.closest('.intel-cluster-clear')) clearSelection();
+      return;
+    }
     const el = event.target?.closest?.('.intel-cluster');
     if (!el || !container.contains(el)) return;
     if (el.dataset.satelliteId || event.target.closest('.intel-cluster-clear')) {

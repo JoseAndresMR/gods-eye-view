@@ -1,4 +1,5 @@
-// The one selected node of the intelligence-layer graph: a cluster or a satellite.
+// The one selected node of the intelligence-layer graph: a cluster, one member
+// of a cluster (its raw element; the cluster stays selected around it) or a satellite.
 import * as Cesium from 'cesium';
 import { isPointerFree } from '../../data/inputOwnership.js';
 import { registerPickOwner, resolvePickId, unregisterPickOwner } from '../../data/pickRegistry.js';
@@ -7,9 +8,11 @@ import { registerPickOwner, resolvePickId, unregisterPickOwner } from '../../dat
 const CLUSTER_PREFIX = 'il-node|';
 /** Pick ids of satellites drawn by IL relation layers: `il-sat|<NORAD id>`. */
 const SATELLITE_PREFIX = 'il-sat|';
+/** Pick ids of cluster members: `il-member|<layer id>|<cluster id>|<member id>`. */
+const MEMBER_PREFIX = 'il-member|';
 const PICK_OWNER = 'intelligence-layer';
 
-/** @typedef {{type: 'cluster', layerId: string, clusterId: string} | {type: 'satellite', satId: string}} IlSelection */
+/** @typedef {{type: 'cluster', layerId: string, clusterId: string} | {type: 'member', layerId: string, clusterId: string, nodeId: string} | {type: 'satellite', satId: string}} IlSelection */
 
 /** @type {IlSelection|null} */
 let _selected = null;
@@ -19,11 +22,16 @@ let _users = 0;
 
 export const clusterPickId = (layerId, clusterId) => `${CLUSTER_PREFIX}${layerId}|${clusterId}`;
 export const satellitePickId = (satId) => `${SATELLITE_PREFIX}${satId}`;
+export const memberPickId = (layerId, clusterId, nodeId) => `${MEMBER_PREFIX}${layerId}|${clusterId}|${nodeId}`;
 
 /** The selection a pick id stands for, or null when it isn't an IL node. */
 export function selectionFromPickId(pickId) {
   const id = String(pickId ?? '');
   if (id.startsWith(SATELLITE_PREFIX)) return { type: 'satellite', satId: id.slice(SATELLITE_PREFIX.length) };
+  if (id.startsWith(MEMBER_PREFIX)) {
+    const [layerId, clusterId, ...rest] = id.slice(MEMBER_PREFIX.length).split('|');
+    if (layerId && clusterId && rest.length) return { type: 'member', layerId, clusterId, nodeId: rest.join('|') };
+  }
   if (id.startsWith(CLUSTER_PREFIX)) {
     const [layerId, ...rest] = id.slice(CLUSTER_PREFIX.length).split('|');
     if (layerId && rest.length) return { type: 'cluster', layerId, clusterId: rest.join('|') };
@@ -36,8 +44,18 @@ export function getSelection() {
   return _selected;
 }
 
+/** True for the selected cluster, and for the cluster of a selected member (it keeps its context). */
 export function isClusterSelected(layerId, clusterId) {
-  return _selected?.type === 'cluster' && _selected.layerId === layerId && _selected.clusterId === clusterId;
+  return (_selected?.type === 'cluster' || _selected?.type === 'member') && _selected.layerId === layerId && _selected.clusterId === clusterId;
+}
+
+export function isMemberSelected(layerId, nodeId) {
+  return _selected?.type === 'member' && _selected.layerId === layerId && _selected.nodeId === String(nodeId);
+}
+
+/** The cluster around a selected member, or null: the way back from a member. */
+export function clusterOfSelection(selection = _selected) {
+  return selection?.type === 'member' ? { type: 'cluster', layerId: selection.layerId, clusterId: selection.clusterId } : null;
 }
 
 export function isSatelliteSelected(satId) {
@@ -84,6 +102,8 @@ export function selectionAfterClick(pickedId) {
 function onKeyDown(event) {
   if (event.key === 'Escape' && _selected) clearSelection();
 }
+
+export const _test = { onKeyDown };
 
 /**
  * Clicks on IL nodes select them; any other click on the globe clears the
