@@ -371,3 +371,33 @@ export function describeOverflights({ place, satellites }) {
     }));
   return lines;
 }
+
+/** The nearest of a place's edges, in metres, and how many there are. */
+const nearest = (place) => ({
+  count: formatNumber(place.now.length),
+  distance: round(Math.min(...place.now.map(([, v]) => v))),
+});
+
+/** @param {ObservationContext} o */
+export function describeFiresNear({ place }) {
+  if (!place.now.length) return [];
+  return [tn(place.now.length, 'Fire cluster within 5 km · nearest {distance} m', '{count} fire clusters within 5 km · nearest {distance} m', nearest(place))];
+}
+
+/** @param {ObservationContext} o */
+export function describeVesselsNear({ place }) {
+  if (!place.now.length) return [];
+  return [tn(place.now.length, 'Ship cluster within 3 km · nearest {distance} m', '{count} ship clusters within 3 km · nearest {distance} m', nearest(place))];
+}
+
+/** @param {ObservationContext} o */
+export function describeMilitaryOver({ place }) {
+  if (!place.now.length) return [];
+  return [tn(place.now.length, 'Military aircraft cluster within 10 km · nearest {distance} m', '{count} military aircraft clusters within 10 km · nearest {distance} m', nearest(place))];
+}
+
+/** Events sit on city centroids, so this is a weak link. @param {ObservationContext} o */
+export function describeFiresEvents({ place }) {
+  if (!place.now.length) return [];
+  return [tn(place.now.length, 'Fire cluster within 25 km (event positions are approximate) · nearest {distance} m', '{count} fire clusters within 25 km (event positions are approximate) · nearest {distance} m', nearest(place))];
+}

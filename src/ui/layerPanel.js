@@ -121,7 +121,10 @@ const PANEL_GROUPS = [
   {
     label: msg('Ground and air'),
     hostId: 'intel-ground-toggles',
-    ids: ['il-obs-cameras', 'il-obs-alpr', 'il-obs-street', 'il-obs-overflights'],
+    ids: [
+      'il-obs-cameras', 'il-obs-alpr', 'il-obs-street', 'il-obs-overflights',
+      'il-obs-fires-near', 'il-obs-vessels-near', 'il-obs-military-over', 'il-obs-fires-events',
+    ],
   },
 ];
 const PANEL_ORDER = PANEL_GROUPS.flatMap(({ label, ids, hostId }) =>

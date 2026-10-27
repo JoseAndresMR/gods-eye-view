@@ -3241,5 +3241,45 @@
   "Switch on military area, data centre, dam, cable landing, fire, event or vessel clusters": "Activa los grupos de zonas militares, centros de datos, presas, amarres de cables, incendios, eventos o buques",
   "Switch on military area, data centre, dam, cable landing, fire or event clusters": "Activa los grupos de zonas militares, centros de datos, presas, amarres de cables, incendios o eventos",
   "Hide": "Ocultar",
-  "Stop drawing this layer's clusters. It stays on and computed, so cross-layer edges still end at its nodes; a selected cluster is still drawn": "Deja de dibujar los clústeres de esta capa. Sigue activa y calculada, así que las aristas entre capas siguen terminando en sus nodos; un clúster seleccionado se sigue dibujando"
+  "Stop drawing this layer's clusters. It stays on and computed, so cross-layer edges still end at its nodes; a selected cluster is still drawn": "Deja de dibujar los clústeres de esta capa. Sigue activa y calculada, así que las aristas entre capas siguen terminando en sus nodos; un clúster seleccionado se sigue dibujando",
+  "Selected fire cluster": "Grupo de incendios seleccionado",
+  "Switch on fire clusters and military area, data centre, dam or cable landing clusters": "Activa los grupos de incendios y de áreas militares, centros de datos, presas o amarres de cables",
+  "{reached} of {count} sites around the view have a fire within 5 km": "{reached} de {count} sitios a la vista tienen un incendio a menos de 5 km",
+  "Within 5 km of {count} clusters in view": "A menos de 5 km de {count} grupos a la vista",
+  "Ship clusters": "Grupos de buques",
+  "Selected ship cluster": "Grupo de buques seleccionado",
+  "Switch on ship clusters and military area, data centre or cable landing clusters": "Activa los grupos de buques y de áreas militares, centros de datos o amarres de cables",
+  "{reached} of {count} sites around the view have a ship within 3 km": "{reached} de {count} sitios a la vista tienen un buque a menos de 3 km",
+  "Within 3 km of {count} clusters in view": "A menos de 3 km de {count} grupos a la vista",
+  "Selected military aircraft cluster": "Grupo de aeronaves militares seleccionado",
+  "Switch on military aircraft and military area clusters": "Activa los grupos de aeronaves militares y de áreas militares",
+  "{reached} of {count} military areas around the view have military aircraft within 10 km": "{reached} de {count} áreas militares a la vista tienen aeronaves militares a menos de 10 km",
+  "Within 10 km of {count} military areas in view": "A menos de 10 km de {count} áreas militares a la vista",
+  "Switch on fire clusters and event clusters": "Activa los grupos de incendios y de eventos",
+  "{reached} of {count} event clusters around the view have a fire within 25 km": "{reached} de {count} grupos de eventos a la vista tienen un incendio a menos de 25 km",
+  "Within 25 km of {count} event clusters in view": "A menos de 25 km de {count} grupos de eventos a la vista",
+  "Fires near sites": "Incendios cerca de sitios",
+  "Ships near sites": "Buques cerca de sitios",
+  "Military over areas": "Militares sobre áreas",
+  "Fires near events": "Incendios cerca de eventos",
+  "{count} fire clusters within 5 km · nearest {distance} m": {
+    "one": "{count} grupo de incendios a menos de 5 km · el más cercano a {distance} m",
+    "many": "{count} de grupos de incendios a menos de 5 km · el más cercano a {distance} m",
+    "other": "{count} grupos de incendios a menos de 5 km · el más cercano a {distance} m"
+  },
+  "{count} ship clusters within 3 km · nearest {distance} m": {
+    "one": "{count} grupo de buques a menos de 3 km · el más cercano a {distance} m",
+    "many": "{count} de grupos de buques a menos de 3 km · el más cercano a {distance} m",
+    "other": "{count} grupos de buques a menos de 3 km · el más cercano a {distance} m"
+  },
+  "{count} military aircraft clusters within 10 km · nearest {distance} m": {
+    "one": "{count} grupo de aeronaves militares a menos de 10 km · el más cercano a {distance} m",
+    "many": "{count} de grupos de aeronaves militares a menos de 10 km · el más cercano a {distance} m",
+    "other": "{count} grupos de aeronaves militares a menos de 10 km · el más cercano a {distance} m"
+  },
+  "{count} fire clusters within 25 km (event positions are approximate) · nearest {distance} m": {
+    "one": "{count} grupo de incendios a menos de 25 km (las posiciones de los eventos son aproximadas) · el más cercano a {distance} m",
+    "many": "{count} de grupos de incendios a menos de 25 km (las posiciones de los eventos son aproximadas) · el más cercano a {distance} m",
+    "other": "{count} grupos de incendios a menos de 25 km (las posiciones de los eventos son aproximadas) · el más cercano a {distance} m"
+  }
 }

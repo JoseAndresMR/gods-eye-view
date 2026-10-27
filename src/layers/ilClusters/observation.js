@@ -9,8 +9,12 @@ import {
 import {
   IL_OBS_ALPR_ID,
   IL_OBS_CAMERAS_ID,
+  IL_OBS_FIRES_EVENTS_ID,
+  IL_OBS_FIRES_NEAR_ID,
+  IL_OBS_MILITARY_OVER_ID,
   IL_OBS_OVERFLIGHTS_ID,
   IL_OBS_STREET_ID,
+  IL_OBS_VESSELS_NEAR_ID,
   IL_SAT_FIRE_ID,
   IL_SAT_IMAGED_ID,
   IL_SAT_IMAGING_ID,
@@ -40,7 +44,11 @@ import {
   ago,
   describeCameras,
   describeFireSatellites,
+  describeFiresEvents,
+  describeFiresNear,
+  describeMilitaryOver,
   describeOverflights,
+  describeVesselsNear,
   describePlateReaders,
   describeStreetImagery,
   describeImaged,
@@ -971,5 +979,106 @@ export function createIlOverflightObserversLayer({ targets, aircraft, military, 
     satelliteLine: ({ count }) => t('Overflies {count} clusters in view below 3,000 m', { count: formatNumber(count) }),
     surface,
     fetchImpl,
+  });
+}
+
+/**
+ * A relation whose observers are clusters of another IL layer (fires, ships, military aircraft).
+ * @param {{feed: object|undefined, kind: string}} observer the observing layer and its feed kind
+ */
+function createIlClusterObserversLayer({ observer, targets, surface, fetchImpl, ...config }) {
+  const lane = () => ({ kind: observer.kind, km: observer.layer?.getParams?.().distanceKm ?? 5 });
+  return createIlSatelliteRelationLayer({
+    ...config,
+    targets,
+    edgeKinds: [{ kind: observer.kind, label: config.observerLabel, on: true }],
+    observerLayers: observer.layer ? { [observer.layer.id]: observer.layer } : {},
+    observerLanes: () => [lane()],
+    surface,
+    fetchImpl,
+  });
+}
+
+/** Fire clusters close to a site. */
+export function createIlFiresNearObserversLayer({ targets, fires, surface, fetchImpl } = {}) {
+  return createIlClusterObserversLayer({
+    id: IL_OBS_FIRES_NEAR_ID,
+    name: 'Fires near sites',
+    icon: '🔥',
+    relation: 'fires-near',
+    source: 'Intelligence layer · NASA FIRMS',
+    observer: { kind: 'fires', layer: fires },
+    observerLabel: msg('Fire clusters'),
+    describe: describeFiresNear,
+    selectedHeading: msg('Selected fire cluster'),
+    offHint: () => t('Switch on fire clusters and military area, data centre, dam or cable landing clusters'),
+    infoOf: ({ rows }) =>
+      t('{reached} of {count} sites around the view have a fire within 5 km', { reached: reached(rows), count: formatNumber(rows.length) }),
+    satelliteLine: ({ count }) => t('Within 5 km of {count} clusters in view', { count: formatNumber(count) }),
+    targets, surface, fetchImpl,
+  });
+}
+
+/** Ship clusters close to a military area, data centre or cable landing. */
+export function createIlVesselsNearObserversLayer({ targets, vessels, surface, fetchImpl } = {}) {
+  return createIlClusterObserversLayer({
+    id: IL_OBS_VESSELS_NEAR_ID,
+    name: 'Ships near sites',
+    icon: '🚢',
+    relation: 'vessels-near',
+    source: 'Intelligence layer · AIS',
+    observer: { kind: 'vessels', layer: vessels },
+    observerLabel: msg('Ship clusters'),
+    describe: describeVesselsNear,
+    selectedHeading: msg('Selected ship cluster'),
+    offHint: () => t('Switch on ship clusters and military area, data centre or cable landing clusters'),
+    infoOf: ({ rows }) =>
+      t('{reached} of {count} sites around the view have a ship within 3 km', { reached: reached(rows), count: formatNumber(rows.length) }),
+    satelliteLine: ({ count }) => t('Within 3 km of {count} clusters in view', { count: formatNumber(count) }),
+    targets, surface, fetchImpl,
+  });
+}
+
+/** Military-aircraft clusters near a military area, at any height. */
+export function createIlMilitaryOverObserversLayer({ targets, military, surface, fetchImpl } = {}) {
+  return createIlClusterObserversLayer({
+    id: IL_OBS_MILITARY_OVER_ID,
+    name: 'Military over areas',
+    icon: '🛩',
+    relation: 'military-over',
+    source: 'Intelligence layer · adsb.lol',
+    observer: { kind: 'military', layer: military },
+    observerLabel: msg('Military aircraft'),
+    describe: describeMilitaryOver,
+    selectedHeading: msg('Selected military aircraft cluster'),
+    offHint: () => t('Switch on military aircraft and military area clusters'),
+    infoOf: ({ rows }) =>
+      t('{reached} of {count} military areas around the view have military aircraft within 10 km', {
+        reached: reached(rows), count: formatNumber(rows.length),
+      }),
+    satelliteLine: ({ count }) => t('Within 10 km of {count} military areas in view', { count: formatNumber(count) }),
+    targets, surface, fetchImpl,
+  });
+}
+
+/** Fire clusters near an event cluster (a weak link: events sit on city centroids). */
+export function createIlFiresEventsObserversLayer({ targets, fires, surface, fetchImpl } = {}) {
+  return createIlClusterObserversLayer({
+    id: IL_OBS_FIRES_EVENTS_ID,
+    name: 'Fires near events',
+    icon: '💥',
+    relation: 'fires-events',
+    source: 'Intelligence layer · NASA FIRMS · GDELT',
+    observer: { kind: 'fires', layer: fires },
+    observerLabel: msg('Fire clusters'),
+    describe: describeFiresEvents,
+    selectedHeading: msg('Selected fire cluster'),
+    offHint: () => t('Switch on fire clusters and event clusters'),
+    infoOf: ({ rows }) =>
+      t('{reached} of {count} event clusters around the view have a fire within 25 km', {
+        reached: reached(rows), count: formatNumber(rows.length),
+      }),
+    satelliteLine: ({ count }) => t('Within 25 km of {count} event clusters in view', { count: formatNumber(count) }),
+    targets, surface, fetchImpl,
   });
 }

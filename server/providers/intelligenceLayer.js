@@ -25,10 +25,17 @@ const KINDS = new Set([
 const RELATIONS = new Set([
   'imaging', 'fire', 'weather', 'receivers', 'navigation', 'imaged',
   'cameras', 'alpr', 'street', 'overflights',
+  'fires-near', 'vessels-near', 'military-over', 'fires-events',
 ]);
 const MAX_OBSERVED_TARGETS = 8;
-/** Cluster feeds that act as observers (overflights). */
-const OBSERVER_KINDS = new Set(['aircraft', 'military']);
+/** Cluster feeds that act as observers, per relation. */
+const OBSERVER_KINDS = {
+  overflights: new Set(['aircraft', 'military']),
+  'fires-near': new Set(['fires']),
+  'vessels-near': new Set(['vessels']),
+  'military-over': new Set(['military']),
+  'fires-events': new Set(['fires']),
+};
 
 const CMR_GRANULES = 'https://cmr.earthdata.nasa.gov/search/granules.umm_json';
 /** HLS collections (as in src/layers/recentImagery/model.js PRODUCTS). */
@@ -114,12 +121,12 @@ function observabilityPath(relation, searchParams) {
   const rawBbox = searchParams.get('bbox');
   const bbox = parseBbox(rawBbox);
   if (rawBbox && !bbox) return null;
-  // Overflights name the aircraft lanes on show as observers.
+  // These relations name the lanes of their observing cluster feeds on show.
   const observers = (searchParams.get('observers') || '').split(',').filter(Boolean);
   if (observers.length > 2) return null;
   for (const lane of observers) {
     const [kind, km, more] = lane.split(':');
-    if (more !== undefined || !OBSERVER_KINDS.has(kind) || !DISTANCE_KM.test(km || '')) return null;
+    if (more !== undefined || !OBSERVER_KINDS[relation]?.has(kind) || !DISTANCE_KM.test(km || '')) return null;
   }
   return `/api/observability/${relation}?targets=${targets.join(',')}` +
     `${observers.length ? `&observers=${observers.join(',')}` : ''}${bbox ? `&bbox=${bbox}` : ''}`;

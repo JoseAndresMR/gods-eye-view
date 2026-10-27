@@ -3065,5 +3065,37 @@
   "Switch on military area, data centre, dam, cable landing, fire, event or vessel clusters": "请开启军事区域、数据中心、水坝、海缆登陆点、火情、事件或船舶集群",
   "Switch on military area, data centre, dam, cable landing, fire or event clusters": "请开启军事区域、数据中心、水坝、海缆登陆点、火情或事件集群",
   "Hide": "隐藏",
-  "Stop drawing this layer's clusters. It stays on and computed, so cross-layer edges still end at its nodes; a selected cluster is still drawn": "停止绘制此图层的集群。图层保持开启并继续计算,因此跨图层连线仍指向其节点;已选中的集群仍会绘制"
+  "Stop drawing this layer's clusters. It stays on and computed, so cross-layer edges still end at its nodes; a selected cluster is still drawn": "停止绘制此图层的集群。图层保持开启并继续计算,因此跨图层连线仍指向其节点;已选中的集群仍会绘制",
+  "Selected fire cluster": "所选火灾集群",
+  "Switch on fire clusters and military area, data centre, dam or cable landing clusters": "请开启火灾集群以及军事区、数据中心、水坝或海缆登陆点集群",
+  "{reached} of {count} sites around the view have a fire within 5 km": "视野内 {count} 个站点中有 {reached} 个在 5 公里内有火灾",
+  "Within 5 km of {count} clusters in view": "距视野内 {count} 个集群 5 公里以内",
+  "Ship clusters": "船舶集群",
+  "Selected ship cluster": "所选船舶集群",
+  "Switch on ship clusters and military area, data centre or cable landing clusters": "请开启船舶集群以及军事区、数据中心或海缆登陆点集群",
+  "{reached} of {count} sites around the view have a ship within 3 km": "视野内 {count} 个站点中有 {reached} 个在 3 公里内有船舶",
+  "Within 3 km of {count} clusters in view": "距视野内 {count} 个集群 3 公里以内",
+  "Selected military aircraft cluster": "所选军用航空器集群",
+  "Switch on military aircraft and military area clusters": "请开启军用航空器集群和军事区集群",
+  "{reached} of {count} military areas around the view have military aircraft within 10 km": "视野内 {count} 个军事区中有 {reached} 个在 10 公里内有军用航空器",
+  "Within 10 km of {count} military areas in view": "距视野内 {count} 个军事区 10 公里以内",
+  "Switch on fire clusters and event clusters": "请开启火灾集群和事件集群",
+  "{reached} of {count} event clusters around the view have a fire within 25 km": "视野内 {count} 个事件集群中有 {reached} 个在 25 公里内有火灾",
+  "Within 25 km of {count} event clusters in view": "距视野内 {count} 个事件集群 25 公里以内",
+  "Fires near sites": "站点附近的火灾",
+  "Ships near sites": "站点附近的船舶",
+  "Military over areas": "军事区上空的军机",
+  "Fires near events": "事件附近的火灾",
+  "{count} fire clusters within 5 km · nearest {distance} m": {
+    "other": "{count} 个火灾集群在 5 公里内 · 最近 {distance} m"
+  },
+  "{count} ship clusters within 3 km · nearest {distance} m": {
+    "other": "{count} 个船舶集群在 3 公里内 · 最近 {distance} m"
+  },
+  "{count} military aircraft clusters within 10 km · nearest {distance} m": {
+    "other": "{count} 个军用航空器集群在 10 公里内 · 最近 {distance} m"
+  },
+  "{count} fire clusters within 25 km (event positions are approximate) · nearest {distance} m": {
+    "other": "{count} 个火灾集群在 25 公里内（事件位置为近似值）· 最近 {distance} m"
+  }
 }

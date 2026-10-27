@@ -128,6 +128,16 @@ test('overflights may name the aircraft lanes on show', () => {
   assert.equal(intelligenceLayerPath('GET', '/observability/overflights?targets=dams:10&observers=aircraft:x'), null);
 });
 
+test('node-to-node relations name only their own observer feeds', () => {
+  assert.equal(
+    intelligenceLayerPath('GET', '/observability/fires-near?targets=dams:10&observers=fires:5'),
+    '/api/observability/fires-near?targets=dams:10&observers=fires:5',
+  );
+  assert.equal(intelligenceLayerPath('GET', '/observability/fires-near?targets=dams:10&observers=vessels:1'), null);
+  assert.equal(intelligenceLayerPath('GET', '/observability/military-over?targets=military-areas:10&observers=aircraft:5'), null);
+  assert.equal(intelligenceLayerPath('GET', '/observability/cameras?targets=dams:10&observers=fires:5'), null);
+});
+
 test('celestrak serves only the groups the IL reads beyond GEV\'s own', () => {
   for (const group of ['resource', 'planet', 'weather', 'spire', 'orbcomm', 'iridium-NEXT', 'sarsat'])
     assert.equal(ilCelestrakGroup(`/celestrak/${group}`), group);

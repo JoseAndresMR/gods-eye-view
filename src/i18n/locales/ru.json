@@ -3329,5 +3329,49 @@
   "Switch on military area, data centre, dam, cable landing, fire, event or vessel clusters": "Включите кластеры военных районов, дата-центров, плотин, кабельных выходов, пожаров, событий или судов",
   "Switch on military area, data centre, dam, cable landing, fire or event clusters": "Включите кластеры военных районов, дата-центров, плотин, кабельных выходов, пожаров или событий",
   "Hide": "Скрыть",
-  "Stop drawing this layer's clusters. It stays on and computed, so cross-layer edges still end at its nodes; a selected cluster is still drawn": "Не рисовать кластеры этого слоя. Он остаётся включённым и рассчитывается, поэтому межслойные связи по-прежнему ведут к его узлам; выбранный кластер по-прежнему рисуется"
+  "Stop drawing this layer's clusters. It stays on and computed, so cross-layer edges still end at its nodes; a selected cluster is still drawn": "Не рисовать кластеры этого слоя. Он остаётся включённым и рассчитывается, поэтому межслойные связи по-прежнему ведут к его узлам; выбранный кластер по-прежнему рисуется",
+  "Selected fire cluster": "Выбранная группа пожаров",
+  "Switch on fire clusters and military area, data centre, dam or cable landing clusters": "Включите группы пожаров и военных зон, дата-центров, плотин или кабельных причалов",
+  "{reached} of {count} sites around the view have a fire within 5 km": "{reached} из {count} объектов в поле зрения имеют пожар в пределах 5 км",
+  "Within 5 km of {count} clusters in view": "В пределах 5 км от {count} групп в поле зрения",
+  "Ship clusters": "Группы судов",
+  "Selected ship cluster": "Выбранная группа судов",
+  "Switch on ship clusters and military area, data centre or cable landing clusters": "Включите группы судов и военных зон, дата-центров или кабельных причалов",
+  "{reached} of {count} sites around the view have a ship within 3 km": "{reached} из {count} объектов в поле зрения имеют судно в пределах 3 км",
+  "Within 3 km of {count} clusters in view": "В пределах 3 км от {count} групп в поле зрения",
+  "Selected military aircraft cluster": "Выбранная группа военных самолётов",
+  "Switch on military aircraft and military area clusters": "Включите группы военных самолётов и военных зон",
+  "{reached} of {count} military areas around the view have military aircraft within 10 km": "{reached} из {count} военных зон в поле зрения имеют военные самолёты в пределах 10 км",
+  "Within 10 km of {count} military areas in view": "В пределах 10 км от {count} военных зон в поле зрения",
+  "Switch on fire clusters and event clusters": "Включите группы пожаров и событий",
+  "{reached} of {count} event clusters around the view have a fire within 25 km": "{reached} из {count} групп событий в поле зрения имеют пожар в пределах 25 км",
+  "Within 25 km of {count} event clusters in view": "В пределах 25 км от {count} групп событий в поле зрения",
+  "Fires near sites": "Пожары рядом с объектами",
+  "Ships near sites": "Суда рядом с объектами",
+  "Military over areas": "Военные над зонами",
+  "Fires near events": "Пожары рядом с событиями",
+  "{count} fire clusters within 5 km · nearest {distance} m": {
+    "one": "{count} группа пожаров в пределах 5 км · ближайшая {distance} м",
+    "few": "{count} группы пожаров в пределах 5 км · ближайшая {distance} м",
+    "many": "{count} групп пожаров в пределах 5 км · ближайшая {distance} м",
+    "other": "{count} группы пожаров в пределах 5 км · ближайшая {distance} м"
+  },
+  "{count} ship clusters within 3 km · nearest {distance} m": {
+    "one": "{count} группа судов в пределах 3 км · ближайшая {distance} м",
+    "few": "{count} группы судов в пределах 3 км · ближайшая {distance} м",
+    "many": "{count} групп судов в пределах 3 км · ближайшая {distance} м",
+    "other": "{count} группы судов в пределах 3 км · ближайшая {distance} м"
+  },
+  "{count} military aircraft clusters within 10 km · nearest {distance} m": {
+    "one": "{count} группа военных самолётов в пределах 10 км · ближайшая {distance} м",
+    "few": "{count} группы военных самолётов в пределах 10 км · ближайшая {distance} м",
+    "many": "{count} групп военных самолётов в пределах 10 км · ближайшая {distance} м",
+    "other": "{count} группы военных самолётов в пределах 10 км · ближайшая {distance} м"
+  },
+  "{count} fire clusters within 25 km (event positions are approximate) · nearest {distance} m": {
+    "one": "{count} группа пожаров в пределах 25 км (положение событий приблизительное) · ближайшая {distance} м",
+    "few": "{count} группы пожаров в пределах 25 км (положение событий приблизительное) · ближайшая {distance} м",
+    "many": "{count} групп пожаров в пределах 25 км (положение событий приблизительное) · ближайшая {distance} м",
+    "other": "{count} группы пожаров в пределах 25 км (положение событий приблизительное) · ближайшая {distance} м"
+  }
 }

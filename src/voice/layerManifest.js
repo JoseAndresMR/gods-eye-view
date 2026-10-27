@@ -433,6 +433,10 @@ export const VOICE_OFF_LAYERS = Object.freeze({
   'il-obs-alpr': 'local intelligence-layer overlay, not a voice data source',
   'il-obs-street': 'local intelligence-layer overlay, not a voice data source',
   'il-obs-overflights': 'local intelligence-layer overlay, not a voice data source',
+  'il-obs-fires-near': 'local intelligence-layer overlay, not a voice data source',
+  'il-obs-vessels-near': 'local intelligence-layer overlay, not a voice data source',
+  'il-obs-military-over': 'local intelligence-layer overlay, not a voice data source',
+  'il-obs-fires-events': 'local intelligence-layer overlay, not a voice data source',
 });
 
 const TYPE_NAMES = Object.freeze({
