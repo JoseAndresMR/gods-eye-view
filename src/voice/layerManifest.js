@@ -438,6 +438,7 @@ export const VOICE_OFF_LAYERS = Object.freeze({
   'il-obs-military-over': 'local intelligence-layer overlay, not a voice data source',
   'il-obs-fires-events': 'local intelligence-layer overlay, not a voice data source',
   'il-obs-gnss-affects': 'local intelligence-layer overlay, not a voice data source',
+  'il-obs-hazards': 'local intelligence-layer overlay, not a voice data source',
 });
 
 const TYPE_NAMES = Object.freeze({

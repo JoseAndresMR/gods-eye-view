@@ -57,6 +57,7 @@ import {
   createIlMilitaryOverObserversLayer,
   createIlFiresEventsObserversLayer,
   createIlGnssAffectsObserversLayer,
+  createIlHazardsObserversLayer,
   createIlPlateReaderObserversLayer,
   createIlStreetImageryObserversLayer,
   createIlWeatherSatellitesLayer,
@@ -263,6 +264,7 @@ export function createApplicationCatalog({
           gnss: ilGnss,
           surface,
         }),
+        createIlHazardsObserversLayer({ targets: [ilAircraft, ilVessels, ...ilFixedSites], surface }),
       ],
       metadata,
     );

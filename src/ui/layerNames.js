@@ -58,6 +58,7 @@ export const LAYER_NAME_KEYS = Object.freeze({
   'il-obs-military-over': msg('Military over areas'),
   'il-obs-fires-events': msg('Fires near events'),
   'il-obs-gnss-affects': msg('Inside GNSS zones'),
+  'il-obs-hazards': msg('Hazards reaching clusters'),
   transit: msg('Transit'),
   'recent-imagery': msg('Recent Imagery'),
   'fire-perimeters': msg('Fire Perimeters'),

@@ -410,3 +410,12 @@ export function describeGnssAffects({ place }) {
     count: formatNumber(place.now.length), percent,
   })];
 }
+
+/** Cyclones and earthquakes reaching a cluster: how many, and the closest. */
+export function describeHazards({ place }) {
+  if (!place.now.length) return [];
+  const closest = Math.min(...place.now.map(([, v]) => v));
+  return [tn(place.now.length, 'Within reach of {count} hazard · closest {km} km', 'Within reach of {count} hazards · closest {km} km', {
+    count: formatNumber(place.now.length), km: formatNumber(Math.round(closest / 1000)),
+  })];
+}

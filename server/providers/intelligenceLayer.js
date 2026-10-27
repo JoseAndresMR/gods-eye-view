@@ -25,7 +25,7 @@ const KINDS = new Set([
 const RELATIONS = new Set([
   'imaging', 'fire', 'weather', 'receivers', 'navigation', 'imaged',
   'cameras', 'alpr', 'street', 'overflights',
-  'fires-near', 'vessels-near', 'military-over', 'fires-events', 'gnss-affects',
+  'fires-near', 'vessels-near', 'military-over', 'fires-events', 'gnss-affects', 'hazards',
 ]);
 const MAX_OBSERVED_TARGETS = 8;
 /** Cluster feeds that act as observers, per relation. */
@@ -36,6 +36,7 @@ const OBSERVER_KINDS = {
   'military-over': new Set(['military']),
   'fires-events': new Set(['fires']),
   'gnss-affects': new Set(['gnss']),
+  hazards: new Set(),
 };
 
 const CMR_GRANULES = 'https://cmr.earthdata.nasa.gov/search/granules.umm_json';
@@ -352,6 +353,30 @@ async function readBody(req, limit) {
   return Buffer.concat(chunks).toString('utf8');
 }
 
+const USGS_DAY_URL = 'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_day.geojson';
+const QUAKE_TTL_MS = 5 * 60 * 1000;
+let _quakes = null; // { at, body }
+
+/** The last 24 h of USGS earthquakes (GEV's own layer reads USGS from the browser), cached 5 min. */
+async function serveEarthquakes(res) {
+  try {
+    if (!_quakes || Date.now() - _quakes.at > QUAKE_TTL_MS) {
+      const upstream = await fetch(USGS_DAY_URL, { signal: AbortSignal.timeout(IL_TLE_TIMEOUT_MS) });
+      if (!upstream.ok) throw new Error(`HTTP ${upstream.status}`);
+      _quakes = { at: Date.now(), body: await upstream.text() };
+    }
+  } catch (error) {
+    if (!_quakes) {
+      sendJson(res, 503, { error: `USGS unavailable: ${error.message}` });
+      return;
+    }
+  }
+  res.statusCode = 200;
+  res.setHeader('Content-Type', 'application/json');
+  res.setHeader('Cache-Control', 'no-store');
+  res.end(_quakes.body);
+}
+
 /**
  * Vite plugin: /api/il/* → the intelligence layer's localhost API
  * (cluster feeds, their satellite observation, areas of interest), and
@@ -365,6 +390,10 @@ export function intelligenceLayerProxy() {
         const group = ilCelestrakGroup(req.url);
         if (group) await serveTleGroup(res, group);
         else sendJson(res, 400, { error: 'celestrak groups here are ' + [...IL_CELESTRAK_GROUPS].join(', ') });
+        return;
+      }
+      if (req.method === 'GET' && new URL(req.url || '', 'http://localhost').pathname === '/earthquakes') {
+        await serveEarthquakes(res);
         return;
       }
       if (req.method === 'GET' && new URL(req.url || '', 'http://localhost').pathname.startsWith('/alpr/')) {

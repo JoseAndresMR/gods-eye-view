@@ -3384,5 +3384,18 @@
     "few": "Внутри {count} зон ухудшенного GNSS · до {percent}% воздушных судов затронуто",
     "many": "Внутри {count} зон ухудшенного GNSS · до {percent}% воздушных судов затронуто",
     "other": "Внутри {count} зон ухудшенного GNSS · до {percent}% воздушных судов затронуто"
+  },
+  "Cyclones": "Циклоны",
+  "Earthquakes": "Землетрясения",
+  "Selected hazard": "Выбранная опасность",
+  "Switch on site, ship or aircraft clusters": "Включите группы объектов, судов или воздушных судов",
+  "{reached} of {count} clusters around the view are within reach of a cyclone or earthquake": "{reached} из {count} групп в поле зрения в зоне досягаемости циклона или землетрясения",
+  "Reaches {count} clusters in view": "Достигает {count} групп в поле зрения",
+  "Hazards reaching clusters": "Опасности, достигающие групп",
+  "Within reach of {count} hazards · closest {km} km": {
+    "one": "В зоне действия {count} опасности · ближайшая на расстоянии {km} км",
+    "few": "В зоне действия {count} опасностей · ближайшая на расстоянии {km} км",
+    "many": "В зоне действия {count} опасностей · ближайшая на расстоянии {km} км",
+    "other": "В зоне действия {count} опасностей · ближайшая на расстоянии {km} км"
   }
 }

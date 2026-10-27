@@ -12,6 +12,7 @@ import {
   IL_OBS_FIRES_EVENTS_ID,
   IL_OBS_FIRES_NEAR_ID,
   IL_OBS_GNSS_AFFECTS_ID,
+  IL_OBS_HAZARDS_ID,
   IL_OBS_MILITARY_OVER_ID,
   IL_OBS_OVERFLIGHTS_ID,
   IL_OBS_STREET_ID,
@@ -48,6 +49,7 @@ import {
   describeFiresEvents,
   describeFiresNear,
   describeGnssAffects,
+  describeHazards,
   describeMilitaryOver,
   describeOverflights,
   describeVesselsNear,
@@ -1103,6 +1105,31 @@ export function createIlGnssAffectsObserversLayer({ targets, gnss, surface, fetc
         reached: reached(rows), count: formatNumber(rows.length),
       }),
     satelliteLine: ({ count }) => t('Covers {count} clusters in view', { count: formatNumber(count) }),
+    targets, surface, fetchImpl,
+  });
+}
+
+/** Active cyclones and recent earthquakes whose reach covers a site, ship or aircraft cluster. */
+export function createIlHazardsObserversLayer({ targets, surface, fetchImpl } = {}) {
+  return createIlSatelliteRelationLayer({
+    id: IL_OBS_HAZARDS_ID,
+    name: 'Hazards reaching clusters',
+    icon: '🌀',
+    relation: 'hazards',
+    source: 'Intelligence layer · NOAA NHC, USGS',
+    edgeKinds: [
+      { kind: 'cyclone', label: msg('Cyclones'), on: true },
+      { kind: 'quake', label: msg('Earthquakes'), on: true },
+    ],
+    observerLanes: () => [],
+    describe: describeHazards,
+    selectedHeading: msg('Selected hazard'),
+    offHint: () => t('Switch on site, ship or aircraft clusters'),
+    infoOf: ({ rows }) =>
+      t('{reached} of {count} clusters around the view are within reach of a cyclone or earthquake', {
+        reached: reached(rows), count: formatNumber(rows.length),
+      }),
+    satelliteLine: ({ count }) => t('Reaches {count} clusters in view', { count: formatNumber(count) }),
     targets, surface, fetchImpl,
   });
 }

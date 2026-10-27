@@ -3291,5 +3291,17 @@
     "one": "Dentro de {count} zona GNSS degradada · hasta el {percent}% de las aeronaves afectadas",
     "many": "Dentro de {count} de zonas GNSS degradadas · hasta el {percent}% de las aeronaves afectadas",
     "other": "Dentro de {count} zonas GNSS degradadas · hasta el {percent}% de las aeronaves afectadas"
+  },
+  "Cyclones": "Ciclones",
+  "Earthquakes": "Terremotos",
+  "Selected hazard": "Peligro seleccionado",
+  "Switch on site, ship or aircraft clusters": "Activa los grupos de sitios, buques o aeronaves",
+  "{reached} of {count} clusters around the view are within reach of a cyclone or earthquake": "{reached} de {count} grupos a la vista están al alcance de un ciclón o terremoto",
+  "Reaches {count} clusters in view": "Alcanza {count} grupos a la vista",
+  "Hazards reaching clusters": "Peligros que alcanzan grupos",
+  "Within reach of {count} hazards · closest {km} km": {
+    "one": "Al alcance de {count} peligro · el más cercano a {km} km",
+    "many": "Al alcance de {count} de peligros · el más cercano a {km} km",
+    "other": "Al alcance de {count} peligros · el más cercano a {km} km"
   }
 }

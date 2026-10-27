@@ -3105,5 +3105,15 @@
   "Inside GNSS zones": "GNSS 区域内",
   "Inside {count} degraded GNSS zones · up to {percent}% of aircraft affected": {
     "other": "位于 {count} 个 GNSS 受损区域内 · 最多 {percent}% 的航空器受影响"
+  },
+  "Cyclones": "气旋",
+  "Earthquakes": "地震",
+  "Selected hazard": "所选灾害",
+  "Switch on site, ship or aircraft clusters": "请开启站点、船舶或航空器集群",
+  "{reached} of {count} clusters around the view are within reach of a cyclone or earthquake": "视野内 {count} 个集群中有 {reached} 个处于气旋或地震的影响范围内",
+  "Reaches {count} clusters in view": "影响视野内 {count} 个集群",
+  "Hazards reaching clusters": "影响集群的灾害",
+  "Within reach of {count} hazards · closest {km} km": {
+    "other": "处于 {count} 个灾害的影响范围内 · 最近的距离 {km} 公里"
   }
 }

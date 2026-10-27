@@ -123,7 +123,7 @@ const PANEL_GROUPS = [
     hostId: 'intel-ground-toggles',
     ids: [
       'il-obs-cameras', 'il-obs-alpr', 'il-obs-street', 'il-obs-overflights',
-      'il-obs-fires-near', 'il-obs-vessels-near', 'il-obs-military-over', 'il-obs-fires-events', 'il-obs-gnss-affects',
+      'il-obs-fires-near', 'il-obs-vessels-near', 'il-obs-military-over', 'il-obs-fires-events', 'il-obs-gnss-affects', 'il-obs-hazards',
     ],
   },
 ];
