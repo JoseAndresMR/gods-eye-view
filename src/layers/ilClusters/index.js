@@ -783,6 +783,12 @@ export function createIlClustersLayer({
       return anchor && Cesium.Cartesian3.magnitude(anchor.position) > 0 ? anchor.position : null;
     },
 
+    /** Whether this layer draws the cluster's node itself (not hidden, not off). */
+    clusterNodeDrawn(clusterId) {
+      const anchor = _enabled ? _anchors.find((a) => a.clusterId === clusterId) : null;
+      return Boolean(anchor) && Cesium.Cartesian3.magnitude(anchor.position) > 0 && drawnAnchor(anchor);
+    },
+
     /** Select one cluster and fly the camera over it. */
     focusCluster(clusterId) {
       const cluster = _clusters.find((c) => c.id === clusterId);

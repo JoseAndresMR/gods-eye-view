@@ -27,7 +27,9 @@ import {
   satellitePosition,
 } from './model.js';
 import {
+  clusterPickId,
   getSelection,
+  isClusterSelected,
   isSatelliteSelected,
   satellitePickId,
   select,
@@ -346,6 +348,7 @@ export function createIlSatelliteRelationLayer({
     _points.removeAll();
     _lines.removeAll();
     const groundEdges = [];
+    const drawnEnds = new Set();
     const satCart = new Map();
     const markers = new Map();
     for (const { satId, at } of edges) markers.set(markerKey(satId, at), { key: markerKey(satId, at), satId, at });
@@ -362,7 +365,12 @@ export function createIlSatelliteRelationLayer({
       const cart = Cesium.Cartesian3.clone(placed.cart, _satCarts.get(key) || new Cesium.Cartesian3());
       _satCarts.set(key, cart);
       satCart.set(key, cart);
-      if (!placed.own) continue; // drawn by its own layer (an aircraft cluster node)
+      if (!placed.own) {
+        // Drawn by its own layer (an aircraft cluster node), unless that layer hides its nodes.
+        const observerLayer = observerLayers[sat.layer];
+        if (!observerLayer?.clusterNodeDrawn?.(sat.cluster)) endpointNode(observerLayer.id, sat.cluster, cart, cssOf(sat), drawnEnds);
+        continue;
+      }
       const selected = isSatelliteSelected(satId);
       // A past position is a fainter, smaller marker of the same satellite node.
       _points.add({
@@ -380,6 +388,8 @@ export function createIlSatelliteRelationLayer({
       const to = layer.clusterNodePosition?.(clusterId)
         || Cesium.Cartesian3.fromDegrees(place.lon, place.lat, groundHeight(place.lat, place.lon) + GROUND_LIFT_M);
       const sat = _doc.satellites[satId];
+      // An edge never ends at nothing: a cluster whose node its own layer doesn't draw gets one here.
+      if (!layer.clusterNodeDrawn?.(clusterId)) endpointNode(layer.id, clusterId, to, cssOf(sat), drawnEnds);
       if (!sat?.tle_line1) {
         groundEdges.push({ from, to, css: cssOf(sat) });
         continue;
@@ -399,6 +409,24 @@ export function createIlSatelliteRelationLayer({
       .filter((m) => _satCarts.has(m.key) && ((!m.at && tagAll) || selection))
       .sort((a, b) => a.key.localeCompare(b.key)));
     governorRequestRender(id);
+  }
+
+  /** A clickable cluster node at an edge end whose layer doesn't draw it (hidden, or not placed). */
+  function endpointNode(layerId, clusterId, position, css, drawn) {
+    const key = `${layerId}|${clusterId}`;
+    if (drawn.has(key)) return;
+    drawn.add(key);
+    const selected = isClusterSelected(layerId, clusterId);
+    const c = Cesium.Color.fromCssColorString(css);
+    _points.add({
+      id: clusterPickId(layerId, clusterId),
+      position,
+      pixelSize: selected ? 14 : 10,
+      color: c.withAlpha(selected ? 0.55 : 0.35),
+      outlineColor: selected ? Cesium.Color.WHITE : c,
+      outlineWidth: 2,
+      disableDepthTestDistance: Number.POSITIVE_INFINITY,
+    });
   }
 
   /** Redraw the ground-observer edges only when an end moved. */
