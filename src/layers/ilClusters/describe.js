@@ -401,3 +401,12 @@ export function describeFiresEvents({ place }) {
   if (!place.now.length) return [];
   return [tn(place.now.length, 'Fire cluster within 25 km (event positions are approximate) · nearest {distance} m', '{count} fire clusters within 25 km (event positions are approximate) · nearest {distance} m', nearest(place))];
 }
+
+/** Inside degraded GNSS zones: how many, and the worst share of aircraft affected. */
+export function describeGnssAffects({ place }) {
+  if (!place.now.length) return [];
+  const percent = round(Math.max(...place.now.map(([, v]) => v)));
+  return [tn(place.now.length, 'Inside {count} degraded GNSS zone · up to {percent}% of aircraft affected', 'Inside {count} degraded GNSS zones · up to {percent}% of aircraft affected', {
+    count: formatNumber(place.now.length), percent,
+  })];
+}

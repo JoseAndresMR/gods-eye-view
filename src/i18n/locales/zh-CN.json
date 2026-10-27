@@ -3097,5 +3097,13 @@
   },
   "{count} fire clusters within 25 km (event positions are approximate) · nearest {distance} m": {
     "other": "{count} 个火灾集群在 25 公里内（事件位置为近似值）· 最近 {distance} m"
+  },
+  "Selected GNSS zone": "所选 GNSS 区域",
+  "Switch on GNSS zones and aircraft, ship, site or event clusters": "请开启 GNSS 区域以及航空器、船舶、站点或事件集群",
+  "{reached} of {count} clusters around the view are inside a degraded GNSS zone": "视野内 {count} 个集群中有 {reached} 个位于 GNSS 受损区域内",
+  "Covers {count} clusters in view": "覆盖视野内 {count} 个集群",
+  "Inside GNSS zones": "GNSS 区域内",
+  "Inside {count} degraded GNSS zones · up to {percent}% of aircraft affected": {
+    "other": "位于 {count} 个 GNSS 受损区域内 · 最多 {percent}% 的航空器受影响"
   }
 }

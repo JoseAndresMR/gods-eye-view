@@ -3373,5 +3373,16 @@
     "few": "{count} группы пожаров в пределах 25 км (положение событий приблизительное) · ближайшая {distance} м",
     "many": "{count} групп пожаров в пределах 25 км (положение событий приблизительное) · ближайшая {distance} м",
     "other": "{count} группы пожаров в пределах 25 км (положение событий приблизительное) · ближайшая {distance} м"
+  },
+  "Selected GNSS zone": "Выбранная зона GNSS",
+  "Switch on GNSS zones and aircraft, ship, site or event clusters": "Включите зоны GNSS и группы воздушных судов, судов, объектов или событий",
+  "{reached} of {count} clusters around the view are inside a degraded GNSS zone": "{reached} из {count} групп в поле зрения находятся в зоне ухудшенного GNSS",
+  "Covers {count} clusters in view": "Охватывает {count} групп в поле зрения",
+  "Inside GNSS zones": "Внутри зон GNSS",
+  "Inside {count} degraded GNSS zones · up to {percent}% of aircraft affected": {
+    "one": "Внутри {count} зоны ухудшенного GNSS · до {percent}% воздушных судов затронуто",
+    "few": "Внутри {count} зон ухудшенного GNSS · до {percent}% воздушных судов затронуто",
+    "many": "Внутри {count} зон ухудшенного GNSS · до {percent}% воздушных судов затронуто",
+    "other": "Внутри {count} зон ухудшенного GNSS · до {percent}% воздушных судов затронуто"
   }
 }

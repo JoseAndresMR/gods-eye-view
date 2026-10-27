@@ -11,6 +11,7 @@ import {
   IL_OBS_CAMERAS_ID,
   IL_OBS_FIRES_EVENTS_ID,
   IL_OBS_FIRES_NEAR_ID,
+  IL_OBS_GNSS_AFFECTS_ID,
   IL_OBS_MILITARY_OVER_ID,
   IL_OBS_OVERFLIGHTS_ID,
   IL_OBS_STREET_ID,
@@ -46,6 +47,7 @@ import {
   describeFireSatellites,
   describeFiresEvents,
   describeFiresNear,
+  describeGnssAffects,
   describeMilitaryOver,
   describeOverflights,
   describeVesselsNear,
@@ -1079,6 +1081,28 @@ export function createIlFiresEventsObserversLayer({ targets, fires, surface, fet
         reached: reached(rows), count: formatNumber(rows.length),
       }),
     satelliteLine: ({ count }) => t('Within 25 km of {count} event clusters in view', { count: formatNumber(count) }),
+    targets, surface, fetchImpl,
+  });
+}
+
+/** Degraded GNSS zones over aircraft, ships, sites and events (affected, or a possible jamming source). */
+export function createIlGnssAffectsObserversLayer({ targets, gnss, surface, fetchImpl } = {}) {
+  return createIlClusterObserversLayer({
+    id: IL_OBS_GNSS_AFFECTS_ID,
+    name: 'Inside GNSS zones',
+    icon: '📡',
+    relation: 'gnss-affects',
+    source: 'Intelligence layer · adsb.lol',
+    observer: { kind: 'gnss', layer: gnss },
+    observerLabel: msg('GNSS zones'),
+    describe: describeGnssAffects,
+    selectedHeading: msg('Selected GNSS zone'),
+    offHint: () => t('Switch on GNSS zones and aircraft, ship, site or event clusters'),
+    infoOf: ({ rows }) =>
+      t('{reached} of {count} clusters around the view are inside a degraded GNSS zone', {
+        reached: reached(rows), count: formatNumber(rows.length),
+      }),
+    satelliteLine: ({ count }) => t('Covers {count} clusters in view', { count: formatNumber(count) }),
     targets, surface, fetchImpl,
   });
 }

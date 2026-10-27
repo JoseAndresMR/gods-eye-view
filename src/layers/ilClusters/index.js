@@ -62,6 +62,7 @@ export {
   createIlVesselsNearObserversLayer,
   createIlMilitaryOverObserversLayer,
   createIlFiresEventsObserversLayer,
+  createIlGnssAffectsObserversLayer,
   createIlPlateReaderObserversLayer,
   createIlStreetImageryObserversLayer,
   createIlWeatherSatellitesLayer,

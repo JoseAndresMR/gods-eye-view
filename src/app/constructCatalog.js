@@ -56,6 +56,7 @@ import {
   createIlVesselsNearObserversLayer,
   createIlMilitaryOverObserversLayer,
   createIlFiresEventsObserversLayer,
+  createIlGnssAffectsObserversLayer,
   createIlPlateReaderObserversLayer,
   createIlStreetImageryObserversLayer,
   createIlWeatherSatellitesLayer,
@@ -257,6 +258,11 @@ export function createApplicationCatalog({
         }),
         createIlMilitaryOverObserversLayer({ targets: ilFixedSites.filter((layer) => layer.id === 'il-military-area-clusters'), military: ilMilitary, surface }),
         createIlFiresEventsObserversLayer({ targets: [ilEvents], fires: ilFires, surface }),
+        createIlGnssAffectsObserversLayer({
+          targets: [ilAircraft, ilMilitary, ilVessels, ilEvents, ...ilFixedSites],
+          gnss: ilGnss,
+          surface,
+        }),
       ],
       metadata,
     );

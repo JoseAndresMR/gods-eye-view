@@ -38,6 +38,7 @@ export const IL_OBS_FIRES_NEAR_ID = 'il-obs-fires-near';
 export const IL_OBS_VESSELS_NEAR_ID = 'il-obs-vessels-near';
 export const IL_OBS_MILITARY_OVER_ID = 'il-obs-military-over';
 export const IL_OBS_FIRES_EVENTS_ID = 'il-obs-fires-events';
+export const IL_OBS_GNSS_AFFECTS_ID = 'il-obs-gnss-affects';
 
 /** Every intelligence-layer overlay, in the order the Intelligence panel lists them. */
 export const IL_LAYER_IDS = Object.freeze([
@@ -67,6 +68,7 @@ export const IL_LAYER_IDS = Object.freeze([
   IL_OBS_VESSELS_NEAR_ID,
   IL_OBS_MILITARY_OVER_ID,
   IL_OBS_FIRES_EVENTS_ID,
+  IL_OBS_GNSS_AFFECTS_ID,
 ]);
 
 const EARTH_RADIUS_M = 6371008.8;
@@ -109,7 +111,7 @@ export function clustersUrl(kind, km, box = null) {
 /**
  * Which satellites of one relation observe the clusters of the given lanes.
  * @param {string} relation imaging | fire | weather | receivers | navigation | imaged |
- *   cameras | alpr | street | overflights | fires-near | vessels-near | military-over | fires-events
+ *   cameras | alpr | street | overflights | fires-near | vessels-near | military-over | fires-events | gnss-affects
  * @param {Array<{kind: string, km: number}>} lanes
  * @param {{west:number, south:number, east:number, north:number}|null} [box]
  * @param {Array<{kind: string, km: number}>|null} [observers] Observer lanes (overflights and

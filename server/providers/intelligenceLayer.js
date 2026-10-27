@@ -25,7 +25,7 @@ const KINDS = new Set([
 const RELATIONS = new Set([
   'imaging', 'fire', 'weather', 'receivers', 'navigation', 'imaged',
   'cameras', 'alpr', 'street', 'overflights',
-  'fires-near', 'vessels-near', 'military-over', 'fires-events',
+  'fires-near', 'vessels-near', 'military-over', 'fires-events', 'gnss-affects',
 ]);
 const MAX_OBSERVED_TARGETS = 8;
 /** Cluster feeds that act as observers, per relation. */
@@ -35,6 +35,7 @@ const OBSERVER_KINDS = {
   'vessels-near': new Set(['vessels']),
   'military-over': new Set(['military']),
   'fires-events': new Set(['fires']),
+  'gnss-affects': new Set(['gnss']),
 };
 
 const CMR_GRANULES = 'https://cmr.earthdata.nasa.gov/search/granules.umm_json';

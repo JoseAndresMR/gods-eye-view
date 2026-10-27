@@ -3281,5 +3281,15 @@
     "one": "{count} grupo de incendios a menos de 25 km (las posiciones de los eventos son aproximadas) · el más cercano a {distance} m",
     "many": "{count} de grupos de incendios a menos de 25 km (las posiciones de los eventos son aproximadas) · el más cercano a {distance} m",
     "other": "{count} grupos de incendios a menos de 25 km (las posiciones de los eventos son aproximadas) · el más cercano a {distance} m"
+  },
+  "Selected GNSS zone": "Zona GNSS seleccionada",
+  "Switch on GNSS zones and aircraft, ship, site or event clusters": "Activa las zonas GNSS y los grupos de aeronaves, buques, sitios o eventos",
+  "{reached} of {count} clusters around the view are inside a degraded GNSS zone": "{reached} de {count} grupos a la vista están dentro de una zona GNSS degradada",
+  "Covers {count} clusters in view": "Cubre {count} grupos a la vista",
+  "Inside GNSS zones": "Dentro de zonas GNSS",
+  "Inside {count} degraded GNSS zones · up to {percent}% of aircraft affected": {
+    "one": "Dentro de {count} zona GNSS degradada · hasta el {percent}% de las aeronaves afectadas",
+    "many": "Dentro de {count} de zonas GNSS degradadas · hasta el {percent}% de las aeronaves afectadas",
+    "other": "Dentro de {count} zonas GNSS degradadas · hasta el {percent}% de las aeronaves afectadas"
   }
 }
