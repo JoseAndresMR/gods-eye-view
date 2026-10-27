@@ -75,6 +75,9 @@ const KIND_CSS = Object.freeze({
 /** Satellite names win label collisions against cluster counts. */
 const TAG_PRIORITY = 1e9;
 const LINE_WIDTH = 1.5;
+/** Edges from ground observers are entities so the part below terrain or buildings still draws, dimmed. */
+const GROUND_EDGE_WIDTH = 2;
+const OCCLUDED_ALPHA = 0.35;
 /** Lines end this far above the ground when the cluster node isn't drawn. */
 const GROUND_LIFT_M = 20;
 /**
@@ -165,6 +168,11 @@ export function createIlSatelliteRelationLayer({
   let _viewer = null;
   let _points = null;
   let _lines = null;
+  // Edges whose observer stands on the ground (cameras, plate readers, street drives, aircraft
+  // nodes): a PolylineCollection line vanishes under terrain and the photoreal mesh, an entity
+  // polyline with depthFailMaterial does not (see data/trailRenderer.js).
+  let _groundEdges = null;
+  let _groundEdgesKey = '';
   let _enabled = false;
   let _doc = null;
   let _lanes = [];
@@ -337,6 +345,7 @@ export function createIlSatelliteRelationLayer({
     _drawnEdges = edges.length;
     _points.removeAll();
     _lines.removeAll();
+    const groundEdges = [];
     const satCart = new Map();
     const markers = new Map();
     for (const { satId, at } of edges) markers.set(markerKey(satId, at), { key: markerKey(satId, at), satId, at });
@@ -370,20 +379,51 @@ export function createIlSatelliteRelationLayer({
       if (!from) continue;
       const to = layer.clusterNodePosition?.(clusterId)
         || Cesium.Cartesian3.fromDegrees(place.lon, place.lat, groundHeight(place.lat, place.lon) + GROUND_LIFT_M);
+      const sat = _doc.satellites[satId];
+      if (!sat?.tle_line1) {
+        groundEdges.push({ from, to, css: cssOf(sat) });
+        continue;
+      }
       _lines.add({
         positions: [from, to],
         width: LINE_WIDTH,
         material: Cesium.Material.fromType('Color', {
-          color: Cesium.Color.fromCssColorString(cssOf(_doc.satellites[satId])).withAlpha(0.7),
+          color: Cesium.Color.fromCssColorString(cssOf(sat)).withAlpha(0.7),
         }),
       });
     }
+    drawGroundEdges(groundEdges);
     for (const key of _satCarts.keys()) if (!satCart.get(key)) _satCarts.delete(key);
     // Past positions are many (one per scene): tag them only for the selection's edges.
     tag([...markers.values()]
       .filter((m) => _satCarts.has(m.key) && ((!m.at && tagAll) || selection))
       .sort((a, b) => a.key.localeCompare(b.key)));
     governorRequestRender(id);
+  }
+
+  /** Redraw the ground-observer edges only when an end moved. */
+  function drawGroundEdges(edges) {
+    if (!_groundEdges) return;
+    const key = edges
+      .map(({ from, to, css }) => `${css}${from.x.toFixed(0)},${from.y.toFixed(0)},${from.z.toFixed(0)}|${to.x.toFixed(0)},${to.y.toFixed(0)},${to.z.toFixed(0)}`)
+      .join(';');
+    if (key === _groundEdgesKey) return;
+    _groundEdgesKey = key;
+    _groundEdges.entities.suspendEvents();
+    _groundEdges.entities.removeAll();
+    for (const { from, to, css } of edges) {
+      const color = Cesium.Color.fromCssColorString(css);
+      _groundEdges.entities.add({
+        polyline: {
+          positions: [Cesium.Cartesian3.clone(from), Cesium.Cartesian3.clone(to)],
+          width: GROUND_EDGE_WIDTH,
+          arcType: Cesium.ArcType.NONE,
+          material: color.withAlpha(0.8),
+          depthFailMaterial: color.withAlpha(OCCLUDED_ALPHA),
+        },
+      });
+    }
+    _groundEdges.entities.resumeEvents();
   }
 
   /** Card lines for one cluster of one target layer. */
@@ -420,6 +460,8 @@ export function createIlSatelliteRelationLayer({
     _drawnEdges = 0;
     _points?.removeAll();
     _lines?.removeAll();
+    _groundEdges?.entities.removeAll();
+    _groundEdgesKey = '';
     _satCarts = new Map();
     _taggedKey = '';
     clearOverlaySource(tagSource);
@@ -490,6 +532,7 @@ export function createIlSatelliteRelationLayer({
 
   function show(visible) {
     for (const collection of [_points, _lines]) if (collection) collection.show = visible;
+    if (_groundEdges) _groundEdges.show = visible;
     setOverlaySourceVisible(tagSource, visible);
   }
 
@@ -506,6 +549,8 @@ export function createIlSatelliteRelationLayer({
       _viewer = viewer;
       _points = viewer.scene.primitives.add(new Cesium.PointPrimitiveCollection());
       _lines = viewer.scene.primitives.add(new Cesium.PolylineCollection());
+      _groundEdges = new Cesium.CustomDataSource(`il-edges:${id}`);
+      viewer.dataSources.add(_groundEdges);
       show(false);
     },
 
@@ -613,8 +658,11 @@ export function createIlSatelliteRelationLayer({
     destroy(viewer = _viewer) {
       if (_enabled) this.disable();
       if (viewer) for (const collection of [_points, _lines]) if (collection) viewer.scene.primitives.remove(collection);
+      if (viewer && _groundEdges) viewer.dataSources.remove(_groundEdges, true);
       _points = null;
       _lines = null;
+      _groundEdges = null;
+      _groundEdgesKey = '';
       _viewer = null;
       _rowListener = null;
       _lastUpdate = null;
