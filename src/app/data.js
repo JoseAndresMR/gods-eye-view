@@ -3,6 +3,7 @@ import { LayerPresentation } from './layerPresentation.js';
 import { createCyberSonarScene } from '../cyberSonarScene.js';
 import { mountIntelPanel } from '../ui/intelPanel.js';
 import { mountIntelAreas } from '../ui/intelAreas.js';
+import { mountIntelSections } from '../ui/intelSections.js';
 import { IL_LAYER_IDS } from '../layers/ilClusters/model.js';
 /** Register the application layer catalog before allowing state restoration. */
 export function createApplicationData({
@@ -67,6 +68,7 @@ export function createApplicationData({
       layers: IL_LAYER_IDS.map((id) => catalog.get(id)).filter(Boolean),
     }),
   );
+  defer(mountIntelSections(document.getElementById('intel-panel-body')));
   defer(
     mountIntelAreas({
       container: document.getElementById('intel-areas'),

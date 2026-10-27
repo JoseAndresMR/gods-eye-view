@@ -35,14 +35,53 @@
           <button class="panel-collapse-btn" data-collapse-target="intel-panel" type="button" title="Collapse panel" data-i18n-title>▼</button>
         </div>
         <div id="intel-panel-body" data-rail-scroller>
-          <div id="intel-areas" class="intel-areas"></div>
-          <h3 class="data-layer-group-heading intel-section-heading" data-i18n>Single-layer</h3>
-          <div id="intel-toggles" class="data-toggle-list"></div>
-          <h3 class="data-layer-group-heading intel-section-heading" data-i18n>Cross-layer</h3>
-          <h4 class="intel-subheading" data-i18n>Satellites</h4>
-          <div id="intel-cross-toggles" class="data-toggle-list"></div>
-          <h4 class="intel-subheading" data-i18n>Ground and air</h4>
-          <div id="intel-ground-toggles" class="data-toggle-list"></div>
+          <!-- Every level folds: a section header shows how many of its layers are on (intelSections.js). -->
+          <section class="intel-section intel-section--l1" data-intel-section="areas">
+            <button type="button" class="intel-disclosure" aria-expanded="false" aria-controls="intel-sec-areas"><span class="intel-disclosure-chevron" aria-hidden="true"></span><span class="intel-disclosure-label" data-i18n>Areas of interest</span><span class="intel-disclosure-count"></span></button>
+            <div class="intel-disclosure-body" id="intel-sec-areas" hidden>
+              <div id="intel-areas" class="intel-areas"></div>
+            </div>
+          </section>
+          <section class="intel-section intel-section--l1" data-intel-section="single">
+            <button type="button" class="intel-disclosure" aria-expanded="false" aria-controls="intel-sec-single"><span class="intel-disclosure-chevron" aria-hidden="true"></span><span class="intel-disclosure-label" data-i18n>Single-layer</span><span class="intel-disclosure-count"></span></button>
+            <div class="intel-disclosure-body" id="intel-sec-single" hidden>
+            <section class="intel-section intel-section--l2" data-intel-section="moving">
+              <button type="button" class="intel-disclosure" aria-expanded="false" aria-controls="intel-sec-moving"><span class="intel-disclosure-chevron" aria-hidden="true"></span><span class="intel-disclosure-label" data-i18n>Moving contacts</span><span class="intel-disclosure-count"></span></button>
+              <div class="intel-disclosure-body" id="intel-sec-moving" hidden>
+                <div id="intel-toggles-moving" class="data-toggle-list"></div>
+              </div>
+            </section>
+            <section class="intel-section intel-section--l2" data-intel-section="events">
+              <button type="button" class="intel-disclosure" aria-expanded="false" aria-controls="intel-sec-events"><span class="intel-disclosure-chevron" aria-hidden="true"></span><span class="intel-disclosure-label" data-i18n>Events and hazards</span><span class="intel-disclosure-count"></span></button>
+              <div class="intel-disclosure-body" id="intel-sec-events" hidden>
+                <div id="intel-toggles-events" class="data-toggle-list"></div>
+              </div>
+            </section>
+            <section class="intel-section intel-section--l2" data-intel-section="sites">
+              <button type="button" class="intel-disclosure" aria-expanded="false" aria-controls="intel-sec-sites"><span class="intel-disclosure-chevron" aria-hidden="true"></span><span class="intel-disclosure-label" data-i18n>Fixed sites</span><span class="intel-disclosure-count"></span></button>
+              <div class="intel-disclosure-body" id="intel-sec-sites" hidden>
+                <div id="intel-toggles-sites" class="data-toggle-list"></div>
+              </div>
+            </section>
+            </div>
+          </section>
+          <section class="intel-section intel-section--l1" data-intel-section="cross">
+            <button type="button" class="intel-disclosure" aria-expanded="false" aria-controls="intel-sec-cross"><span class="intel-disclosure-chevron" aria-hidden="true"></span><span class="intel-disclosure-label" data-i18n>Cross-layer</span><span class="intel-disclosure-count"></span></button>
+            <div class="intel-disclosure-body" id="intel-sec-cross" hidden>
+            <section class="intel-section intel-section--l2" data-intel-section="satellites">
+              <button type="button" class="intel-disclosure" aria-expanded="false" aria-controls="intel-sec-satellites"><span class="intel-disclosure-chevron" aria-hidden="true"></span><span class="intel-disclosure-label" data-i18n>Satellites</span><span class="intel-disclosure-count"></span></button>
+              <div class="intel-disclosure-body" id="intel-sec-satellites" hidden>
+                <div id="intel-cross-toggles" class="data-toggle-list"></div>
+              </div>
+            </section>
+            <section class="intel-section intel-section--l2" data-intel-section="ground">
+              <button type="button" class="intel-disclosure" aria-expanded="false" aria-controls="intel-sec-ground"><span class="intel-disclosure-chevron" aria-hidden="true"></span><span class="intel-disclosure-label" data-i18n>Ground and air</span><span class="intel-disclosure-count"></span></button>
+              <div class="intel-disclosure-body" id="intel-sec-ground" hidden>
+                <div id="intel-ground-toggles" class="data-toggle-list"></div>
+              </div>
+            </section>
+            </div>
+          </section>
           <div id="intel-clusters" class="intel-clusters" aria-live="polite"></div>
         </div>
       </div>

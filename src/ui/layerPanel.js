@@ -92,18 +92,21 @@ const PANEL_GROUPS = [
     ids: ['directions', 'radio'],
   },
   // Derived by the local intelligence layer; their rows live in the
-  // INTELLIGENCE panel (`hostId`), next to the cluster summaries.
+  // INTELLIGENCE panel (`hostId`), in its Single-layer section's groups.
   {
-    label: msg('Intelligence layer'),
-    hostId: 'intel-toggles',
+    label: msg('Moving contacts'),
+    hostId: 'intel-toggles-moving',
+    ids: ['il-aircraft-clusters', 'il-military-clusters', 'il-vessel-clusters', 'il-satellite-clusters'],
+  },
+  {
+    label: msg('Events and hazards'),
+    hostId: 'intel-toggles-events',
+    ids: ['il-fire-clusters', 'il-gnss-zones', 'il-event-clusters'],
+  },
+  {
+    label: msg('Fixed sites'),
+    hostId: 'intel-toggles-sites',
     ids: [
-      'il-aircraft-clusters',
-      'il-military-clusters',
-      'il-vessel-clusters',
-      'il-satellite-clusters',
-      'il-fire-clusters',
-      'il-gnss-zones',
-      'il-event-clusters',
       'il-military-area-clusters',
       'il-datacenter-clusters',
       'il-dam-clusters',

@@ -1,6 +1,7 @@
 import * as Cesium from 'cesium';
 import { formatNumber, msg, t } from '../../i18n/index.js';
 import { governorRequestRender } from '../../renderGovernor.js';
+import { spriteBillboard } from './sprites.js';
 import {
   clearOverlaySource,
   setOverlayEntries,
@@ -388,10 +389,7 @@ export function createIlSatelliteRelationLayer({
       _points.add({
         id: satellitePickId(satId),
         position: cart,
-        pixelSize: (selected ? 12 : 8) * (at ? 0.75 : 1),
-        color: Cesium.Color.fromCssColorString(cssOf(sat)).withAlpha(at ? 0.55 : 0.9),
-        outlineColor: selected ? Cesium.Color.WHITE : Cesium.Color.BLACK.withAlpha(0.6),
-        outlineWidth: selected ? 2 : 1,
+        ...spriteBillboard({ css: cssOf(sat), style: at ? 'past' : 'observer', selected, corePx: at ? 7 : 10 }),
       });
     }
     for (const { satId, layer, clusterId, place, at } of edges) {
@@ -429,14 +427,10 @@ export function createIlSatelliteRelationLayer({
     if (drawn.has(key)) return;
     drawn.add(key);
     const selected = isClusterSelected(layerId, clusterId);
-    const c = Cesium.Color.fromCssColorString(css);
     _points.add({
       id: clusterPickId(layerId, clusterId),
       position,
-      pixelSize: selected ? 13 : 9,
-      color: c.withAlpha(0.92),
-      outlineColor: selected ? Cesium.Color.WHITE : Cesium.Color.fromCssColorString('#05080e').withAlpha(0.85),
-      outlineWidth: selected ? 3 : 2,
+      ...spriteBillboard({ css, style: 'node', selected, corePx: 10 }),
       disableDepthTestDistance: Number.POSITIVE_INFINITY,
     });
   }
@@ -587,7 +581,7 @@ export function createIlSatelliteRelationLayer({
     init(viewer) {
       if (_viewer) throw new Error(`${id} layer is already initialized`);
       _viewer = viewer;
-      _points = viewer.scene.primitives.add(new Cesium.PointPrimitiveCollection());
+      _points = viewer.scene.primitives.add(new Cesium.BillboardCollection());
       _lines = viewer.scene.primitives.add(new Cesium.PolylineCollection());
       _groundEdges = new Cesium.CustomDataSource(`il-edges:${id}`);
       viewer.dataSources.add(_groundEdges);

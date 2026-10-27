@@ -48,6 +48,8 @@ import {
   useIlPicking,
 } from './selection.js';
 import { GNSS_LEVEL_COLORS } from '../gnss/records.js';
+import { spriteBillboard } from './sprites.js';
+import { lodAlpha, lodShown, markerDim, pixelsAcross, usableHull } from './lod.js';
 export * from './model.js';
 export { describeCluster, CLUSTER_KINDS } from './describe.js';
 export {
@@ -69,11 +71,13 @@ export {
   createIlWeatherSatellitesLayer,
 } from './observation.js';
 
-/** Dark keyline around every node, so it reads over bright imagery and next to its neighbours. */
-const nodeEdge = () => Cesium.Color.fromCssColorString('#05080e').withAlpha(0.85);
 const REPOSITION_MS = 250;
-const LINK_WIDTH = 1.5;
+const LINK_WIDTH = 1.25;
 const FOOTPRINT_WIDTH = 2;
+/** Cluster polygons (level of detail): outline width and the most opaque fill and outline. */
+const HULL_WIDTH = 1.5;
+const HULL_FILL_ALPHA = 0.14;
+const HULL_LINE_ALPHA = 0.9;
 const FLY_SECONDS = 1.5;
 /** Wait this long after the camera stops before asking for the new view. */
 const MOVE_SETTLE_MS = 400;
@@ -166,6 +170,11 @@ export function createIlClustersLayer({
   let _points = null;
   let _lines = null;
   let _outlines = null;
+  // Cluster polygons drawn when big enough on screen: {fill, line, color, alpha} by cluster id.
+  let _hulls = null;
+  let _hullShapes = new Map();
+  let _hullInfo = new Map();
+  let _removeCameraChanged = null;
   let _request = null;
   let _timer = null;
   let _enabled = false;
@@ -219,6 +228,9 @@ export function createIlClustersLayer({
   };
   const labelSource = `il-clusters:${kind}`;
   const scratchNormal = new Cesium.Cartesian3();
+  const scratchScreen = new Cesium.Cartesian2();
+  // Surface feeds with cluster outlines draw them by level of detail; GNSS cells keep their boxes.
+  const lodHulls = footprints && !areaOf;
   const placeOf =
     positionOf ||
     ((node, nowSec) => predictPosition(motionOf?.(node), nowSec, maxDeadReckonS));
@@ -289,6 +301,7 @@ export function createIlClustersLayer({
       point.show = occluder ? occluder.isPointVisible(cart) : true;
     }
     placeAnchors(where, occluder);
+    updateLod();
     const height = _viewer?.camera?.positionCartographic?.height;
     const width = scaleByDistance && Number.isFinite(height)
       ? Math.max(1, LINK_WIDTH * nearFarScalarValueAtDistance(scaleByDistance, height))
@@ -342,7 +355,7 @@ export function createIlClustersLayer({
   }
 
   /** One node per cluster (pickable: selecting it shows its members and edges). */
-  function buildAnchors(color) {
+  function buildAnchors() {
     const membersOf = new Map();
     for (const node of _nodes) {
       if (!membersOf.has(node.cluster_id)) membersOf.set(node.cluster_id, []);
@@ -360,15 +373,12 @@ export function createIlClustersLayer({
         const alt = staticPositions ? groundHeight(centre.lat, centre.lon) : Number.isFinite(centre.alt_m) ? centre.alt_m : 0;
         position = Cesium.Cartesian3.fromDegrees(centre.lon, centre.lat, alt + liftM);
       }
-      const c = footprintColor ? Cesium.Color.fromCssColorString(footprintColor) : color(cluster.id);
       const selected = isClusterSelected(id, cluster.id);
+      // Glow sprite: soft halo, lit core, crisp rim; a white ring when selected.
       const point = _points.add({
         id: clusterPickId(id, cluster.id),
         position,
-        pixelSize: ringPixels * (selected ? 1.3 : 0.85),
-        color: c.withAlpha(0.92),
-        outlineColor: selected ? Cesium.Color.WHITE : nodeEdge(),
-        outlineWidth: selected ? 3 : 2,
+        ...spriteBillboard({ css: footprintColor || clusterColorCss(cluster.id), style: 'node', selected, corePx: ringPixels * 0.85 }),
         show: false,
         ...(scaleByDistance ? { scaleByDistance } : {}),
         ...(alwaysOnTop ? { disableDepthTestDistance: Number.POSITIVE_INFINITY } : {}),
@@ -415,13 +425,110 @@ export function createIlClustersLayer({
     if (_hidden && !_selectedHere) return;
     for (const c of contextOf?.(_meta) || [])
       drawRing(_outlines, densifyRing(c.ring), Cesium.Color.fromCssColorString(c.css), c.width);
-    if (!footprints) return;
+    if (!footprints || lodHulls) return;
     const fixed = footprintColor ? Cesium.Color.fromCssColorString(footprintColor) : null;
     for (const cluster of _clusters.filter((c) => !_hidden || c.id === _selectedHere))
       drawRing(_outlines, densifyRing(cluster.summary?.hull), (fixed || color(cluster.id)).withAlpha(0.85), FOOTPRINT_WIDTH);
   }
 
+  function clearHulls() {
+    _hulls?.removeAll();
+    _hullShapes = new Map();
+  }
+
+  /** Fill and outline of one cluster's hull, draped on terrain and the photoreal mesh. Not pickable. */
+  function hullShape(info, css, alpha) {
+    const color = Cesium.Color.fromCssColorString(css);
+    const positions = Cesium.Cartesian3.fromDegreesArray(info.points.flat());
+    const fill = _hulls.add(new Cesium.GroundPrimitive({
+      geometryInstances: new Cesium.GeometryInstance({
+        id: 'fill',
+        geometry: new Cesium.PolygonGeometry({ polygonHierarchy: new Cesium.PolygonHierarchy(positions) }),
+        attributes: { color: Cesium.ColorGeometryInstanceAttribute.fromColor(color.withAlpha(alpha * HULL_FILL_ALPHA)) },
+      }),
+      appearance: new Cesium.PerInstanceColorAppearance({ flat: true, translucent: true }),
+      classificationType: Cesium.ClassificationType.BOTH,
+      allowPicking: false,
+    }));
+    const line = _hulls.add(new Cesium.GroundPolylinePrimitive({
+      geometryInstances: new Cesium.GeometryInstance({
+        id: 'line',
+        geometry: new Cesium.GroundPolylineGeometry({ positions, loop: true, width: HULL_WIDTH }),
+        attributes: { color: Cesium.ColorGeometryInstanceAttribute.fromColor(color.withAlpha(alpha * HULL_LINE_ALPHA)) },
+      }),
+      appearance: new Cesium.PolylineColorAppearance(),
+      allowPicking: false,
+    }));
+    return { fill, line, color, alpha };
+  }
+
+  function setHullAlpha(shape, alpha) {
+    const a = Math.round(alpha * 20) / 20;
+    if (a === shape.alpha) return;
+    try {
+      if (!shape.fill.ready || !shape.line.ready) return; // keeps the creation alpha until built
+      for (const [prim, key, max] of [[shape.fill, 'fill', HULL_FILL_ALPHA], [shape.line, 'line', HULL_LINE_ALPHA]]) {
+        const attrs = prim.getGeometryInstanceAttributes(key);
+        attrs.color = Cesium.ColorGeometryInstanceAttribute.toValue(shape.color.withAlpha(a * max), attrs.color);
+      }
+      shape.alpha = a;
+    } catch (error) {
+      console.warn(`[Data:IL] ${kind} hull fade failed:`, error);
+    }
+  }
+
+  /**
+   * Level of detail: a cluster whose hull spans enough screen pixels shows as
+   * its polygon (fading in with size, hysteresis between LOD_SHOW_PX and
+   * LOD_HIDE_PX), and its node shrinks and dims but stays clickable. Only
+   * clusters on screen get polygons.
+   */
+  function updateLod() {
+    if (!lodHulls || !_viewer || !_hulls || !_enabled) return;
+    const camera = _viewer.camera;
+    const canvas = _viewer.scene.canvas;
+    const w = canvas.clientWidth || canvas.width;
+    const h = canvas.clientHeight || canvas.height;
+    const fovy = camera.frustum?.fovy || 1;
+    const kept = new Set();
+    for (const anchor of _anchors) {
+      const info = _hullInfo.get(anchor.clusterId);
+      let shape = _hullShapes.get(anchor.clusterId);
+      let alpha = 0;
+      let shown = false;
+      if (info && anchor.point.show) {
+        const px = pixelsAcross(info.extentM, Cesium.Cartesian3.distance(camera.positionWC, anchor.position), fovy, h);
+        if (lodShown(px, Boolean(shape))) {
+          const sp = _viewer.scene.cartesianToCanvasCoordinates(anchor.position, scratchScreen);
+          shown = Boolean(sp) && sp.x > -px && sp.y > -px && sp.x < w + px && sp.y < h + px;
+          alpha = lodAlpha(px);
+        }
+      }
+      if (shown) {
+        kept.add(anchor.clusterId);
+        if (!shape) {
+          shape = hullShape(info, footprintColor || clusterColorCss(anchor.clusterId), alpha);
+          _hullShapes.set(anchor.clusterId, shape);
+        } else setHullAlpha(shape, alpha);
+      }
+      const dim = markerDim(shown && !isClusterSelected(id, anchor.clusterId) ? alpha : 0);
+      if (anchor.dim !== dim.alpha) {
+        anchor.dim = dim.alpha;
+        anchor.point.scale = dim.scale;
+        anchor.point.color = Cesium.Color.WHITE.withAlpha(dim.alpha);
+      }
+    }
+    for (const [clusterId, shape] of _hullShapes) {
+      if (kept.has(clusterId)) continue;
+      _hulls.remove(shape.fill);
+      _hulls.remove(shape.line);
+      _hullShapes.delete(clusterId);
+    }
+    governorRequestRender(id);
+  }
+
   function rebuild() {
+    clearHulls();
     _points.removeAll();
     _lines.removeAll();
     _drawnPoints = new Map();
@@ -442,14 +549,11 @@ export function createIlClustersLayer({
       }
     }
     for (const node of areaOf ? [] : shown) {
-      const c = color(node.cluster_id);
       _drawnPoints.set(node.id, _points.add({
-        id: `${id}:${node.id}`,
+        // A member picks as its cluster: clicking it keeps (or makes) that cluster the selection.
+        id: clusterPickId(id, node.cluster_id),
         position: Cesium.Cartesian3.ZERO,
-        pixelSize: ringPixels * 0.55,
-        color: c.withAlpha(0.7),
-        outlineColor: nodeEdge(),
-        outlineWidth: 1.5,
+        ...spriteBillboard({ css: clusterColorCss(node.cluster_id), style: 'member', corePx: ringPixels * 0.5 }),
         show: false,
         ...(scaleByDistance ? { scaleByDistance } : {}),
         ...(alwaysOnTop ? { disableDepthTestDistance: Number.POSITIVE_INFINITY } : {}),
@@ -463,12 +567,19 @@ export function createIlClustersLayer({
         width: LINK_WIDTH,
         show: false,
         material: Cesium.Material.fromType('Color', {
-          color: color(clusterOf.get(edge.a)).withAlpha(0.9),
+          color: color(clusterOf.get(edge.a)).withAlpha(0.75),
         }),
       });
       _drawnLines.push({ line, a: edge.a, b: edge.b });
     }
-    buildAnchors(color);
+    buildAnchors();
+    _hullInfo = new Map();
+    if (lodHulls) {
+      for (const cluster of _clusters) {
+        const info = usableHull(cluster.summary?.hull, cluster.summary?.size ?? cluster.size);
+        if (info) _hullInfo.set(cluster.id, info);
+      }
+    }
     drawFootprints(color);
     publishLabels();
     reposition();
@@ -599,7 +710,7 @@ export function createIlClustersLayer({
   }
 
   function show(visible) {
-    for (const collection of [_points, _lines, _outlines]) if (collection) collection.show = visible;
+    for (const collection of [_points, _lines, _outlines, _hulls]) if (collection) collection.show = visible;
     setOverlaySourceVisible(labelSource, visible);
   }
 
@@ -614,9 +725,10 @@ export function createIlClustersLayer({
     init(viewer) {
       if (_viewer) throw new Error(`${id} layer is already initialized`);
       _viewer = viewer;
-      _points = viewer.scene.primitives.add(new Cesium.PointPrimitiveCollection());
+      _points = viewer.scene.primitives.add(new Cesium.BillboardCollection());
       _lines = viewer.scene.primitives.add(new Cesium.PolylineCollection());
       _outlines = viewer.scene.primitives.add(new Cesium.PolylineCollection());
+      _hulls = viewer.scene.primitives.add(new Cesium.PrimitiveCollection());
       show(false);
     },
 
@@ -629,6 +741,8 @@ export function createIlClustersLayer({
       _unsubscribeSelection = subscribeSelection(onSelection);
       _removeMoveEnd?.();
       _removeMoveEnd = _viewer?.camera?.moveEnd?.addEventListener?.(onMoveEnd) || null;
+      _removeCameraChanged?.();
+      _removeCameraChanged = lodHulls ? _viewer?.camera?.changed?.addEventListener?.(updateLod) || null : null;
       clearInterval(_timer);
       _timer = staticPositions ? setInterval(reposition, REPOSITION_MS * 4) : setInterval(reposition, REPOSITION_MS);
     },
@@ -645,6 +759,9 @@ export function createIlClustersLayer({
       _releasePicking = null;
       _removeMoveEnd?.();
       _removeMoveEnd = null;
+      _removeCameraChanged?.();
+      _removeCameraChanged = null;
+      clearHulls();
       clearTimeout(_moveTimer);
       clearTimeout(_retryTimer);
       clearInterval(_timer);
@@ -822,9 +939,14 @@ export function createIlClustersLayer({
       _timer = null;
       _enabled = false;
       if (viewer) {
-        for (const collection of [_points, _lines, _outlines])
+        for (const collection of [_points, _lines, _outlines, _hulls])
           if (collection) viewer.scene.primitives.remove(collection);
       }
+      _removeCameraChanged?.();
+      _removeCameraChanged = null;
+      _hulls = null;
+      _hullShapes = new Map();
+      _hullInfo = new Map();
       _points = null;
       _lines = null;
       _outlines = null;

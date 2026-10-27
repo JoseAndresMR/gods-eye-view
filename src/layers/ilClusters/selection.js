@@ -69,12 +69,24 @@ export function subscribeSelection(listener) {
   return () => _listeners.delete(listener);
 }
 
+/**
+ * The selection after a globe click on `pickedId` (null when nothing with an
+ * id was picked). An IL node selects itself; anything else clears: empty
+ * globe, the photoreal 3D tiles (picked as a tile feature without an id) and
+ * other GEV objects alike.
+ * @param {string|null} pickedId
+ * @returns {IlSelection|null}
+ */
+export function selectionAfterClick(pickedId) {
+  return selectionFromPickId(pickedId);
+}
+
 function onKeyDown(event) {
   if (event.key === 'Escape' && _selected) clearSelection();
 }
 
 /**
- * Clicks on IL nodes select them; a click on empty space clears the
+ * Clicks on IL nodes select them; any other click on the globe clears the
  * selection. Every enabled IL layer calls this; the handler lives while any
  * of them does (the returned function releases one use).
  * @param {object} viewer Cesium viewer.
@@ -88,10 +100,9 @@ export function useIlPicking(viewer) {
     _handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
     _handler.setInputAction((click) => {
       if (!isPointerFree()) return;
-      const picked = viewer.scene.pick(click.position);
-      const selection = selectionFromPickId(resolvePickId(picked));
-      if (selection) select(selection);
-      else if (!picked && _selected) clearSelection();
+      // The photoreal tileset is always under the pointer, so "picked nothing"
+      // never happens over land: every click that isn't on an IL node clears.
+      select(selectionAfterClick(resolvePickId(viewer.scene.pick(click.position))));
     }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
     globalThis.document?.addEventListener?.('keydown', onKeyDown);
   }

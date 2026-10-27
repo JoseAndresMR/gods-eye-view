@@ -25,6 +25,16 @@ export function mountIntelPanel({ container, count = null, layers }) {
   const open = new Set();
   let frame = null;
 
+  /** The × that clears the selection, on the selected card. */
+  function clearControl(doc) {
+    const el = doc.createElement('span');
+    el.className = 'intel-cluster-clear';
+    el.textContent = '×';
+    el.title = t('Clear selection');
+    el.setAttribute('aria-label', t('Clear selection'));
+    return el;
+  }
+
   function card(layer, cluster) {
     const key = `${layer.id}:${cluster.id}`;
     const el = container.ownerDocument.createElement('button');
@@ -34,18 +44,25 @@ export function mountIntelPanel({ container, count = null, layers }) {
     el.dataset.layerId = layer.id;
     el.dataset.clusterId = cluster.id;
     el.setAttribute('aria-expanded', String(open.has(key)));
-    el.title = t('Show this cluster on the map');
+    el.style.setProperty('--cluster', cluster.color);
+    el.title = cluster.selected ? t('Clear the selection (Esc)') : t('Show this cluster on the map');
 
-    const heading = container.ownerDocument.createElement('span');
+    const doc = container.ownerDocument;
+    const heading = doc.createElement('span');
     heading.className = 'rail-card-heading';
-    const swatch = container.ownerDocument.createElement('span');
+    const swatch = doc.createElement('span');
     swatch.className = 'intel-cluster-swatch';
-    swatch.style.borderColor = cluster.color;
     swatch.setAttribute('aria-hidden', 'true');
-    const title = container.ownerDocument.createElement('span');
+    // The title reads "<id> · <members>": the members lead, the id is a tag.
+    const prefix = `${cluster.id} · `;
+    const title = doc.createElement('span');
     title.className = 'rail-card-title rail-card-nowrap';
-    title.textContent = cluster.title;
-    heading.append(swatch, title);
+    title.textContent = cluster.title.startsWith(prefix) ? cluster.title.slice(prefix.length) : cluster.title;
+    const tag = doc.createElement('span');
+    tag.className = 'intel-cluster-id';
+    tag.textContent = cluster.id;
+    heading.append(swatch, title, tag);
+    if (cluster.selected) heading.appendChild(clearControl(doc));
 
     const lines = container.ownerDocument.createElement('span');
     lines.className = 'rail-card-lines';
@@ -71,9 +88,15 @@ export function mountIntelPanel({ container, count = null, layers }) {
     el.className = 'rail-card intel-cluster is-open is-selected';
     el.dataset.satelliteId = satId;
     el.title = t('Clear the selection (Esc)');
+    const head = doc.createElement('span');
+    head.className = 'rail-card-heading';
+    const swatch = doc.createElement('span');
+    swatch.className = 'intel-cluster-swatch is-observer';
+    swatch.setAttribute('aria-hidden', 'true');
     const title = doc.createElement('span');
     title.className = 'rail-card-title rail-card-nowrap';
     title.textContent = parts[0].name;
+    head.append(swatch, title, clearControl(doc));
     const lines = doc.createElement('span');
     lines.className = 'rail-card-lines';
     for (const text of [...new Set(parts.flatMap((part) => part.lines))]) {
@@ -82,7 +105,7 @@ export function mountIntelPanel({ container, count = null, layers }) {
       line.textContent = text;
       lines.appendChild(line);
     }
-    el.append(title, lines);
+    el.append(head, lines);
     return [heading, el];
   }
 
@@ -136,7 +159,8 @@ export function mountIntelPanel({ container, count = null, layers }) {
   function onClick(event) {
     const el = event.target?.closest?.('.intel-cluster');
     if (!el || !container.contains(el)) return;
-    if (el.dataset.satelliteId) {
+    if (el.dataset.satelliteId || event.target.closest('.intel-cluster-clear')) {
+      if (el.dataset.clusterId) open.delete(`${el.dataset.layerId}:${el.dataset.clusterId}`);
       clearSelection();
       return;
     }

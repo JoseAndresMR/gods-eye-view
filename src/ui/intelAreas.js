@@ -129,11 +129,7 @@ export function mountIntelAreas({ container, panel, viewer, fetchImpl = globalTh
   function render() {
     if (destroyed) return;
     container.textContent = '';
-    const heading = doc.createElement('h3');
-    heading.className = 'data-layer-group-heading';
-    heading.textContent = t('Areas of interest');
-    container.appendChild(heading);
-
+    // The Areas of interest section header (intelSections.js) names this list.
     const world = doc.createElement('span');
     world.className = 'intel-area-name';
     world.textContent = t('Whole world');

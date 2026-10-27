@@ -8,6 +8,7 @@ import {
   isSatelliteSelected,
   satellitePickId,
   select,
+  selectionAfterClick,
   selectionFromPickId,
   subscribeSelection,
 } from './selection.js';
@@ -40,4 +41,12 @@ test('one selection at a time, listeners told only of changes', () => {
     { type: 'satellite', satId: '7' },
     null,
   ]);
+});
+
+test('a click selects an IL node and clears on anything else', () => {
+  assert.deepEqual(selectionAfterClick(clusterPickId('L', 'C9')), { type: 'cluster', layerId: 'L', clusterId: 'C9' });
+  assert.deepEqual(selectionAfterClick(satellitePickId('7')), { type: 'satellite', satId: '7' });
+  // Empty globe, a photoreal tile (no id), another GEV layer's object.
+  assert.equal(selectionAfterClick(null), null);
+  assert.equal(selectionAfterClick('a1b2c3'), null);
 });
