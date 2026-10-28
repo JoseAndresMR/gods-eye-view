@@ -3196,8 +3196,6 @@
   "Water": "水务",
   "Defence": "国防",
   "Observers": "观察站",
-  "Show lone members": "显示单成员群",
-  "Show clusters of one member in every feed, unless a feed says otherwise": "在所有数据源中显示单成员群，除非某个数据源另有设置",
   "A cluster of one member is a node with no count tag.": "单成员群是没有计数标签的节点。",
   "follows default": "跟随默认",
   "Reset": "重置",
@@ -3207,5 +3205,8 @@
   "Changes apply on the next update of each feed": "更改将在各数据源下次更新时生效",
   "Loading settings": "正在加载设置",
   "Could not save settings: {error}": "无法保存设置：{error}",
-  "Could not load settings: {error}": "无法加载设置：{error}"
+  "Could not load settings: {error}": "无法加载设置：{error}",
+  "Lone members: per-layer defaults": "单独成员：按图层默认",
+  "Lone members: none": "单独成员：无",
+  "ON: each layer uses its own default for clusters of one member. OFF: no layer shows them unless you switch it on below": "开：每个图层使用各自的默认值显示单成员分组。关：除非在下方单独开启，否则所有图层都不显示"
 }

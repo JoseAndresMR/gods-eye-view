@@ -1,8 +1,10 @@
 /**
  * General IL settings in the INTELLIGENCE panel. For now one feature: "Show
- * lone members" (clusters of one member), a global switch plus one per feed.
- * A feed's row says "follows default" until it is switched against the global
- * switch; switching it back, or "Reset", returns it to following. Every change
+ * lone members" (clusters of one member). The global switch means "per-layer
+ * defaults" (ON: each feed uses the IL's built-in default, e.g. off for fires
+ * and satellites) or "no lone members" (OFF). A feed's row says "follows
+ * default" until it is switched against its default; switching it back, or
+ * "Reset", returns it to following. Every change
  * saves the whole document at once (unknown keys are kept); the trackers read
  * it on their next tick, and the IL layers that are on re-read their feed.
  */
@@ -13,6 +15,7 @@ import {
   SETTINGS_FEEDS,
   loadSettings,
   loneClusters,
+  loneDefaultFor,
   loneEffective,
   saveSettings,
   setLoneDefault,
@@ -80,8 +83,8 @@ export function mountIntelSettings({ container, layers = [], fetchImpl = globalT
     container.textContent = '';
     const lone = loneClusters(state);
     container.appendChild(row(
-      label(t('Show lone members')),
-      switchButton(lone.default, t('Show clusters of one member in every feed, unless a feed says otherwise'), () =>
+      label(lone.default ? t('Lone members: per-layer defaults') : t('Lone members: none')),
+      switchButton(lone.default, t('ON: each layer uses its own default for clusters of one member. OFF: no layer shows them unless you switch it on below'), () =>
         commit(setLoneDefault(state, !lone.default)),
       ),
     ));
@@ -103,7 +106,7 @@ export function mountIntelSettings({ container, layers = [], fetchImpl = globalT
         reset,
         switchButton(effective, t('Show lone members in this feed'), () => {
           const next = !effective;
-          commit(setLoneOverride(state, kind, next === lone.default ? null : next));
+          commit(setLoneOverride(state, kind, next === loneDefaultFor(state, kind) ? null : next));
         }),
       ));
     }

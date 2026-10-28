@@ -3,7 +3,7 @@
 // Unknown keys are kept: later features add their own sections.
 import { IL_SETTINGS_URL } from './model.js';
 
-/** Feed kinds that get their own "Show lone members" switch, in panel order. */
+/** Feed kinds that get their own lone-members switch, in panel order. */
 export const SETTINGS_FEEDS = Object.freeze([
   ['aircraft', 'il-aircraft-clusters'],
   ['military', 'il-military-clusters'],
@@ -35,10 +35,21 @@ export function loneClusters(doc) {
   };
 }
 
-/** Whether a feed shows lone members: its override, else the global default. */
+/**
+ * What a feed does without an override: the IL's built-in per-feed default
+ * (`doc.defaults.lone_clusters[kind]`, read-only, served by the IL; on when
+ * unknown) while the global switch is on, else off.
+ */
+export function loneDefaultFor(doc, kind) {
+  if (!loneClusters(doc).default) return false;
+  const builtIn = doc?.defaults?.lone_clusters?.[kind];
+  return typeof builtIn === 'boolean' ? builtIn : true;
+}
+
+/** Whether a feed shows lone members: its override, else its default. */
 export function loneEffective(doc, kind) {
-  const { default: on, overrides } = loneClusters(doc);
-  return typeof overrides[kind] === 'boolean' ? overrides[kind] : on;
+  const { overrides } = loneClusters(doc);
+  return typeof overrides[kind] === 'boolean' ? overrides[kind] : loneDefaultFor(doc, kind);
 }
 
 /** The document with the global switch set; other keys and the overrides are kept. */
@@ -69,13 +80,14 @@ export async function loadSettings(fetchImpl = globalThis.fetch) {
   return readJson(await fetchImpl(IL_SETTINGS_URL, { cache: 'no-store' }));
 }
 
-/** Save the whole document; resolves to what the IL stored. */
+/** Save the whole document (without the read-only `defaults`); resolves to what the IL stored. */
 export async function saveSettings(doc, fetchImpl = globalThis.fetch) {
+  const { defaults: _readOnly, ...body } = doc || {};
   return readJson(
     await fetchImpl(IL_SETTINGS_URL, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(doc),
+      body: JSON.stringify(body),
     }),
   );
 }

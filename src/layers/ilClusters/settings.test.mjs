@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  DEFAULT_SETTINGS, SETTINGS_FEEDS, loadSettings, loneClusters, loneEffective,
+  DEFAULT_SETTINGS, SETTINGS_FEEDS, loadSettings, loneClusters, loneDefaultFor, loneEffective,
   saveSettings, setLoneDefault, setLoneOverride,
 } from './settings.js';
 import { IL_LAYER_IDS } from './model.js';
@@ -51,4 +51,23 @@ test('loads and saves the whole document through the GEV route', async () => {
   assert.deepEqual(await saveSettings(doc, fetchImpl), doc);
   await assert.rejects(saveSettings({ bad: 1 }, fetchImpl), /nope/);
   assert.deepEqual(calls.map((c) => c[0]), Array(3).fill('/api/il/settings'));
+});
+
+test('the built-in per-feed defaults apply only while the global switch is on', () => {
+  const doc = { lone_clusters: { default: true, overrides: {} }, defaults: { lone_clusters: { fires: false, aircraft: true } } };
+  assert.equal(loneDefaultFor(doc, 'fires'), false);
+  assert.equal(loneDefaultFor(doc, 'aircraft'), true);
+  assert.equal(loneDefaultFor(doc, 'unknown-kind'), true);
+  assert.equal(loneEffective(setLoneOverride(doc, 'fires', true), 'fires'), true);
+  const off = setLoneDefault(doc, false);
+  assert.equal(loneDefaultFor(off, 'aircraft'), false);
+  assert.equal(loneEffective(off, 'aircraft'), false);
+  assert.equal(loneEffective(setLoneOverride(off, 'aircraft', true), 'aircraft'), true);
+});
+
+test('saving does not send the read-only defaults', async () => {
+  let sent;
+  const fetchImpl = async (url, init) => { sent = JSON.parse(init.body); return new Response(init.body, { status: 200 }); };
+  await saveSettings({ keep: 1, defaults: { lone_clusters: { fires: false } }, lone_clusters: { default: true, overrides: {} } }, fetchImpl);
+  assert.deepEqual(Object.keys(sent).sort(), ['keep', 'lone_clusters']);
 });

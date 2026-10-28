@@ -3396,8 +3396,6 @@
   "Water": "Agua",
   "Defence": "Defensa",
   "Observers": "Observadores",
-  "Show lone members": "Mostrar miembros solitarios",
-  "Show clusters of one member in every feed, unless a feed says otherwise": "Mostrar grupos de un solo miembro en todas las fuentes, salvo que una fuente indique lo contrario",
   "A cluster of one member is a node with no count tag.": "Un grupo de un miembro es un nodo sin etiqueta de recuento.",
   "follows default": "sigue el valor global",
   "Reset": "Restablecer",
@@ -3407,5 +3405,8 @@
   "Changes apply on the next update of each feed": "Los cambios se aplican en la próxima actualización de cada fuente",
   "Loading settings": "Cargando ajustes",
   "Could not save settings: {error}": "No se pudieron guardar los ajustes: {error}",
-  "Could not load settings: {error}": "No se pudieron cargar los ajustes: {error}"
+  "Could not load settings: {error}": "No se pudieron cargar los ajustes: {error}",
+  "Lone members: per-layer defaults": "Miembros solitarios: valores por capa",
+  "Lone members: none": "Miembros solitarios: ninguno",
+  "ON: each layer uses its own default for clusters of one member. OFF: no layer shows them unless you switch it on below": "ACTIVADO: cada capa usa su propio valor para los grupos de un solo miembro. DESACTIVADO: ninguna capa los muestra salvo que la actives abajo"
 }

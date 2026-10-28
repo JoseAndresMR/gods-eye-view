@@ -3496,8 +3496,6 @@
   "Water": "Вода",
   "Defence": "Оборона",
   "Observers": "Наблюдатели",
-  "Show lone members": "Показывать одиночные элементы",
-  "Show clusters of one member in every feed, unless a feed says otherwise": "Показывать группы из одного элемента во всех источниках, если источник не задан иначе",
   "A cluster of one member is a node with no count tag.": "Группа из одного элемента — это узел без метки количества.",
   "follows default": "по умолчанию",
   "Reset": "Сбросить",
@@ -3507,5 +3505,8 @@
   "Changes apply on the next update of each feed": "Изменения применяются при следующем обновлении каждого источника",
   "Loading settings": "Загрузка настроек",
   "Could not save settings: {error}": "Не удалось сохранить настройки: {error}",
-  "Could not load settings: {error}": "Не удалось загрузить настройки: {error}"
+  "Could not load settings: {error}": "Не удалось загрузить настройки: {error}",
+  "Lone members: per-layer defaults": "Одиночные участники: по слоям",
+  "Lone members: none": "Одиночные участники: нет",
+  "ON: each layer uses its own default for clusters of one member. OFF: no layer shows them unless you switch it on below": "ВКЛ: каждый слой использует своё значение для групп из одного участника. ВЫКЛ: ни один слой их не показывает, пока вы не включите его ниже"
 }
