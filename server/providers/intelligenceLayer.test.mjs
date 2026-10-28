@@ -19,6 +19,13 @@ test('index, per-distance and box reads are allowed for each kind', () => {
   assert.equal(intelligenceLayerPath('GET', '/vessels?km=1&bbox=170,-5,-170,5'), '/api/vessels?km=1&bbox=170,-5,-170,5');
 });
 
+test('settings can be read and saved, nothing else written', () => {
+  assert.equal(intelligenceLayerPath('GET', '/settings'), '/api/settings');
+  assert.equal(intelligenceLayerPath('PUT', '/settings'), '/api/settings');
+  assert.equal(intelligenceLayerPath('DELETE', '/settings'), null);
+  assert.equal(intelligenceLayerPath('GET', '/settings/x'), null);
+});
+
 test('areas can be read and saved, nothing else written', () => {
   assert.equal(intelligenceLayerPath('GET', '/areas'), '/api/areas');
   assert.equal(intelligenceLayerPath('PUT', '/areas'), '/api/areas');

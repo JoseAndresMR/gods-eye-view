@@ -3395,5 +3395,17 @@
   "Digital infrastructure": "Infraestructura digital",
   "Water": "Agua",
   "Defence": "Defensa",
-  "Observers": "Observadores"
+  "Observers": "Observadores",
+  "Show lone members": "Mostrar miembros solitarios",
+  "Show clusters of one member in every feed, unless a feed says otherwise": "Mostrar grupos de un solo miembro en todas las fuentes, salvo que una fuente indique lo contrario",
+  "A cluster of one member is a node with no count tag.": "Un grupo de un miembro es un nodo sin etiqueta de recuento.",
+  "follows default": "sigue el valor global",
+  "Reset": "Restablecer",
+  "Follow the default again": "Volver a seguir el valor global",
+  "This feed follows the default": "Esta fuente sigue el valor global",
+  "Show lone members in this feed": "Mostrar miembros solitarios en esta fuente",
+  "Changes apply on the next update of each feed": "Los cambios se aplican en la próxima actualización de cada fuente",
+  "Loading settings": "Cargando ajustes",
+  "Could not save settings: {error}": "No se pudieron guardar los ajustes: {error}",
+  "Could not load settings: {error}": "No se pudieron cargar los ajustes: {error}"
 }

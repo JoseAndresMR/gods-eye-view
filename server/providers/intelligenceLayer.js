@@ -95,12 +95,15 @@ function parseBbox(raw) {
  *   GET /<kind>?km=<km>[&bbox=W,S,E,N] → /api/<kind>?km=…[&bbox=…]
  *   GET /observability/<relation>?targets=<kind>:<km>,…[&bbox=W,S,E,N] → /api/observability/<relation>?…
  *   GET|PUT /areas                     → /api/areas
+ *   GET|PUT /settings                  → /api/settings
  */
 export function intelligenceLayerPath(method, url) {
   const { pathname, searchParams } = new URL(url || '', 'http://localhost');
   const [, first, rest, extra] = pathname.split('/');
   if (first === 'areas' && rest === undefined)
     return method === 'GET' || method === 'PUT' ? '/api/areas' : null;
+  if (first === 'settings' && rest === undefined)
+    return method === 'GET' || method === 'PUT' ? '/api/settings' : null;
   if (first === 'observability')
     return method === 'GET' && RELATIONS.has(rest) && extra === undefined ? observabilityPath(rest, searchParams) : null;
   if (method !== 'GET' || !KINDS.has(first) || extra !== undefined) return null;
@@ -427,7 +430,7 @@ export function intelligenceLayerProxy() {
         sendJson(res, upstream.ok ? 200 : upstream.status === 400 ? 400 : 502, text);
       } catch (error) {
         if (error?.status === 413) {
-          sendJson(res, 413, { error: 'Areas must be under 64 KB' });
+          sendJson(res, 413, { error: 'Request body must be under 64 KB' });
           return;
         }
         sendJson(res, 503, {

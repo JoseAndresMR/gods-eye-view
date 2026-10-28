@@ -256,6 +256,19 @@ input.intel-area-name {
   color: var(--text-primary);
   border-color: #79c2ff;
 }
+.intel-setting-state {
+  flex: 0 0 auto;
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: var(--text-dim);
+  font: 11px var(--font-sans);
+}
+.intel-setting-state:not(:disabled) {
+  color: #79c2ff;
+  cursor: pointer;
+  text-decoration: underline;
+}
 .intel-area-draw {
   align-self: flex-start;
 }

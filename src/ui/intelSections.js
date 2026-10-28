@@ -53,8 +53,8 @@ export function mountIntelSections(root, { storage = globalThis.localStorage } =
   function sync() {
     frame = null;
     for (const s of sections) {
-      const toggles = s.body.querySelectorAll('.data-toggle-btn');
-      const active = s.body.querySelectorAll('.data-toggle-btn.active').length;
+      const toggles = s.body.querySelectorAll('.data-toggle-btn:not(.intel-switch)');
+      const active = s.body.querySelectorAll('.data-toggle-btn.active:not(.intel-switch)').length;
       const open = sectionOpen(state[s.id], active);
       if (s.button.getAttribute('aria-expanded') !== String(open)) s.button.setAttribute('aria-expanded', String(open));
       if (s.body.hidden === open) s.body.hidden = !open;

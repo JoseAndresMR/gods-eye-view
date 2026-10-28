@@ -3495,5 +3495,17 @@
   "Digital infrastructure": "Цифровая инфраструктура",
   "Water": "Вода",
   "Defence": "Оборона",
-  "Observers": "Наблюдатели"
+  "Observers": "Наблюдатели",
+  "Show lone members": "Показывать одиночные элементы",
+  "Show clusters of one member in every feed, unless a feed says otherwise": "Показывать группы из одного элемента во всех источниках, если источник не задан иначе",
+  "A cluster of one member is a node with no count tag.": "Группа из одного элемента — это узел без метки количества.",
+  "follows default": "по умолчанию",
+  "Reset": "Сбросить",
+  "Follow the default again": "Снова следовать значению по умолчанию",
+  "This feed follows the default": "Этот источник следует значению по умолчанию",
+  "Show lone members in this feed": "Показывать одиночные элементы в этом источнике",
+  "Changes apply on the next update of each feed": "Изменения применяются при следующем обновлении каждого источника",
+  "Loading settings": "Загрузка настроек",
+  "Could not save settings: {error}": "Не удалось сохранить настройки: {error}",
+  "Could not load settings: {error}": "Не удалось загрузить настройки: {error}"
 }

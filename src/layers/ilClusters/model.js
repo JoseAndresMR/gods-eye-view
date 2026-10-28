@@ -139,6 +139,9 @@ export function observationUrl(relation, lanes, box = null, observers = null) {
 /** Areas of interest: where the intelligence layer computes. */
 export const IL_AREAS_URL = '/api/il/areas';
 
+/** General IL settings (lone clusters, ...), one JSON document. */
+export const IL_SETTINGS_URL = '/api/il/settings';
+
 /** Views wider than this are treated as worldwide (the overview). */
 const MAX_VIEW_SPAN_DEG = 150;
 
