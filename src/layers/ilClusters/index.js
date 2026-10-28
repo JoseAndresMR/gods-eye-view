@@ -15,6 +15,10 @@ import {
   IL_MILITARY_AREA_CLUSTERS_ID,
   IL_DATACENTER_CLUSTERS_ID,
   IL_DAM_CLUSTERS_ID,
+  IL_POWER_PLANT_CLUSTERS_ID,
+  IL_LNG_TERMINAL_CLUSTERS_ID,
+  IL_AIRPORT_CLUSTERS_ID,
+  IL_PORT_CLUSTERS_ID,
   IL_LANDING_CLUSTERS_ID,
   IL_CAMERA_CLUSTERS_ID,
   IL_MILITARY_CLUSTERS_ID,
@@ -1266,6 +1270,62 @@ function createIlFixedClustersLayer({ id, name, icon, source, kind, chipTitle, s
     liftM: 20,
     alwaysOnTop: true,
     chipTitle,
+    fetchImpl,
+  });
+}
+
+/** Power plant clusters. */
+export function createIlPowerPlantClustersLayer({ surface = null, fetchImpl } = {}) {
+  return createIlFixedClustersLayer({
+    id: IL_POWER_PLANT_CLUSTERS_ID,
+    name: 'Power plant clusters',
+    icon: '⚡',
+    source: 'Intelligence layer · Global Energy Monitor',
+    kind: 'power-plants',
+    chipTitle: (distance) => t('Link power plants closer than {distance} km', { distance }),
+    surface,
+    fetchImpl,
+  });
+}
+
+/** LNG terminal clusters. */
+export function createIlLngTerminalClustersLayer({ surface = null, fetchImpl } = {}) {
+  return createIlFixedClustersLayer({
+    id: IL_LNG_TERMINAL_CLUSTERS_ID,
+    name: 'LNG terminal clusters',
+    icon: '🚢',
+    source: 'Intelligence layer · Global Energy Monitor',
+    kind: 'lng-terminals',
+    chipTitle: (distance) => t('Link LNG terminals closer than {distance} km', { distance }),
+    surface,
+    fetchImpl,
+  });
+}
+
+/** Airport clusters. */
+export function createIlAirportClustersLayer({ surface = null, fetchImpl } = {}) {
+  return createIlFixedClustersLayer({
+    id: IL_AIRPORT_CLUSTERS_ID,
+    name: 'Airport clusters',
+    icon: '🛫',
+    source: 'Intelligence layer · OurAirports',
+    kind: 'airports',
+    chipTitle: (distance) => t('Link airports closer than {distance} km', { distance }),
+    surface,
+    fetchImpl,
+  });
+}
+
+/** Port clusters. */
+export function createIlPortClustersLayer({ surface = null, fetchImpl } = {}) {
+  return createIlFixedClustersLayer({
+    id: IL_PORT_CLUSTERS_ID,
+    name: 'Port clusters',
+    icon: '⚓',
+    source: 'Intelligence layer · NGA World Port Index',
+    kind: 'ports',
+    chipTitle: (distance) => t('Link ports closer than {distance} km', { distance }),
+    surface,
     fetchImpl,
   });
 }

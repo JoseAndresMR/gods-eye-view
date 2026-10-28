@@ -52,6 +52,22 @@ export const CLUSTER_KINDS = Object.freeze({
     members: (n) => tn(n, '{count} low-accuracy cell', '{count} low-accuracy cells', { count: formatNumber(n) }),
     composition: [],
   },
+  'power-plants': {
+    members: (n) => tn(n, '{count} power plant', '{count} power plants', { count: formatNumber(n) }),
+    composition: [{ key: 'fuel', line: msg('Mostly {value} ({count})') }],
+  },
+  'lng-terminals': {
+    members: (n) => tn(n, '{count} LNG terminal', '{count} LNG terminals', { count: formatNumber(n) }),
+    composition: [],
+  },
+  airports: {
+    members: (n) => tn(n, '{count} airport', '{count} airports', { count: formatNumber(n) }),
+    composition: [{ key: 'tier', line: msg('Mostly {value} ({count})') }],
+  },
+  ports: {
+    members: (n) => tn(n, '{count} port', '{count} ports', { count: formatNumber(n) }),
+    composition: [{ key: 'size', line: msg('Mostly {value} ({count})') }],
+  },
   'military-areas': {
     members: (n) => tn(n, '{count} military area', '{count} military areas', { count: formatNumber(n) }),
     composition: [{ key: 'class', line: msg('Mostly {value} ({count})') }],

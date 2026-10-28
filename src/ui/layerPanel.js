@@ -105,15 +105,34 @@ const PANEL_GROUPS = [
     ids: ['il-fire-clusters', 'il-gnss-zones', 'il-event-clusters'],
   },
   {
-    label: msg('Fixed sites'),
-    hostId: 'intel-toggles-sites',
-    ids: [
-      'il-military-area-clusters',
-      'il-datacenter-clusters',
-      'il-dam-clusters',
-      'il-landing-clusters',
-      'il-camera-clusters',
-    ],
+    label: msg('Energy'),
+    hostId: 'intel-toggles-energy',
+    ids: ['il-power-plant-clusters', 'il-lng-terminal-clusters'],
+  },
+  {
+    label: msg('Transport'),
+    hostId: 'intel-toggles-transport',
+    ids: ['il-airport-clusters', 'il-port-clusters'],
+  },
+  {
+    label: msg('Digital infrastructure'),
+    hostId: 'intel-toggles-digital',
+    ids: ['il-datacenter-clusters', 'il-landing-clusters'],
+  },
+  {
+    label: msg('Water'),
+    hostId: 'intel-toggles-water',
+    ids: ['il-dam-clusters'],
+  },
+  {
+    label: msg('Defence'),
+    hostId: 'intel-toggles-defence',
+    ids: ['il-military-area-clusters'],
+  },
+  {
+    label: msg('Observers'),
+    hostId: 'intel-toggles-observers',
+    ids: ['il-camera-clusters'],
   },
   // Cross-layer relations: satellites observing the clusters above.
   {

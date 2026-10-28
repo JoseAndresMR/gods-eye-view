@@ -3290,7 +3290,6 @@
   "Turn on {layer} for its time, FRP and confidence": "Включите слой {layer}, чтобы увидеть время, FRP и достоверность",
   "Moving contacts": "Движущиеся объекты",
   "Events and hazards": "События и угрозы",
-  "Fixed sites": "Стационарные объекты",
   "{active} of {total} on": "Включено {active} из {total}",
   "{days} days ago": "{days} дн. назад",
   "{hours} h ago": "{hours} ч назад",
@@ -3458,5 +3457,43 @@
     "few": "В зоне действия {count} опасностей · ближайшая на расстоянии {km} км",
     "many": "В зоне действия {count} опасностей · ближайшая на расстоянии {km} км",
     "other": "В зоне действия {count} опасностей · ближайшая на расстоянии {km} км"
-  }
+  },
+  "{count} power plants": {
+    "one": "{count} электростанция",
+    "few": "{count} электростанции",
+    "many": "{count} электростанций",
+    "other": "{count} электростанции"
+  },
+  "{count} LNG terminals": {
+    "one": "{count} СПГ-терминал",
+    "few": "{count} СПГ-терминала",
+    "many": "{count} СПГ-терминалов",
+    "other": "{count} СПГ-терминала"
+  },
+  "{count} airports": {
+    "one": "{count} аэропорт",
+    "few": "{count} аэропорта",
+    "many": "{count} аэропортов",
+    "other": "{count} аэропорта"
+  },
+  "{count} ports": {
+    "one": "{count} порт",
+    "few": "{count} порта",
+    "many": "{count} портов",
+    "other": "{count} порта"
+  },
+  "Link power plants closer than {distance} km": "Связывать электростанции ближе {distance} км",
+  "Link LNG terminals closer than {distance} km": "Связывать СПГ-терминалы ближе {distance} км",
+  "Link airports closer than {distance} km": "Связывать аэропорты ближе {distance} км",
+  "Link ports closer than {distance} km": "Связывать порты ближе {distance} км",
+  "Power plant clusters": "Группы электростанций",
+  "LNG terminal clusters": "Группы СПГ-терминалов",
+  "Airport clusters": "Группы аэропортов",
+  "Port clusters": "Группы портов",
+  "Energy": "Энергетика",
+  "Transport": "Транспорт",
+  "Digital infrastructure": "Цифровая инфраструктура",
+  "Water": "Вода",
+  "Defence": "Оборона",
+  "Observers": "Наблюдатели"
 }

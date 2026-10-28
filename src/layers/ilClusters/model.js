@@ -17,6 +17,10 @@ export const IL_SATELLITE_CLUSTERS_ID = 'il-satellite-clusters';
 export const IL_FIRE_CLUSTERS_ID = 'il-fire-clusters';
 export const IL_GNSS_ZONES_ID = 'il-gnss-zones';
 export const IL_EVENT_CLUSTERS_ID = 'il-event-clusters';
+export const IL_POWER_PLANT_CLUSTERS_ID = 'il-power-plant-clusters';
+export const IL_LNG_TERMINAL_CLUSTERS_ID = 'il-lng-terminal-clusters';
+export const IL_AIRPORT_CLUSTERS_ID = 'il-airport-clusters';
+export const IL_PORT_CLUSTERS_ID = 'il-port-clusters';
 export const IL_MILITARY_AREA_CLUSTERS_ID = 'il-military-area-clusters';
 export const IL_DATACENTER_CLUSTERS_ID = 'il-datacenter-clusters';
 export const IL_DAM_CLUSTERS_ID = 'il-dam-clusters';
@@ -50,6 +54,10 @@ export const IL_LAYER_IDS = Object.freeze([
   IL_FIRE_CLUSTERS_ID,
   IL_GNSS_ZONES_ID,
   IL_EVENT_CLUSTERS_ID,
+  IL_POWER_PLANT_CLUSTERS_ID,
+  IL_LNG_TERMINAL_CLUSTERS_ID,
+  IL_AIRPORT_CLUSTERS_ID,
+  IL_PORT_CLUSTERS_ID,
   IL_MILITARY_AREA_CLUSTERS_ID,
   IL_DATACENTER_CLUSTERS_ID,
   IL_DAM_CLUSTERS_ID,

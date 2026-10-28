@@ -46,6 +46,10 @@ import {
   createIlDamClustersLayer,
   createIlLandingClustersLayer,
   createIlCameraClustersLayer,
+  createIlPowerPlantClustersLayer,
+  createIlLngTerminalClustersLayer,
+  createIlAirportClustersLayer,
+  createIlPortClustersLayer,
   createIlCameraObserversLayer,
   createIlFireSatellitesLayer,
   createIlImagedSatellitesLayer,
@@ -147,6 +151,10 @@ export function createApplicationCatalog({
     const ilGnss = createIlGnssZonesLayer({ surface });
     const ilEvents = createIlEventClustersLayer({ surface });
     const ilFixedSites = [
+      createIlPowerPlantClustersLayer({ surface }),
+      createIlLngTerminalClustersLayer({ surface }),
+      createIlAirportClustersLayer({ surface }),
+      createIlPortClustersLayer({ surface }),
       createIlMilitaryAreaClustersLayer({ surface }),
       createIlDatacenterClustersLayer({ surface }),
       createIlDamClustersLayer({ surface }),

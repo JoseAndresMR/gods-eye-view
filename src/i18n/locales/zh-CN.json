@@ -3038,7 +3038,6 @@
   "Turn on {layer} for its time, FRP and confidence": "开启{layer}可查看其时间、FRP和置信度",
   "Moving contacts": "移动目标",
   "Events and hazards": "事件与灾害",
-  "Fixed sites": "固定地点",
   "{active} of {total} on": "已开启 {active}/{total}",
   "{days} days ago": "{days} 天前",
   "{hours} h ago": "{hours} 小时前",
@@ -3170,5 +3169,31 @@
   "Hazards reaching clusters": "影响集群的灾害",
   "Within reach of {count} hazards · closest {km} km": {
     "other": "处于 {count} 个灾害的影响范围内 · 最近的距离 {km} 公里"
-  }
+  },
+  "{count} power plants": {
+    "other": "{count} 座发电厂"
+  },
+  "{count} LNG terminals": {
+    "other": "{count} 座 LNG 接收站"
+  },
+  "{count} airports": {
+    "other": "{count} 个机场"
+  },
+  "{count} ports": {
+    "other": "{count} 个港口"
+  },
+  "Link power plants closer than {distance} km": "连接距离小于 {distance} km 的发电厂",
+  "Link LNG terminals closer than {distance} km": "连接距离小于 {distance} km 的LNG 接收站",
+  "Link airports closer than {distance} km": "连接距离小于 {distance} km 的机场",
+  "Link ports closer than {distance} km": "连接距离小于 {distance} km 的港口",
+  "Power plant clusters": "发电厂集群",
+  "LNG terminal clusters": "LNG 接收站集群",
+  "Airport clusters": "机场集群",
+  "Port clusters": "港口集群",
+  "Energy": "能源",
+  "Transport": "交通运输",
+  "Digital infrastructure": "数字基础设施",
+  "Water": "水务",
+  "Defence": "国防",
+  "Observers": "观察站"
 }
