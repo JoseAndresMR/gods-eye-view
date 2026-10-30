@@ -37,6 +37,16 @@ const INTERNAL = new Set([
 /** Fields that hold epoch seconds. */
 const EPOCH_FIELDS = /(^|_)(epoch|time_position|last_position_epoch|updated_at|position_epoch|seen_at|last_contact)$/;
 
+/**
+ * A hub's member is a site of another feed: `kind` is that feed and `ref` the site's own id
+ * (the member's id is `<kind>:<ref>`). Every other feed's member is its own element.
+ * @returns {{kind: string, node: object}} the feed and node to open the element by.
+ */
+export function elementTarget(kind, node) {
+  if (kind !== 'hubs' || !node?.kind) return { kind, node };
+  return { kind: node.kind, node: { ...node, id: node.ref ?? node.id } };
+}
+
 /** The id GEV's owning layer knows the element by. */
 export function ownerElementId(kind, node) {
   if (!node) return null;
@@ -98,7 +108,8 @@ export function elementFields(node, limit = 24) {
  * @param {{isEnabled?: Function, layers?: Map}|null} dataManager GEV's layer lifecycle.
  * @returns {{layerId: string|null, opened: boolean, reason: 'none'|'off'|'missing'|'not-found'|null}}
  */
-export function openInGev(dataManager, kind, node) {
+export function openInGev(dataManager, feedKind, feedNode) {
+  const { kind, node } = elementTarget(feedKind, feedNode);
   const owner = ELEMENT_OWNERS[kind];
   if (!owner) return { layerId: null, opened: false, reason: 'none' };
   const elementId = ownerElementId(kind, node);

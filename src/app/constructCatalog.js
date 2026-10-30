@@ -50,6 +50,8 @@ import {
   createIlLngTerminalClustersLayer,
   createIlAirportClustersLayer,
   createIlPortClustersLayer,
+  createIlHubClustersLayer,
+  createIlHubsObserversLayer,
   createIlCameraObserversLayer,
   createIlFireSatellitesLayer,
   createIlImagedSatellitesLayer,
@@ -150,6 +152,8 @@ export function createApplicationCatalog({
     const ilFires = createIlFireClustersLayer({ surface });
     const ilGnss = createIlGnssZonesLayer({ surface });
     const ilEvents = createIlEventClustersLayer({ surface });
+    // Cross-sector hubs: not a target of the relations below, but the card roll-up reads them.
+    const ilHubs = createIlHubClustersLayer({ surface });
     const ilFixedSites = [
       createIlPowerPlantClustersLayer({ surface }),
       createIlLngTerminalClustersLayer({ surface }),
@@ -244,6 +248,7 @@ export function createApplicationCatalog({
         ilFires,
         ilGnss,
         ilEvents,
+        ilHubs,
         ...ilFixedSites,
         createIlCameraClustersLayer({ surface }),
         createIlImagingSatellitesLayer({ targets: [...ilFixedSites, ilFires, ilEvents, ilVessels], surface }),
@@ -252,29 +257,33 @@ export function createApplicationCatalog({
         createIlReceiverSatellitesLayer({ targets: [ilVessels, ilAircraft, ilMilitary], surface }),
         createIlNavigationSatellitesLayer({ targets: [ilGnss], surface }),
         createIlImagedSatellitesLayer({ targets: [...ilFixedSites, ilFires, ilEvents], surface }),
-        createIlCameraObserversLayer({ targets: [...ilFixedSites, ilVessels, ilFires], surface }),
-        createIlPlateReaderObserversLayer({ targets: ilFixedSites, surface }),
-        createIlStreetImageryObserversLayer({ targets: ilFixedSites, surface }),
+        createIlCameraObserversLayer({ hubs: ilHubs, targets: [...ilFixedSites, ilVessels, ilFires], surface }),
+        createIlPlateReaderObserversLayer({ hubs: ilHubs, targets: ilFixedSites, surface }),
+        createIlStreetImageryObserversLayer({ hubs: ilHubs, targets: ilFixedSites, surface }),
         createIlOverflightObserversLayer({
+          hubs: ilHubs,
           targets: [...ilFixedSites, ilVessels, ilFires],
           aircraft: ilAircraft,
           military: ilMilitary,
           surface,
         }),
-        createIlFiresNearObserversLayer({ targets: ilFixedSites, fires: ilFires, surface }),
+        createIlFiresNearObserversLayer({ hubs: ilHubs, targets: ilFixedSites, fires: ilFires, surface }),
         createIlVesselsNearObserversLayer({
+          hubs: ilHubs,
           targets: ilFixedSites.filter((layer) => layer.id !== 'il-dam-clusters'),
           vessels: ilVessels,
           surface,
         }),
-        createIlMilitaryOverObserversLayer({ targets: ilFixedSites.filter((layer) => layer.id === 'il-military-area-clusters'), military: ilMilitary, surface }),
+        createIlMilitaryOverObserversLayer({ hubs: ilHubs, targets: ilFixedSites.filter((layer) => layer.id === 'il-military-area-clusters'), military: ilMilitary, surface }),
         createIlFiresEventsObserversLayer({ targets: [ilEvents], fires: ilFires, surface }),
         createIlGnssAffectsObserversLayer({
+          hubs: ilHubs,
           targets: [ilAircraft, ilMilitary, ilVessels, ilEvents, ...ilFixedSites],
           gnss: ilGnss,
           surface,
         }),
-        createIlHazardsObserversLayer({ targets: [ilAircraft, ilVessels, ...ilFixedSites], surface }),
+        createIlHazardsObserversLayer({ hubs: ilHubs, targets: [ilAircraft, ilVessels, ...ilFixedSites], surface }),
+        createIlHubsObserversLayer({ targets: ilFixedSites, hubs: ilHubs, surface }),
       ],
       metadata,
     );

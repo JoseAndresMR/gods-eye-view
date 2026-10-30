@@ -88,7 +88,60 @@ export const CLUSTER_KINDS = Object.freeze({
     members: (n) => tn(n, '{count} camera', '{count} cameras', { count: formatNumber(n) }),
     composition: [{ key: 'city', line: msg('Mostly {value} ({count})') }],
   },
+  hubs: {
+    members: (n) => tn(n, '{count} site', '{count} sites', { count: formatNumber(n) }),
+    composition: [],
+  },
 });
+
+/** Sector names as the IL's hub summaries carry them. */
+const SECTOR_LABELS = Object.freeze({
+  Energy: msg('Energy'),
+  Transport: msg('Transport'),
+  'Digital infrastructure': msg('Digital infrastructure'),
+  Water: msg('Water'),
+  Defence: msg('Defence'),
+});
+
+/** What one site of a hub kind is called alone, and how many of it read as a count (hub card). */
+const HUB_PARTS = Object.freeze([
+  ['ports', msg('port'), (n) => tn(n, '{count} port', '{count} ports', { count: formatNumber(n) })],
+  ['airports', msg('airport'), (n) => tn(n, '{count} airport', '{count} airports', { count: formatNumber(n) })],
+  ['lng-terminals', msg('LNG terminal'), (n) => tn(n, '{count} LNG terminal', '{count} LNG terminals', { count: formatNumber(n) })],
+  ['power-plants', msg('power plant'), (n) => tn(n, '{count} power plant', '{count} power plants', { count: formatNumber(n) })],
+  ['datacenters', msg('data centre'), (n) => tn(n, '{count} data centre', '{count} data centres', { count: formatNumber(n) })],
+  ['landings', msg('cable landing'), (n) => tn(n, '{count} cable landing', '{count} cable landings', { count: formatNumber(n) })],
+  ['dams', msg('dam'), (n) => tn(n, '{count} dam', '{count} dams', { count: formatNumber(n) })],
+  ['military-areas', msg('military area'), (n) => tn(n, '{count} military area', '{count} military areas', { count: formatNumber(n) })],
+]);
+
+/** "Port + LNG terminal + 2 power plants (3.4 GW) + cable landing": what a hub is made of. */
+export function hubComposition(summary) {
+  const kinds = summary?.kinds || {};
+  const parts = [];
+  for (const [kind, one, many] of HUB_PARTS) {
+    const n = kinds[kind];
+    if (!(n > 0)) continue;
+    let text = n === 1 ? t(one) : many(n);
+    if (kind === 'power-plants' && finite(summary.capacity_mw_total) && summary.capacity_mw_total > 0)
+      text += ` (${round(summary.capacity_mw_total / 1000, 1)} GW)`;
+    if (kind === 'lng-terminals' && finite(summary.capacity_mtpa_total) && summary.capacity_mtpa_total > 0)
+      text += ` (${round(summary.capacity_mtpa_total, 1)} Mtpa)`;
+    parts.push(text);
+  }
+  const text = parts.join(' + ');
+  return text ? text.charAt(0).toLocaleUpperCase() + text.slice(1) : '';
+}
+
+/** "4 sectors · nuclear · 5.1 GW": the significance the IL ranked the hub by. */
+export function hubRankLine(summary) {
+  const sectors = Array.isArray(summary?.sectors) ? summary.sectors.length : 0;
+  const parts = [tn(sectors, '{count} sector', '{count} sectors', { count: formatNumber(sectors) })];
+  if (summary?.nuclear) parts.push(t('nuclear'));
+  if (finite(summary?.capacity_mw_total) && summary.capacity_mw_total > 0)
+    parts.push(`${round(summary.capacity_mw_total / 1000, 1)} GW`);
+  return parts.join(' · ');
+}
 
 function spreadLine(s) {
   if (!finite(s.radius_km) || !(s.size > 1)) return null;
@@ -189,7 +242,10 @@ export function describeCluster(cluster, kind) {
   const spec = CLUSTER_KINDS[kind] || CLUSTER_KINDS.aircraft;
   const s = cluster?.summary || {};
   const size = finite(s.size) ? s.size : cluster?.size || 0;
-  const lines = [spreadLine(s), heightLine(s), motionLine(s), ...fireLines(s), ...eventLines(s), ...gnssLines(s)];
+  const hub = kind === 'hubs';
+  const lines = [hub ? hubComposition(s) : null, spreadLine(s), heightLine(s), motionLine(s), ...fireLines(s), ...eventLines(s), ...gnssLines(s)];
+  if (hub && Array.isArray(s.sectors) && s.sectors.length)
+    lines.push(t('Sectors: {list}', { list: s.sectors.map((name) => (SECTOR_LABELS[name] ? t(SECTOR_LABELS[name]) : name)).join(', ') }));
   for (const { key, line } of spec.composition) {
     const top = s.composition?.[key]?.[0];
     if (top && top.count > 1) lines.push(t(line, { value: String(top.value), count: formatNumber(top.count) }));
@@ -199,8 +255,10 @@ export function describeCluster(cluster, kind) {
   // Named members (satellites, fixed sites), largest first where it matters.
   if (Array.isArray(s.names) && s.names.length)
     lines.push(s.names.slice(0, 3).join(', ') + (s.names.length > 3 ? '…' : ''));
-  lines.push(ageLine(cluster));
-  return { title: `${cluster?.id ?? ''} · ${spec.members(size)}`, lines: lines.filter(Boolean) };
+  lines.push(hub ? t('Exposure counts only the relation rows that are on') : ageLine(cluster));
+  // A hub's title is its rank and what ranked it; the cards come most significant first.
+  const heading = hub ? `${finite(s.rank) ? `#${formatNumber(s.rank)} · ` : ''}${hubRankLine(s)}` : spec.members(size);
+  return { title: `${cluster?.id ?? ''} · ${heading}`, lines: lines.filter(Boolean) };
 }
 
 /** Satellites named on one card line before "+N". */
@@ -435,3 +493,45 @@ export function describeHazards({ place }) {
     count: formatNumber(place.now.length), km: formatNumber(Math.round(closest / 1000)),
   })];
 }
+
+/** Part-of: a site cluster that shares sites with cross-sector hubs. The edge value counts the shared sites. */
+export function describeHubs({ place }) {
+  if (!place.now.length) return [];
+  const sites = Math.max(...place.now.map(([, v]) => v));
+  return [tn(place.now.length, 'Part of {count} cross-sector hub · up to {sites} shared sites', 'Part of {count} cross-sector hubs · up to {sites} shared sites', {
+    count: formatNumber(place.now.length), sites: formatNumber(sites),
+  })];
+}
+
+/**
+ * What the sites of a hub are exposed to, by relation: one line each from the distinct observers
+ * of the site clusters that are the hub's parts. Relations absent here (satellite passes, which
+ * cover everything) add nothing.
+ * @param {Array<[string, number]>} entries distinct observers as `[id, value]`.
+ * @param {Object<string, {kinds?: string[]}>} observers the relation's observers by id.
+ */
+export const HUB_EXPOSURE = Object.freeze({
+  cameras: (entries) => tn(entries.length, 'Watched by {count} public camera', 'Watched by {count} public cameras', { count: formatNumber(entries.length) }),
+  alpr: (entries) => tn(entries.length, '{count} plate reader within 100 m', '{count} plate readers within 100 m', { count: formatNumber(entries.length) }),
+  street: (entries) => tn(entries.length, '{count} street-imagery drive passed', '{count} street-imagery drives passed', { count: formatNumber(entries.length) }),
+  overflights: (entries, observers) => {
+    const military = entries.filter(([id]) => observers[id]?.kinds?.includes('military')).length;
+    const civil = entries.length - military;
+    return [
+      civil ? tn(civil, '{count} aircraft cluster overhead', '{count} aircraft clusters overhead', { count: formatNumber(civil) }) : null,
+      military ? tn(military, '{count} military aircraft cluster overhead', '{count} military aircraft clusters overhead', { count: formatNumber(military) }) : null,
+    ].filter(Boolean);
+  },
+  'fires-near': (entries) => tn(entries.length, '{count} fire cluster near', '{count} fire clusters near', { count: formatNumber(entries.length) }),
+  'vessels-near': (entries) => tn(entries.length, '{count} ship cluster near', '{count} ship clusters near', { count: formatNumber(entries.length) }),
+  'military-over': (entries) => tn(entries.length, '{count} military aircraft cluster near', '{count} military aircraft clusters near', { count: formatNumber(entries.length) }),
+  'gnss-affects': (entries) => tn(entries.length, 'Inside {count} degraded GNSS zone', 'Inside {count} degraded GNSS zones', { count: formatNumber(entries.length) }),
+  hazards: (entries, observers) => {
+    const quakes = entries.filter(([id]) => observers[id]?.kinds?.includes('quake')).length;
+    const cyclones = entries.length - quakes;
+    return [
+      cyclones ? tn(cyclones, '{count} cyclone in reach', '{count} cyclones in reach', { count: formatNumber(cyclones) }) : null,
+      quakes ? tn(quakes, '{count} earthquake in reach', '{count} earthquakes in reach', { count: formatNumber(quakes) }) : null,
+    ].filter(Boolean);
+  },
+});

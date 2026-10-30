@@ -105,6 +105,11 @@ const PANEL_GROUPS = [
     ids: ['il-fire-clusters', 'il-gnss-zones', 'il-event-clusters'],
   },
   {
+    label: msg('Hubs'),
+    hostId: 'intel-toggles-hubs',
+    ids: ['il-hub-clusters'],
+  },
+  {
     label: msg('Energy'),
     hostId: 'intel-toggles-energy',
     ids: ['il-power-plant-clusters', 'il-lng-terminal-clusters'],
@@ -146,7 +151,7 @@ const PANEL_GROUPS = [
     hostId: 'intel-ground-toggles',
     ids: [
       'il-obs-cameras', 'il-obs-alpr', 'il-obs-street', 'il-obs-overflights',
-      'il-obs-fires-near', 'il-obs-vessels-near', 'il-obs-military-over', 'il-obs-fires-events', 'il-obs-gnss-affects', 'il-obs-hazards',
+      'il-obs-fires-near', 'il-obs-vessels-near', 'il-obs-military-over', 'il-obs-fires-events', 'il-obs-gnss-affects', 'il-obs-hazards', 'il-obs-hubs',
     ],
   },
 ];

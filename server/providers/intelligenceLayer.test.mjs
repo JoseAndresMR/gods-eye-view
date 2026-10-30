@@ -145,6 +145,18 @@ test('node-to-node relations name only their own observer feeds', () => {
   assert.equal(intelligenceLayerPath('GET', '/observability/cameras?targets=dams:10&observers=fires:5'), null);
 });
 
+test('hubs: a feed and a relation whose observers are hub clusters', () => {
+  assert.equal(intelligenceLayerPath('GET', '/hubs/index'), '/api/hubs/index');
+  assert.equal(intelligenceLayerPath('GET', '/hubs?km=10&bbox=3,51,5,52'), '/api/hubs?km=10&bbox=3,51,5,52');
+  const targets = 'power-plants:10,lng-terminals:10,airports:10,ports:10,military-areas:10,datacenters:10,dams:10,landings:10';
+  assert.equal(
+    intelligenceLayerPath('GET', `/observability/hubs?targets=${targets}&observers=hubs:10`),
+    `/api/observability/hubs?targets=${targets}&observers=hubs:10`,
+  );
+  assert.equal(intelligenceLayerPath('GET', '/observability/hubs?targets=ports:10&observers=fires:5'), null);
+  assert.equal(intelligenceLayerPath('GET', '/observability/overflights?targets=ports:10&observers=hubs:10'), null);
+});
+
 test('celestrak serves only the groups the IL reads beyond GEV\'s own', () => {
   for (const group of ['resource', 'planet', 'weather', 'spire', 'orbcomm', 'iridium-NEXT', 'sarsat'])
     assert.equal(ilCelestrakGroup(`/celestrak/${group}`), group);

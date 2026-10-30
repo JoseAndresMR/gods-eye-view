@@ -210,10 +210,14 @@ export function mountIntelPanel({ container, count = null, layers }) {
       container.appendChild(heading);
       const note = doc.createElement('div');
       note.className = 'intel-clusters-note';
-      note.textContent = t('{shown} of {total} clusters · largest first', {
+      // Hubs come ranked by the IL (sectors, nuclear, capacity, size), not by size.
+      const counts = {
         shown: formatNumber(Math.min(clusters.length, MAX_CARDS_PER_LAYER)),
         total: formatNumber(clusters.length),
-      });
+      };
+      note.textContent = layer.kind === 'hubs'
+        ? t('{shown} of {total} hubs · most significant first', counts)
+        : t('{shown} of {total} clusters · largest first', counts);
       container.appendChild(note);
       const listed = clusters.slice(0, MAX_CARDS_PER_LAYER);
       // The selected cluster always has its card, even when it isn't among the largest.

@@ -3403,5 +3403,95 @@
   "Could not load settings: {error}": "No se pudieron cargar los ajustes: {error}",
   "Lone members: per-layer defaults": "Miembros solitarios: valores por capa",
   "Lone members: none": "Miembros solitarios: ninguno",
-  "ON: each layer uses its own default for clusters of one member. OFF: no layer shows them unless you switch it on below": "ACTIVADO: cada capa usa su propio valor para los grupos de un solo miembro. DESACTIVADO: ninguna capa los muestra salvo que la actives abajo"
+  "ON: each layer uses its own default for clusters of one member. OFF: no layer shows them unless you switch it on below": "ACTIVADO: cada capa usa su propio valor para los grupos de un solo miembro. DESACTIVADO: ninguna capa los muestra salvo que la actives abajo",
+  "Exposure counts only the relation rows that are on": "La exposición cuenta solo las filas de relación activadas",
+  "Hub clusters": "Nodos intersectoriales",
+  "Hubs": "Nodos",
+  "Hubs and their parts": "Nodos y sus partes",
+  "Selected hub": "Nodo seleccionado",
+  "Link sites of any sector closer than {distance} km into hubs": "Unir sitios de cualquier sector a menos de {distance} km en nodos",
+  "Made of {count} site clusters in view": "Formado por {count} grupos de sitios a la vista",
+  "Switch on hub clusters and site clusters": "Activa los nodos intersectoriales y los grupos de sitios",
+  "Sectors: {list}": "Sectores: {list}",
+  "LNG terminal": "terminal de GNL",
+  "airport": "aeropuerto",
+  "cable landing": "punto de amarre de cable",
+  "dam": "presa",
+  "data centre": "centro de datos",
+  "military area": "área militar",
+  "nuclear": "nuclear",
+  "port": "puerto",
+  "power plant": "central eléctrica",
+  "{reached} of {count} site clusters around the view are part of a hub": "{reached} de {count} grupos de sitios a la vista forman parte de un nodo",
+  "{shown} of {total} hubs · most significant first": "{shown} de {total} nodos · los más significativos primero",
+  "Part of {count} cross-sector hubs · up to {sites} shared sites": {
+    "one": "Parte de {count} nodo intersectorial · hasta {sites} sitios compartidos",
+    "many": "Parte de {count} de nodos intersectoriales · hasta {sites} sitios compartidos",
+    "other": "Parte de {count} nodos intersectoriales · hasta {sites} sitios compartidos"
+  },
+  "Watched by {count} public cameras": {
+    "one": "Vigilado por {count} cámara pública",
+    "many": "Vigilado por {count} de cámaras públicas",
+    "other": "Vigilado por {count} cámaras públicas"
+  },
+  "Inside {count} degraded GNSS zones": {
+    "one": "Dentro de {count} zona GNSS degradada",
+    "many": "Dentro de {count} de zonas GNSS degradadas",
+    "other": "Dentro de {count} zonas GNSS degradadas"
+  },
+  "{count} aircraft clusters overhead": {
+    "one": "{count} grupo de aeronaves encima",
+    "many": "{count} de grupos de aeronaves encima",
+    "other": "{count} grupos de aeronaves encima"
+  },
+  "{count} military aircraft clusters overhead": {
+    "one": "{count} grupo de aeronaves militares encima",
+    "many": "{count} de grupos de aeronaves militares encima",
+    "other": "{count} grupos de aeronaves militares encima"
+  },
+  "{count} military aircraft clusters near": {
+    "one": "{count} grupo de aeronaves militares cerca",
+    "many": "{count} de grupos de aeronaves militares cerca",
+    "other": "{count} grupos de aeronaves militares cerca"
+  },
+  "{count} cyclones in reach": {
+    "one": "{count} ciclón al alcance",
+    "many": "{count} de ciclones al alcance",
+    "other": "{count} ciclones al alcance"
+  },
+  "{count} earthquakes in reach": {
+    "one": "{count} terremoto al alcance",
+    "many": "{count} de terremotos al alcance",
+    "other": "{count} terremotos al alcance"
+  },
+  "{count} fire clusters near": {
+    "one": "{count} grupo de incendios cerca",
+    "many": "{count} de grupos de incendios cerca",
+    "other": "{count} grupos de incendios cerca"
+  },
+  "{count} ship clusters near": {
+    "one": "{count} grupo de buques cerca",
+    "many": "{count} de grupos de buques cerca",
+    "other": "{count} grupos de buques cerca"
+  },
+  "{count} plate readers within 100 m": {
+    "one": "{count} lector de matrículas a menos de 100 m",
+    "many": "{count} de lectores de matrículas a menos de 100 m",
+    "other": "{count} lectores de matrículas a menos de 100 m"
+  },
+  "{count} street-imagery drives passed": {
+    "one": "{count} recorrido de imágenes de calle pasó",
+    "many": "{count} de recorridos de imágenes de calle pasaron",
+    "other": "{count} recorridos de imágenes de calle pasaron"
+  },
+  "{count} sectors": {
+    "one": "{count} sector",
+    "many": "{count} de sectores",
+    "other": "{count} sectores"
+  },
+  "{count} sites": {
+    "one": "{count} sitio",
+    "many": "{count} de sitios",
+    "other": "{count} sitios"
+  }
 }

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { ELEMENT_OWNERS, elementFields, elementTitle, matchFireRecord, openInGev, ownerElementId } from './element.js';
+import { ELEMENT_OWNERS, elementFields, elementTarget, elementTitle, matchFireRecord, openInGev, ownerElementId } from './element.js';
 
 test('each feed opens its element in the GEV layer that owns it, by that layer\'s id', () => {
   assert.equal(ELEMENT_OWNERS.aircraft.layerId, 'flights');
@@ -55,4 +55,13 @@ test('a fire member matches the nearest FIRMS record within ~50 m', () => {
   assert.equal(matchFireRecord(records, { lat: 1.00021, lon: 1.0001 }).frp, 9);
   assert.equal(matchFireRecord(records, { lat: 1.5, lon: 1.5 }), null);
   assert.equal(matchFireRecord(null, { lat: 1, lon: 1 }), null);
+});
+
+test('a hub member opens as the site of its own kind, by its own id', () => {
+  const node = { id: 'ports:wpi-1', kind: 'ports', ref: 'WPI-1', sector: 'Transport', name: 'Rotterdam' };
+  assert.deepEqual(elementTarget('hubs', node), { kind: 'ports', node: { ...node, id: 'WPI-1' } });
+  assert.deepEqual(elementTarget('hubs', { id: 'x' }), { kind: 'hubs', node: { id: 'x' } });
+  const same = { id: 'abc' };
+  assert.equal(elementTarget('events', same).node, same);
+  assert.deepEqual(openInGev(null, 'hubs', node), { layerId: null, opened: false, reason: 'none' });
 });

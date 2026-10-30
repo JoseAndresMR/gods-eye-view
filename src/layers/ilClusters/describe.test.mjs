@@ -7,6 +7,10 @@ import {
   describePlateReaders,
   describeStreetImagery,
   describeFireSatellites,
+  describeHubs,
+  HUB_EXPOSURE,
+  hubComposition,
+  hubRankLine,
   describeImaged,
   describeImaging,
   describeNavigation,
@@ -143,4 +147,45 @@ test('ground and air observer lines', () => {
     describeOverflights({ place: { now: [['air:aircraft:20:A', 900], ['air:military:20:M', 450]] }, satellites: obs }),
     ['Overflown now by 1 aircraft cluster · lowest 900 m', 'Overflown now by 1 military aircraft cluster · lowest 450 m'],
   );
+});
+
+const HUB = {
+  id: 'C9',
+  size: 7,
+  summary: {
+    size: 7, radius_km: 3.2, rank: 4, sectors: ['Energy', 'Transport', 'Digital infrastructure'], nuclear: true,
+    kinds: { landings: 1, 'lng-terminals': 1, 'power-plants': 2, ports: 1, dams: 0 },
+    capacity_mw_total: 3400, capacity_mtpa_total: 0, names: ['Maasvlakte', 'Europoort'],
+  },
+};
+
+test('a hub reads as the sites it is made of, in a fixed order', () => {
+  assert.equal(hubComposition(HUB.summary), 'Port + LNG terminal + 2 power plants (3.4 GW) + cable landing');
+  assert.equal(hubComposition({ kinds: { airports: 2, 'military-areas': 1 } }), '2 airports + military area');
+  assert.equal(hubComposition({}), '');
+});
+
+test('a hub card leads with its rank, then lists composition, sectors and the exposure caveat', () => {
+  assert.equal(hubRankLine(HUB.summary), '3 sectors · nuclear · 3.4 GW');
+  const { title, lines } = describeCluster(HUB, 'hubs');
+  assert.equal(title, 'C9 · #4 · 3 sectors · nuclear · 3.4 GW');
+  assert.equal(lines[0], 'Port + LNG terminal + 2 power plants (3.4 GW) + cable landing');
+  assert.ok(lines.includes('Sectors: Energy, Transport, Digital infrastructure'));
+  assert.equal(lines.at(-1), 'Exposure counts only the relation rows that are on');
+});
+
+test('a site cluster says how many hubs it is part of', () => {
+  assert.deepEqual(describeHubs({ place: { now: [] } }), []);
+  assert.deepEqual(describeHubs({ place: { now: [['air:hubs:10:C9', 3], ['air:hubs:10:C2', 1]] } }),
+    ['Part of 2 cross-sector hubs · up to 3 shared sites']);
+});
+
+test('hub exposure counts each relation once and splits military aircraft and quakes out', () => {
+  const observers = { a: { kinds: ['aircraft'] }, m: { kinds: ['military'] }, q: { kinds: ['quake'] }, c: { kinds: ['cyclone'] } };
+  assert.deepEqual(HUB_EXPOSURE.overflights([['a', 90], ['m', 1200]], observers),
+    ['1 aircraft cluster overhead', '1 military aircraft cluster overhead']);
+  assert.deepEqual(HUB_EXPOSURE.hazards([['q', 1000], ['c', 2000]], observers),
+    ['1 cyclone in reach', '1 earthquake in reach']);
+  assert.equal(HUB_EXPOSURE['vessels-near']([['x', 1], ['y', 2], ['z', 3]]), '3 ship clusters near');
+  assert.equal(HUB_EXPOSURE.imaging, undefined);
 });

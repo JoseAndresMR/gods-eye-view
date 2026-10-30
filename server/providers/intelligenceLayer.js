@@ -20,13 +20,13 @@ const DISTANCE_KM = /^(?:[1-9]\d{0,3}(?:\.\d{1,3})?|0\.\d{0,2}[1-9])$/;
 const KINDS = new Set([
   'aircraft', 'vessels', 'military', 'satellites', 'fires', 'gnss',
   'military-areas', 'datacenters', 'dams', 'landings', 'cameras', 'events',
-  'power-plants', 'lng-terminals', 'airports', 'ports',
+  'power-plants', 'lng-terminals', 'airports', 'ports', 'hubs',
 ]);
 /** Cross-layer satellite relations; each names the cluster feeds it observes. */
 const RELATIONS = new Set([
   'imaging', 'fire', 'weather', 'receivers', 'navigation', 'imaged',
   'cameras', 'alpr', 'street', 'overflights',
-  'fires-near', 'vessels-near', 'military-over', 'fires-events', 'gnss-affects', 'hazards',
+  'fires-near', 'vessels-near', 'military-over', 'fires-events', 'gnss-affects', 'hazards', 'hubs',
 ]);
 const MAX_OBSERVED_TARGETS = 8;
 /** Cluster feeds that act as observers, per relation. */
@@ -38,6 +38,7 @@ const OBSERVER_KINDS = {
   'fires-events': new Set(['fires']),
   'gnss-affects': new Set(['gnss']),
   hazards: new Set(),
+  hubs: new Set(['hubs']),
 };
 
 const CMR_GRANULES = 'https://cmr.earthdata.nasa.gov/search/granules.umm_json';

@@ -14,6 +14,7 @@ import {
   IL_OBS_FIRES_NEAR_ID,
   IL_OBS_GNSS_AFFECTS_ID,
   IL_OBS_HAZARDS_ID,
+  IL_OBS_HUBS_ID,
   IL_OBS_MILITARY_OVER_ID,
   IL_OBS_OVERFLIGHTS_ID,
   IL_OBS_STREET_ID,
@@ -51,6 +52,8 @@ import {
   describeFiresNear,
   describeGnssAffects,
   describeHazards,
+  describeHubs,
+  HUB_EXPOSURE,
   describeMilitaryOver,
   describeOverflights,
   describeVesselsNear,
@@ -148,6 +151,8 @@ const SAME_PLACE_DEFAULT_DEG = 0.06;
  * @param {boolean} [config.tagAll=true] Name every observer drawn; false names only the
  *   selection's (numerous observers such as cameras).
  * @param {string} [config.selectedHeading] msg() key heading a selected observer's card.
+ * @param {object|null} [config.hubLayer] The hub cluster layer: its cards gain a roll-up of this
+ *   relation over the site clusters that are the hub's parts (relations in `HUB_EXPOSURE`).
  * @param {object|null} [config.surface] GEV surface (DEM anchors for line ends).
  * @param {Function} [config.fetchImpl]
  */
@@ -174,6 +179,7 @@ export function createIlSatelliteRelationLayer({
   observerLanes = null,
   tagAll = true,
   selectedHeading = msg('Selected satellite'),
+  hubLayer = null,
   surface = null,
   fetchImpl = globalThis.fetch,
 }) {
@@ -245,6 +251,27 @@ export function createIlSatelliteRelationLayer({
 
   function refreshCards() {
     for (const { layer } of _lanes) layer.refreshCards?.();
+    if (hubLayer && HUB_EXPOSURE[relation]) hubLayer.refreshCards?.();
+  }
+
+  /**
+   * What this relation shows for the sites of one hub: the distinct observers of the site clusters
+   * that hold them, counted once however many of the hub's sites they reach.
+   */
+  function hubExposure(hub) {
+    if (!_enabled || !_doc) return [];
+    const observers = new Map();
+    const seen = new Set();
+    for (const member of hubLayer.membersOf?.(hub.id) || []) {
+      const lane = _lanes.find((l) => l.kind === member.kind);
+      const clusterId = lane?.layer.clusterOfNode?.(member.ref);
+      if (!clusterId || seen.has(`${member.kind}|${clusterId}`)) continue;
+      seen.add(`${member.kind}|${clusterId}`);
+      const place = _doc.targets?.[member.kind]?.[distanceLabel(lane.km)]?.[clusterId];
+      for (const entry of place?.now || []) observers.set(entry[0], entry);
+    }
+    if (!observers.size) return [];
+    return [HUB_EXPOSURE[relation]([...observers.values()], _doc.satellites || {})].flat().filter(Boolean);
   }
 
   /** Is this edge drawn now: the selection's edges, else those of the kinds switched on. */
@@ -594,6 +621,7 @@ export function createIlSatelliteRelationLayer({
       _releasePicking?.();
       _releasePicking = useIlPicking(_viewer);
       for (const layer of targets) layer.setAnnotator?.(id, (cluster, km) => annotate(layer.kind, cluster, km));
+      if (hubLayer && HUB_EXPOSURE[relation]) hubLayer.setAnnotator?.(`${id}:hub`, (hub) => hubExposure(hub));
       _unsubscribers = [
         ...targets.map((layer) => layer.subscribeClusters?.(onTargetsChanged) || (() => {})),
         subscribeSelection(onSelection),
@@ -613,6 +641,7 @@ export function createIlSatelliteRelationLayer({
       for (const unsubscribe of _unsubscribers) unsubscribe();
       _unsubscribers = [];
       for (const layer of targets) layer.setAnnotator?.(id, null);
+      if (hubLayer && HUB_EXPOSURE[relation]) hubLayer.setAnnotator?.(`${id}:hub`, null);
       if (getSelection()?.type === 'satellite' && _doc?.satellites?.[getSelection().satId]) select(null);
       _releasePicking?.();
       _releasePicking = null;
@@ -877,7 +906,7 @@ const reached = (rows) => formatNumber(rows.filter(({ place }) => place.now.leng
 const fixedSitesHint = () => t('Switch on military area, data centre, dam or cable landing clusters');
 
 /** Public traffic cameras whose view reaches into a site (GEV's CCTV catalog). */
-export function createIlCameraObserversLayer({ targets, surface, fetchImpl } = {}) {
+export function createIlCameraObserversLayer({ targets, hubs, surface, fetchImpl } = {}) {
   return createIlSatelliteRelationLayer({
     id: IL_OBS_CAMERAS_ID,
     name: 'Public cameras',
@@ -898,13 +927,14 @@ export function createIlCameraObserversLayer({ targets, surface, fetchImpl } = {
       t('Its view reaches {count} clusters in view · {range} m, {fov}° wide', {
         count: formatNumber(count), range: formatNumber(sat.range_m), fov: formatNumber(sat.fov_deg),
       }),
+    hubLayer: hubs,
     surface,
     fetchImpl,
   });
 }
 
 /** Licence-plate readers next to a site (OpenStreetMap, via DeFlock's tiles). */
-export function createIlPlateReaderObserversLayer({ targets, surface, fetchImpl } = {}) {
+export function createIlPlateReaderObserversLayer({ targets, hubs, surface, fetchImpl } = {}) {
   return createIlSatelliteRelationLayer({
     id: IL_OBS_ALPR_ID,
     name: 'Plate readers',
@@ -922,13 +952,14 @@ export function createIlPlateReaderObserversLayer({ targets, surface, fetchImpl 
         reached: reached(rows), count: formatNumber(rows.length), waiting: formatNumber(meta.tiles_waiting || 0),
       }),
     satelliteLine: ({ count }) => t('Within 100 m of {count} clusters in view', { count: formatNumber(count) }),
+    hubLayer: hubs,
     surface,
     fetchImpl,
   });
 }
 
 /** Street-level imagery drives passing a site (Mapillary). */
-export function createIlStreetImageryObserversLayer({ targets, surface, fetchImpl } = {}) {
+export function createIlStreetImageryObserversLayer({ targets, hubs, surface, fetchImpl } = {}) {
   return createIlSatelliteRelationLayer({
     id: IL_OBS_STREET_ID,
     name: 'Street imagery',
@@ -946,13 +977,14 @@ export function createIlStreetImageryObserversLayer({ targets, surface, fetchImp
         reached: reached(rows), count: formatNumber(rows.length), waiting: formatNumber(meta.tiles_waiting || 0),
       }),
     satelliteLine: ({ count }) => t('Passed {count} clusters in view', { count: formatNumber(count) }),
+    hubLayer: hubs,
     surface,
     fetchImpl,
   });
 }
 
 /** Aircraft and military-aircraft clusters flying low over sites, ship clusters and fires. */
-export function createIlOverflightObserversLayer({ targets, aircraft, military, surface, fetchImpl } = {}) {
+export function createIlOverflightObserversLayer({ targets, aircraft, military, hubs, surface, fetchImpl } = {}) {
   const laneOf = (layer, kind) => ({ kind, km: layer?.getParams?.().distanceKm ?? 20 });
   return createIlSatelliteRelationLayer({
     id: IL_OBS_OVERFLIGHTS_ID,
@@ -975,6 +1007,7 @@ export function createIlOverflightObserversLayer({ targets, aircraft, military, 
         reached: reached(rows), count: formatNumber(rows.length),
       }),
     satelliteLine: ({ count }) => t('Overflies {count} clusters in view below 3,000 m', { count: formatNumber(count) }),
+    hubLayer: hubs,
     surface,
     fetchImpl,
   });
@@ -998,7 +1031,7 @@ function createIlClusterObserversLayer({ observer, targets, surface, fetchImpl, 
 }
 
 /** Fire clusters close to a site. */
-export function createIlFiresNearObserversLayer({ targets, fires, surface, fetchImpl } = {}) {
+export function createIlFiresNearObserversLayer({ targets, fires, hubs, surface, fetchImpl } = {}) {
   return createIlClusterObserversLayer({
     id: IL_OBS_FIRES_NEAR_ID,
     name: 'Fires near sites',
@@ -1013,12 +1046,12 @@ export function createIlFiresNearObserversLayer({ targets, fires, surface, fetch
     infoOf: ({ rows }) =>
       t('{reached} of {count} sites around the view have a fire within 5 km', { reached: reached(rows), count: formatNumber(rows.length) }),
     satelliteLine: ({ count }) => t('Within 5 km of {count} clusters in view', { count: formatNumber(count) }),
-    targets, surface, fetchImpl,
+    targets, hubLayer: hubs, surface, fetchImpl,
   });
 }
 
 /** Ship clusters close to a military area, data centre or cable landing. */
-export function createIlVesselsNearObserversLayer({ targets, vessels, surface, fetchImpl } = {}) {
+export function createIlVesselsNearObserversLayer({ targets, vessels, hubs, surface, fetchImpl } = {}) {
   return createIlClusterObserversLayer({
     id: IL_OBS_VESSELS_NEAR_ID,
     name: 'Ships near sites',
@@ -1033,12 +1066,12 @@ export function createIlVesselsNearObserversLayer({ targets, vessels, surface, f
     infoOf: ({ rows }) =>
       t('{reached} of {count} sites around the view have a ship within 3 km', { reached: reached(rows), count: formatNumber(rows.length) }),
     satelliteLine: ({ count }) => t('Within 3 km of {count} clusters in view', { count: formatNumber(count) }),
-    targets, surface, fetchImpl,
+    targets, hubLayer: hubs, surface, fetchImpl,
   });
 }
 
 /** Military-aircraft clusters near a military area, at any height. */
-export function createIlMilitaryOverObserversLayer({ targets, military, surface, fetchImpl } = {}) {
+export function createIlMilitaryOverObserversLayer({ targets, military, hubs, surface, fetchImpl } = {}) {
   return createIlClusterObserversLayer({
     id: IL_OBS_MILITARY_OVER_ID,
     name: 'Military over areas',
@@ -1055,7 +1088,7 @@ export function createIlMilitaryOverObserversLayer({ targets, military, surface,
         reached: reached(rows), count: formatNumber(rows.length),
       }),
     satelliteLine: ({ count }) => t('Within 10 km of {count} military areas in view', { count: formatNumber(count) }),
-    targets, surface, fetchImpl,
+    targets, hubLayer: hubs, surface, fetchImpl,
   });
 }
 
@@ -1082,7 +1115,7 @@ export function createIlFiresEventsObserversLayer({ targets, fires, surface, fet
 }
 
 /** Degraded GNSS zones over aircraft, ships, sites and events (affected, or a possible jamming source). */
-export function createIlGnssAffectsObserversLayer({ targets, gnss, surface, fetchImpl } = {}) {
+export function createIlGnssAffectsObserversLayer({ targets, gnss, hubs, surface, fetchImpl } = {}) {
   return createIlClusterObserversLayer({
     id: IL_OBS_GNSS_AFFECTS_ID,
     name: 'Inside GNSS zones',
@@ -1099,12 +1132,12 @@ export function createIlGnssAffectsObserversLayer({ targets, gnss, surface, fetc
         reached: reached(rows), count: formatNumber(rows.length),
       }),
     satelliteLine: ({ count }) => t('Covers {count} clusters in view', { count: formatNumber(count) }),
-    targets, surface, fetchImpl,
+    targets, hubLayer: hubs, surface, fetchImpl,
   });
 }
 
 /** Active cyclones and recent earthquakes whose reach covers a site, ship or aircraft cluster. */
-export function createIlHazardsObserversLayer({ targets, surface, fetchImpl } = {}) {
+export function createIlHazardsObserversLayer({ targets, hubs, surface, fetchImpl } = {}) {
   return createIlSatelliteRelationLayer({
     id: IL_OBS_HAZARDS_ID,
     name: 'Hazards reaching clusters',
@@ -1124,6 +1157,28 @@ export function createIlHazardsObserversLayer({ targets, surface, fetchImpl } = 
         reached: reached(rows), count: formatNumber(rows.length),
       }),
     satelliteLine: ({ count }) => t('Reaches {count} clusters in view', { count: formatNumber(count) }),
+    targets, hubLayer: hubs, surface, fetchImpl,
+  });
+}
+
+/** Cross-sector hubs and the site clusters that are their parts (part-of: shared sites). */
+export function createIlHubsObserversLayer({ targets, hubs, surface, fetchImpl } = {}) {
+  return createIlClusterObserversLayer({
+    id: IL_OBS_HUBS_ID,
+    name: 'Hubs and their parts',
+    icon: '⬢',
+    relation: 'hubs',
+    source: 'Intelligence layer · all fixed sites',
+    observer: { kind: 'hubs', layer: hubs },
+    observerLabel: msg('Hub clusters'),
+    describe: describeHubs,
+    selectedHeading: msg('Selected hub'),
+    offHint: () => t('Switch on hub clusters and site clusters'),
+    infoOf: ({ rows }) =>
+      t('{reached} of {count} site clusters around the view are part of a hub', {
+        reached: reached(rows), count: formatNumber(rows.length),
+      }),
+    satelliteLine: ({ count }) => t('Made of {count} site clusters in view', { count: formatNumber(count) }),
     targets, surface, fetchImpl,
   });
 }

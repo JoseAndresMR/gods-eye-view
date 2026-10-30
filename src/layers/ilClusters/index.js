@@ -19,6 +19,7 @@ import {
   IL_LNG_TERMINAL_CLUSTERS_ID,
   IL_AIRPORT_CLUSTERS_ID,
   IL_PORT_CLUSTERS_ID,
+  IL_HUB_CLUSTERS_ID,
   IL_LANDING_CLUSTERS_ID,
   IL_CAMERA_CLUSTERS_ID,
   IL_MILITARY_CLUSTERS_ID,
@@ -56,7 +57,7 @@ import {
 import { GNSS_LEVEL_COLORS } from '../gnss/records.js';
 import { spriteBillboard } from './sprites.js';
 import { lodAlpha, lodShown, markerDim, pixelsAcross, usableHull } from './lod.js';
-import { ELEMENT_OWNERS, elementFields, elementTitle, matchFireRecord, openInGev } from './element.js';
+import { ELEMENT_OWNERS, elementFields, elementTarget, elementTitle, matchFireRecord, openInGev } from './element.js';
 export * from './model.js';
 export { describeCluster, CLUSTER_KINDS } from './describe.js';
 export {
@@ -73,6 +74,7 @@ export {
   createIlFiresEventsObserversLayer,
   createIlGnssAffectsObserversLayer,
   createIlHazardsObserversLayer,
+  createIlHubsObserversLayer,
   createIlPlateReaderObserversLayer,
   createIlStreetImageryObserversLayer,
   createIlWeatherSatellitesLayer,
@@ -188,6 +190,7 @@ export function createIlClustersLayer({
   let _distances = [];
   let _distanceKm = null;
   let _nodes = [];
+  let _membersByCluster = null;
   let _edges = [];
   let _clusters = [];
   let _drawnPoints = new Map();
@@ -716,6 +719,7 @@ export function createIlClustersLayer({
         nodes = nodes.filter((n) => shown.get(n.cluster_id) >= 2);
       }
       _nodes = nodes;
+      _membersByCluster = null;
       // A member opened before its GEV layer had it (or while that layer was
       // off) gets another try on each refresh, until it opens.
       if (_memberHere && _memberOpen && !_memberOpen.opened && _memberOpen.reason !== 'none') {
@@ -904,11 +908,17 @@ export function createIlClustersLayer({
       if (!_enabled) return [];
       return _clusters
         .slice()
-        .sort((a, b) => (b.summary.size ?? b.size) - (a.summary.size ?? a.size))
-        .map((c) => {
+        // Hubs come ranked by significance (the IL's `rank`); the others by size.
+        .sort((a, b) => kind === 'hubs'
+          ? (a.summary.rank ?? Infinity) - (b.summary.rank ?? Infinity)
+          : (b.summary.size ?? b.size) - (a.summary.size ?? a.size))
+        .map((c, index) => {
           const card = describeCluster(c, kind);
           const extra = [];
-          for (const annotate of _annotators.values()) {
+          // ~3,900 hubs: only the cards the panel can show (the top ones and the selection) get the
+          // relation lines, which cost a lookup per member.
+          const annotated = kind !== 'hubs' || index < HUB_ANNOTATED_CARDS || isClusterSelected(id, c.id);
+          for (const annotate of annotated ? _annotators.values() : []) {
             try {
               extra.push(...(annotate(c, _distanceKm) || []));
             } catch (error) {
@@ -980,7 +990,7 @@ export function createIlClustersLayer({
       const node = _nodes.find((n) => String(n.id) === String(nodeId));
       if (!node) return null;
       const facts = fireFacts(node);
-      const owner = ELEMENT_OWNERS[kind] || null;
+      const owner = ELEMENT_OWNERS[elementTarget(kind, node).kind] || null;
       return {
         kind,
         clusterId: node.cluster_id,
@@ -991,6 +1001,23 @@ export function createIlClustersLayer({
         open: isMemberSelected(id, node.id) ? _memberOpen : null,
         firms: kind === 'fires' && node.frp == null ? Boolean(facts) : null,
       };
+    },
+
+    /** The cluster a member node belongs to now, or null (cross-layer roll-ups). */
+    clusterOfNode(nodeId) {
+      return _nodes.find((n) => n.id === String(nodeId).toLowerCase())?.cluster_id ?? null;
+    },
+
+    /** The member nodes of one cluster (a hub's parts name their site by `kind` + `ref`). */
+    membersOf(clusterId) {
+      if (!_membersByCluster) {
+        _membersByCluster = new Map();
+        for (const n of _nodes) {
+          if (!_membersByCluster.has(n.cluster_id)) _membersByCluster.set(n.cluster_id, []);
+          _membersByCluster.get(n.cluster_id).push(n);
+        }
+      }
+      return _membersByCluster.get(clusterId) || [];
     },
 
     /** Select one cluster and fly the camera over it. */
@@ -1274,6 +1301,9 @@ function createIlFixedClustersLayer({ id, name, icon, source, kind, chipTitle, s
   });
 }
 
+/** Hub cards that get relation lines (the panel lists at most this many and the selected one). */
+const HUB_ANNOTATED_CARDS = 24;
+
 /** Power plant clusters. */
 export function createIlPowerPlantClustersLayer({ surface = null, fetchImpl } = {}) {
   return createIlFixedClustersLayer({
@@ -1325,6 +1355,23 @@ export function createIlPortClustersLayer({ surface = null, fetchImpl } = {}) {
     source: 'Intelligence layer · NGA World Port Index',
     kind: 'ports',
     chipTitle: (distance) => t('Link ports closer than {distance} km', { distance }),
+    surface,
+    fetchImpl,
+  });
+}
+
+/**
+ * Cross-sector hubs: sites of two or more sectors in one place, most significant first. A hub's
+ * members are the sites themselves (`kind` + `ref` name the site); the layer is single, not tiled.
+ */
+export function createIlHubClustersLayer({ surface = null, fetchImpl } = {}) {
+  return createIlFixedClustersLayer({
+    id: IL_HUB_CLUSTERS_ID,
+    name: 'Hub clusters',
+    icon: '⬢',
+    source: 'Intelligence layer · all fixed sites',
+    kind: 'hubs',
+    chipTitle: (distance) => t('Link sites of any sector closer than {distance} km into hubs', { distance }),
     surface,
     fetchImpl,
   });
