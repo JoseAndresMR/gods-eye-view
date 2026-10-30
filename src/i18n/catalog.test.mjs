@@ -11,8 +11,13 @@ import {
   unmarkedScript,
 } from '../../scripts/i18n.mjs';
 import { LOCALES } from './locale.js';
+import IL_MESSAGES from './il-messages.json' with { type: 'json' };
 
 const messages = extractMessages();
+// Fork (intelligence layer): IL strings are translated into es only; other
+// locales may lack them and show English. See il-english-fallback.test.mjs.
+const IL_ONLY = new Set(IL_MESSAGES);
+const allowedMissing = (locale, text) => locale !== 'es' && IL_ONLY.has(text);
 
 test('every catalog file is a shipped locale and every non-English locale has a catalog', () => {
   assert.deepEqual(
@@ -29,7 +34,11 @@ for (const locale of shippedLocales()) {
       messages,
     );
     assert.deepEqual(
-      { missing, stale, errors },
+      {
+        missing: missing.filter((text) => !allowedMissing(locale, text)),
+        stale,
+        errors,
+      },
       { missing: [], stale: [], errors: [] },
     );
   });
