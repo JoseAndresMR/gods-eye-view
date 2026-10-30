@@ -6,6 +6,7 @@ import { mountIntelAreas } from '../ui/intelAreas.js';
 import { mountIntelSettings } from '../ui/intelSettings.js';
 import { mountIntelSections } from '../ui/intelSections.js';
 import { IL_LAYER_IDS } from '../layers/ilClusters/model.js';
+import { panelAwareVisibility } from './embed.js';
 /** Register the application layer catalog before allowing state restoration. */
 export function createApplicationData({
   scene: { viewer, mapStackController },
@@ -18,7 +19,9 @@ export function createApplicationData({
   // Initialize data layer manager
   const dataManager = new LayerLifecycle(viewer, {
     allowQaRegistration,
-    visibilityTarget: document,
+    // A panel's host may report it hidden while it is on screen; its layers
+    // keep polling (see keepPanelRendering in embed.js).
+    visibilityTarget: panelAwareVisibility(document),
     getSourceAvailability: catalog?.getSourceAvailability,
   });
   defer(async () => {
