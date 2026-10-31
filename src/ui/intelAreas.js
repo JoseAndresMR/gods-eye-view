@@ -29,7 +29,7 @@ const OFF_COLOR = Cesium.Color.fromCssColorString('#9a9a94').withAlpha(0.6);
 /**
  * @param {object} options
  * @param {HTMLElement|null} options.container `#intel-areas`
- * @param {HTMLElement|null} options.panel `#intel-panel` (outlines show while it is open)
+ * @param {HTMLElement|null} options.panel `#intel-layers-panel` (outlines show while it is open)
  * @param {object|null} options.viewer
  * @param {Function} [options.fetchImpl]
  * @returns {() => void} Unmount.

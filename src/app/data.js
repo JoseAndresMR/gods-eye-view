@@ -69,14 +69,17 @@ export function createApplicationData({
     mountIntelPanel({
       container: document.getElementById('intel-clusters'),
       count: document.getElementById('intel-panel-count'),
+      panel: document.getElementById('intel-panel'),
       layers: IL_LAYER_IDS.map((id) => catalog.get(id)).filter(Boolean),
     }),
   );
-  defer(mountIntelSections(document.getElementById('intel-panel-body')));
+  defer(mountIntelSections(document.getElementById('intel-layers-body'), {
+      total: document.getElementById('intel-layers-count'),
+    }));
   defer(
     mountIntelAreas({
       container: document.getElementById('intel-areas'),
-      panel: document.getElementById('intel-panel'),
+      panel: document.getElementById('intel-layers-panel'),
       viewer,
     }),
   );

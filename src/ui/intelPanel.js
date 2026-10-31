@@ -18,12 +18,14 @@ export const MAX_CARDS_PER_LAYER = 8;
  * @param {object} options
  * @param {HTMLElement|null} options.container `#intel-clusters`
  * @param {HTMLElement|null} [options.count] `#intel-panel-count`
+ * @param {HTMLElement|null} [options.panel] `#intel-panel`: hidden while no layer is on and nothing is selected; opens on the first selection
  * @param {object[]} options.layers IL layer modules (getClusterSummaries, subscribeClusters, focusCluster).
  * @returns {() => void} Unmount.
  */
-export function mountIntelPanel({ container, count = null, layers }) {
+export function mountIntelPanel({ container, count = null, panel = null, layers }) {
   if (!container) return () => {};
   const open = new Set();
+  let opened = false;
   let frame = null;
 
   /** The × that clears the selection, on the selected card. */
@@ -228,10 +230,23 @@ export function mountIntelPanel({ container, count = null, layers }) {
     if (!total) {
       const empty = doc.createElement('div');
       empty.className = 'intel-clusters-note';
-      empty.textContent = t('Turn on an intelligence layer overlay above to list its clusters');
+      empty.textContent = t('Turn on a layer under Intelligence layers to list its clusters');
       container.appendChild(empty);
     }
     if (count) count.textContent = total ? formatNumber(total) : '';
+    if (panel) {
+      const anyOn = layers.some((layer) => layer.isEnabled?.());
+      const hidden = !anyOn && !selection;
+      if (panel.hidden !== hidden) panel.hidden = hidden;
+      // The first selection opens the panel unless the user has chosen its state.
+      if (selection && !opened && !hidden) {
+        opened = true;
+        const preference = panel.dataset?.collapsedPreference;
+        if (panel.classList.contains('collapsed') && (preference === undefined || preference === 'default')) {
+          panel.querySelector('[data-collapse-target="intel-panel"]')?.click();
+        }
+      }
+    }
   }
 
   function schedule() {

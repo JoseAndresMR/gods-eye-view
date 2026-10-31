@@ -26,3 +26,10 @@ test('choices round-trip through storage; bad or missing storage reads as none',
   assert.equal(writeSectionState({ a: true }, throwing), false);
   assert.deepEqual(readSectionState(null), {});
 });
+
+test('countText is active/total, empty without toggles', async () => {
+  const { countText } = await import('./intelSections.js');
+  assert.equal(countText(2, 5), '2/5');
+  assert.equal(countText(0, 3), '0/3');
+  assert.equal(countText(0, 0), '');
+});

@@ -2903,7 +2903,6 @@
   "Together for {hours} h": "已聚集 {hours} 小时",
   "Show this cluster on the map": "在地图上显示此集群",
   "{shown} of {total} clusters · largest first": "{total} 个集群中的 {shown} 个 · 按规模降序",
-  "Turn on an intelligence layer overlay above to list its clusters": "打开上方的情报层叠加图层以列出其集群",
   "Link military aircraft closer than {distance} km in a straight line, height included": "连接直线距离（含高度）小于 {distance} km 的军用航空器",
   "Link satellites closer than {distance} km in a straight line": "连接直线距离小于 {distance} km 的卫星",
   "Link fire detections closer than {distance} km along the surface": "连接地表距离小于 {distance} km 的火点探测",

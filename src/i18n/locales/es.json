@@ -3055,7 +3055,6 @@
   "Together for {hours} h": "Juntos desde hace {hours} h",
   "Show this cluster on the map": "Mostrar este grupo en el mapa",
   "{shown} of {total} clusters · largest first": "{shown} de {total} grupos · primero los mayores",
-  "Turn on an intelligence layer overlay above to list its clusters": "Activa arriba una capa de inteligencia para ver sus grupos",
   "Link military aircraft closer than {distance} km in a straight line, height included": "Unir aeronaves militares a menos de {distance} km en línea recta, altura incluida",
   "Link satellites closer than {distance} km in a straight line": "Unir satélites a menos de {distance} km en línea recta",
   "Link fire detections closer than {distance} km along the surface": "Unir detecciones de fuego a menos de {distance} km sobre la superficie",
@@ -3493,5 +3492,8 @@
     "one": "{count} sitio",
     "many": "{count} de sitios",
     "other": "{count} sitios"
-  }
+  },
+  "INTELLIGENCE LAYERS": "CAPAS DE INTELIGENCIA",
+  "Intelligence layers on": "Capas de inteligencia activas",
+  "Turn on a layer under Intelligence layers to list its clusters": "Activa una capa en Capas de inteligencia para ver sus grupos"
 }

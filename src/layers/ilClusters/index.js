@@ -799,6 +799,7 @@ export function createIlClustersLayer({
       _removeCameraChanged = lodHulls ? _viewer?.camera?.changed?.addEventListener?.(updateLod) || null : null;
       clearInterval(_timer);
       _timer = staticPositions ? setInterval(reposition, REPOSITION_MS * 4) : setInterval(reposition, REPOSITION_MS);
+      notifyClusters();
     },
 
     disable() {

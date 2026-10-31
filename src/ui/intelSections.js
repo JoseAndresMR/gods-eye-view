@@ -14,6 +14,11 @@ export function sectionOpen(stored, activeCount) {
   return typeof stored === 'boolean' ? stored : activeCount > 0;
 }
 
+/** The "on/total" text of a section header or of the panel count; empty when there are no toggles. */
+export function countText(active, total) {
+  return total ? `${formatNumber(active)}/${formatNumber(total)}` : '';
+}
+
 /** The remembered open/closed choices, or {} when storage is unavailable or garbled. */
 export function readSectionState(storage = globalThis.localStorage) {
   try {
@@ -35,10 +40,12 @@ export function writeSectionState(state, storage = globalThis.localStorage) {
 }
 
 /**
- * @param {HTMLElement|null} root `#intel-panel-body`
+ * @param {HTMLElement|null} root `#intel-layers-body`
+ * @param {object} [options]
+ * @param {HTMLElement|null} [options.total] `#intel-layers-count`: layers on / layers
  * @returns {() => void} Unmount.
  */
-export function mountIntelSections(root, { storage = globalThis.localStorage } = {}) {
+export function mountIntelSections(root, { storage = globalThis.localStorage, total = null } = {}) {
   if (!root) return () => {};
   const state = readSectionState(storage);
   const sections = [...root.querySelectorAll('[data-intel-section]')].map((el) => ({
@@ -60,11 +67,17 @@ export function mountIntelSections(root, { storage = globalThis.localStorage } =
       if (s.body.hidden === open) s.body.hidden = !open;
       s.el.classList.toggle('is-open', open);
       s.el.classList.toggle('has-active', active > 0);
-      const text = toggles.length ? `${formatNumber(active)}/${formatNumber(toggles.length)}` : '';
+      const text = countText(active, toggles.length);
       if (s.count && s.count.textContent !== text) {
         s.count.textContent = text;
         s.count.title = t('{active} of {total} on', { active: formatNumber(active), total: formatNumber(toggles.length) });
       }
+    }
+    if (total) {
+      const all = root.querySelectorAll('.data-toggle-btn:not(.intel-switch)');
+      const on = root.querySelectorAll('.data-toggle-btn.active:not(.intel-switch)').length;
+      const text = countText(on, all.length);
+      if (total.textContent !== text) total.textContent = text;
     }
   }
   const schedule = () => {

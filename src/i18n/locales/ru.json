@@ -3131,7 +3131,6 @@
   "Together for {hours} h": "Вместе {hours} ч",
   "Show this cluster on the map": "Показать эту группу на карте",
   "{shown} of {total} clusters · largest first": "{shown} из {total} групп · сначала крупные",
-  "Turn on an intelligence layer overlay above to list its clusters": "Включите выше слой аналитики, чтобы увидеть его группы",
   "Link military aircraft closer than {distance} km in a straight line, height included": "Связывать военные воздушные суда ближе {distance} км по прямой, с учётом высоты",
   "Link satellites closer than {distance} km in a straight line": "Связывать спутники ближе {distance} км по прямой",
   "Link fire detections closer than {distance} km along the surface": "Связывать обнаружения пожаров ближе {distance} км по поверхности",
