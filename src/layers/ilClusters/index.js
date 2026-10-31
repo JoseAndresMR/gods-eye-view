@@ -36,6 +36,7 @@ import {
   circleRing,
   clusterLabelEntry,
   densifyRing,
+  selectedLabelEntry,
   distanceLabel,
   framingHeightM,
   militaryMotion,
@@ -44,7 +45,7 @@ import {
   satellitePosition,
   vesselMotion,
 } from './model.js';
-import { describeCluster } from './describe.js';
+import { clusterMapLabel, describeCluster } from './describe.js';
 import {
   clusterPickId,
   isClusterSelected,
@@ -57,7 +58,7 @@ import {
 import { GNSS_LEVEL_COLORS } from '../gnss/records.js';
 import { spriteBillboard } from './sprites.js';
 import { lodAlpha, lodShown, markerDim, pixelsAcross, usableHull } from './lod.js';
-import { ELEMENT_OWNERS, elementFields, elementTarget, elementTitle, matchFireRecord, openInGev } from './element.js';
+import { ELEMENT_OWNERS, elementFields, elementMapLabel, elementTarget, elementTitle, matchFireRecord, openInGev } from './element.js';
 export * from './model.js';
 export { describeCluster, CLUSTER_KINDS } from './describe.js';
 export {
@@ -241,6 +242,10 @@ export function createIlClustersLayer({
     }
   };
   const labelSource = `il-clusters:${kind}`;
+  // A second source, so publishLabels (count tags) never wipes the selected cluster's or member's tag.
+  const selectionSource = `il-selection:${kind}`;
+  let _selectionShown = false;
+  let _selectionTitles = [];
   const scratchNormal = new Cesium.Cartesian3();
   const scratchScreen = new Cesium.Cartesian2();
   // Surface feeds with cluster outlines draw them by level of detail; GNSS cells keep their boxes.
@@ -403,7 +408,8 @@ export function createIlClustersLayer({
 
   /** One count tag per cluster node, largest clusters first. */
   function publishLabels() {
-    const labelled = _anchors.filter(drawnAnchor).sort((a, b) => b.count - a.count).slice(0, CLUSTER_LABEL_LIMIT);
+    // The selected cluster's tag (publishSelectionLabels) carries its count.
+    const labelled = _anchors.filter((a) => drawnAnchor(a) && !isClusterSelected(id, a.clusterId)).sort((a, b) => b.count - a.count).slice(0, CLUSTER_LABEL_LIMIT);
     setOverlayEntries(
       labelSource,
       labelled.map((label) => clusterLabelEntry({
@@ -414,6 +420,51 @@ export function createIlClustersLayer({
       { cohortLimit: CLUSTER_LABEL_LIMIT, moving: !staticPositions },
     );
     _labelsShown = true;
+  }
+
+  /** A cartesian place, or undefined while one is not known yet (the overlay then skips the entry). */
+  const placed = (cart) => (cart && Cesium.Cartesian3.magnitude(cart) > 0 ? cart : undefined);
+
+  /** Tags for the selected cluster node and the selected member (what it is, one detail). */
+  function publishSelectionLabels() {
+    const entries = [];
+    const clusterId = _selectedHere;
+    const anchor = clusterId ? _anchors.find((a) => a.clusterId === clusterId) : null;
+    const cluster = anchor ? _clusters.find((c) => c.id === clusterId) : null;
+    if (anchor && cluster && drawnAnchor(anchor)) {
+      const { title, detail } = clusterMapLabel(cluster, kind);
+      entries.push(selectedLabelEntry({
+        id: `${selectionSource}:cluster:${clusterId}`,
+        position: () => placed(_anchors.find((a) => a.clusterId === clusterId)?.position),
+        title,
+        details: [detail],
+        color: footprintColor || clusterColorCss(clusterId),
+      }));
+    }
+    // GEV's own card names an element it opened itself; only the others get a tag.
+    const nodeId = _memberHere;
+    const node = anchor && nodeId && !_memberOpen?.opened ? _nodes.find((n) => String(n.id) === nodeId) : null;
+    if (node) {
+      const { title, detail } = elementMapLabel(kind, node);
+      entries.push(selectedLabelEntry({
+        id: `${selectionSource}:member:${nodeId}`,
+        // Drawn members move with their contacts; GNSS cells (no points) sit at their centre.
+        position: () => placed(_drawnPoints.get(node.id)?.position) || placed(_staticWhere.get(node.id)),
+        title,
+        details: [detail],
+        color: clusterColorCss(node.cluster_id),
+        member: true,
+      }));
+    }
+    if (entries.length) {
+      setOverlayEntries(selectionSource, entries, { moving: !staticPositions });
+      _selectionShown = true;
+      _selectionTitles = entries.map((e) => `${e.title}${e.details.length ? ` | ${e.details.join(' | ')}` : ''}`);
+    } else if (_selectionShown) {
+      _selectionShown = false;
+      _selectionTitles = [];
+      clearOverlaySource(selectionSource);
+    }
   }
 
   function hideLabels() {
@@ -599,6 +650,7 @@ export function createIlClustersLayer({
     }
     drawFootprints(color);
     publishLabels();
+    publishSelectionLabels();
     reposition();
   }
 
@@ -616,6 +668,7 @@ export function createIlClustersLayer({
       _memberOpen = node ? openInGev(_dataManager, kind, node) : null;
     }
     if (_enabled && _points) rebuild();
+    publishSelectionLabels();
     notifyClusters();
   }
 
@@ -766,6 +819,8 @@ export function createIlClustersLayer({
   function show(visible) {
     for (const collection of [_points, _lines, _outlines, _hulls]) if (collection) collection.show = visible;
     setOverlaySourceVisible(labelSource, visible);
+    // The Hide chip does not hide a selected cluster's tag.
+    setOverlaySourceVisible(selectionSource, visible);
   }
 
   return {
@@ -812,6 +867,7 @@ export function createIlClustersLayer({
       _selectedHere = null;
       _memberHere = null;
       _memberOpen = null;
+      publishSelectionLabels();
       _releasePicking?.();
       _releasePicking = null;
       _removeMoveEnd?.();
@@ -1070,6 +1126,9 @@ export function createIlClustersLayer({
       _releasePicking = null;
       hideLabels();
       setOverlaySourceVisible(labelSource, false);
+      clearOverlaySource(selectionSource);
+      _selectionShown = false;
+      _selectionTitles = [];
       _staticWhere = new Map();
       _clusterCount = 0;
       _lastUpdate = null;
@@ -1079,7 +1138,13 @@ export function createIlClustersLayer({
     },
 
     getStats() {
-      return { count: _nodes.length, lastUpdate: _lastUpdate, error: _lastError };
+      return {
+        count: _nodes.length,
+        lastUpdate: _lastUpdate,
+        error: _lastError,
+        // Titles of the selected cluster's and member's map tags (empty when nothing is selected here).
+        selectionLabels: _selectionTitles,
+      };
     },
   };
 }
