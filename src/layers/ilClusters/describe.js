@@ -261,6 +261,41 @@ export function describeCluster(cluster, kind) {
   return { title: `${cluster?.id ?? ''} · ${heading}`, lines: lines.filter(Boolean) };
 }
 
+/** Longest map-label line (characters) before it is cut with an ellipsis. */
+export const MAP_LABEL_MAX = 48;
+
+/** @param {string} text */
+export function truncateLabel(text, max = MAP_LABEL_MAX) {
+  const s = String(text ?? '').trim();
+  return s.length > max ? `${s.slice(0, max - 1).trimEnd()}…` : s;
+}
+
+/**
+ * The two-line tag on a selected cluster's node: what the cluster is, and one detail.
+ * Hubs: composition, then "#rank · rank line". Others: member count, then the first
+ * composition line (as on its card) or else the first two member names.
+ * @returns {{title: string, detail: string}}
+ */
+export function clusterMapLabel(cluster, kind) {
+  const spec = CLUSTER_KINDS[kind] || CLUSTER_KINDS.aircraft;
+  const s = cluster?.summary || {};
+  const size = finite(s.size) ? s.size : cluster?.size || 0;
+  if (kind === 'hubs') {
+    const rank = finite(s.rank) ? `#${formatNumber(s.rank)} · ` : '';
+    return { title: truncateLabel(hubComposition(s)), detail: truncateLabel(`${rank}${hubRankLine(s)}`) };
+  }
+  let detail = '';
+  for (const { key, line } of spec.composition) {
+    const top = s.composition?.[key]?.[0];
+    if (top && top.count > 1) {
+      detail = t(line, { value: String(top.value), count: formatNumber(top.count) });
+      break;
+    }
+  }
+  if (!detail && Array.isArray(s.names) && s.names.length) detail = s.names.slice(0, 2).join(', ');
+  return { title: truncateLabel(spec.members(size)), detail: truncateLabel(detail) };
+}
+
 /** Satellites named on one card line before "+N". */
 const NAMES_SHOWN = 3;
 

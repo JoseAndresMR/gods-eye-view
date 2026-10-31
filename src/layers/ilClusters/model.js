@@ -427,6 +427,35 @@ export function clusterLabelEntry({ clusterId, count, title, position, color }) 
 }
 
 /**
+ * The tag on the selected cluster node or the selected member: a protected card in the
+ * shared selected lane (like a selected CCTV camera or bike station), above the node.
+ * The cluster outranks its member; both stay under a selected camera (`MAX - 1`).
+ * @param {{id: string, position: object|Function, title: string, details?: string[], color: string, member?: boolean}} input
+ */
+export function selectedLabelEntry({ id, position, title, details = [], color, member = false }) {
+  return {
+    id: String(id),
+    position,
+    variant: 'selected',
+    selected: true,
+    protected: true,
+    paintLane: 'selected',
+    collisionGroup: 'ambient-card',
+    priority: Number.MAX_SAFE_INTEGER - (member ? 2 : 3),
+    title,
+    details: details.filter(Boolean),
+    accent: color,
+    interactive: false,
+    gapPx: 14,
+    verticalOnly: true,
+    placement: 'above',
+    edgeFade: 'keyhole',
+    horizonCull: true,
+    terrainOcclusion: false,
+  };
+}
+
+/**
  * Where a satellite (`tle_line1`/`tle_line2`) is at `nowSec`, Earth-fixed (km),
  * or null when SGP4 can't place it.
  */

@@ -7,6 +7,7 @@ import {
   cellCorners,
   circleRing,
   clusterLabelEntry,
+  selectedLabelEntry,
   elevationDeg,
   observationUrl,
   satelliteEcf,
@@ -196,4 +197,27 @@ test('a satellite is near 90° elevation over its own ground point and below the
   assert.ok(elevationDeg(ecf, -sub.lat, sub.lon + 180) < 0);
   assert.equal(elevationDeg(null, 0, 0), null);
   assert.equal(satelliteEcf({}, now), null);
+});
+
+test('a selected label is a protected card in the selected lane, the cluster above its member', () => {
+  const position = { x: 1, y: 2, z: 3 };
+  const cluster = selectedLabelEntry({ id: 'sel:C1', position, title: '5 vessels', details: ['Mostly cargo (3)', ''], color: '#00d4ff' });
+  assert.equal(cluster.variant, 'selected');
+  assert.equal(cluster.selected, true);
+  assert.equal(cluster.protected, true);
+  assert.equal(cluster.paintLane, 'selected');
+  assert.equal(cluster.collisionGroup, 'ambient-card');
+  assert.equal(cluster.placement, 'above');
+  assert.equal(cluster.verticalOnly, true);
+  assert.equal(cluster.horizonCull, true);
+  assert.equal(cluster.edgeFade, 'keyhole');
+  assert.equal(cluster.accent, '#00d4ff');
+  assert.deepEqual(cluster.details, ['Mostly cargo (3)']);
+  assert.equal(cluster.position, position);
+  assert.equal(cluster.priority, Number.MAX_SAFE_INTEGER - 3);
+  const member = selectedLabelEntry({ id: 'sel:m', position: () => position, title: 'Port', color: '#fff', member: true });
+  assert.equal(member.priority, Number.MAX_SAFE_INTEGER - 2);
+  assert.ok(member.priority > cluster.priority);
+  assert.ok(member.priority < Number.MAX_SAFE_INTEGER - 1, 'a selected camera outranks it');
+  assert.equal(typeof member.position, 'function');
 });

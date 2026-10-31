@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   describeCameras,
+  clusterMapLabel,
+  truncateLabel,
   describeCluster,
   describeOverflights,
   describePlateReaders,
@@ -188,4 +190,31 @@ test('hub exposure counts each relation once and splits military aircraft and qu
     ['1 cyclone in reach', '1 earthquake in reach']);
   assert.equal(HUB_EXPOSURE['vessels-near']([['x', 1], ['y', 2], ['z', 3]]), '3 ship clusters near');
   assert.equal(HUB_EXPOSURE.imaging, undefined);
+});
+
+test('a hub map label is its composition over "#rank · rank line"', () => {
+  assert.deepEqual(clusterMapLabel(HUB, 'hubs'), {
+    title: 'Port + LNG terminal + 2 power plants (3.4 GW) + cable landing'.slice(0, 47) + '…',
+    detail: '#4 · 3 sectors · nuclear · 3.4 GW',
+  });
+  assert.equal(clusterMapLabel({ summary: { rank: 2, sectors: ['Energy'], kinds: { dams: 1 } } }, 'hubs').title, 'Dam');
+});
+
+test('other map labels are the member count and the first composition line, else two names', () => {
+  const vessels = clusterMapLabel({ summary: { size: 4, composition: { type: [{ value: 'Cargo', count: 3 }] } } }, 'vessels');
+  assert.deepEqual(vessels, { title: '4 vessels', detail: 'Mostly Cargo (3)' });
+  const named = clusterMapLabel({ summary: { size: 5, names: ['Alpha', 'Beta', 'Gamma'] } }, 'datacenters');
+  assert.equal(named.detail, 'Alpha, Beta');
+  assert.match(named.title, /^5 /);
+  assert.deepEqual(clusterMapLabel({ size: 1, summary: { size: 1 } }, 'fires'), { title: '1 fire detection', detail: '' });
+  // A single repeated value is not a composition line.
+  assert.equal(clusterMapLabel({ summary: { size: 3, composition: { type: [{ value: 'Cargo', count: 1 }] } } }, 'vessels').detail, '');
+});
+
+test('map label lines are cut at about 48 characters with an ellipsis', () => {
+  assert.equal(truncateLabel('short'), 'short');
+  const cut = truncateLabel('x'.repeat(80));
+  assert.equal(cut.length, 48);
+  assert.ok(cut.endsWith('…'));
+  assert.equal(truncateLabel(null), '');
 });

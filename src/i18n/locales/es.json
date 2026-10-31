@@ -3495,5 +3495,16 @@
   },
   "INTELLIGENCE LAYERS": "CAPAS DE INTELIGENCIA",
   "Intelligence layers on": "Capas de inteligencia activas",
-  "Turn on a layer under Intelligence layers to list its clusters": "Activa una capa en Capas de inteligencia para ver sus grupos"
+  "Turn on a layer under Intelligence layers to list its clusters": "Activa una capa en Capas de inteligencia para ver sus grupos",
+  "Vessel": "Buque",
+  "Satellite": "Satélite",
+  "Fire detection": "Detección de incendio",
+  "Low-accuracy cell": "Celda de baja precisión",
+  "Power plant": "Central eléctrica",
+  "Airport": "Aeropuerto",
+  "Port": "Puerto",
+  "Data centre": "Centro de datos",
+  "Dam": "Presa",
+  "Cable landing": "Amarre de cable",
+  "Camera": "Cámara"
 }

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { ELEMENT_OWNERS, elementFields, elementTarget, elementTitle, matchFireRecord, openInGev, ownerElementId } from './element.js';
+import { ELEMENT_KIND_LABELS, ELEMENT_OWNERS, elementFields, elementMapLabel, elementTarget, elementTitle, matchFireRecord, openInGev, ownerElementId } from './element.js';
 
 test('each feed opens its element in the GEV layer that owns it, by that layer\'s id', () => {
   assert.equal(ELEMENT_OWNERS.aircraft.layerId, 'flights');
@@ -64,4 +64,20 @@ test('a hub member opens as the site of its own kind, by its own id', () => {
   const same = { id: 'abc' };
   assert.equal(elementTarget('events', same).node, same);
   assert.deepEqual(openInGev(null, 'hubs', node), { layerId: null, opened: false, reason: 'none' });
+});
+
+test('a selected member is tagged with its title and "kind · subtype"', () => {
+  assert.deepEqual(elementMapLabel('power-plants', { id: '1', name: 'Maasvlakte', subtype: 'coal' }), { title: 'Maasvlakte', detail: 'Power plant · coal' });
+  assert.deepEqual(elementMapLabel('aircraft', { id: '3c5ee9', flight: 'DLH4AB ' }), { title: 'DLH4AB', detail: 'Aircraft' });
+  // A hub member is labelled by the site's own feed.
+  assert.deepEqual(
+    elementMapLabel('hubs', { id: 'ports:77', kind: 'ports', ref: '77', name: 'Rotterdam', subtype: 'large' }),
+    { title: 'Rotterdam', detail: 'Port · large' },
+  );
+  assert.deepEqual(elementMapLabel('fires', { id: '9abec1b4a8e0' }), { title: '9abec1b4a8e0', detail: 'Fire detection' });
+  assert.equal(elementMapLabel('mystery', { id: 'z' }).detail, '');
+});
+
+test('every feed kind has a singular label', () => {
+  assert.equal(Object.keys(ELEMENT_KIND_LABELS).length, 16);
 });

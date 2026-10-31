@@ -1,6 +1,8 @@
 // The raw element behind one cluster member: which GEV layer owns it (and its
 // select API), its title, and its feed fields for the INTELLIGENCE panel's
 // element card. Pure, so the per-feed rules are tested.
+import { msg, t } from '../../i18n/index.js';
+import { truncateLabel } from './describe.js';
 
 /**
  * The GEV layer that shows each feed's elements, and the method that selects
@@ -45,6 +47,39 @@ const EPOCH_FIELDS = /(^|_)(epoch|time_position|last_position_epoch|updated_at|p
 export function elementTarget(kind, node) {
   if (kind !== 'hubs' || !node?.kind) return { kind, node };
   return { kind: node.kind, node: { ...node, id: node.ref ?? node.id } };
+}
+
+/** What one element of each feed is called, on the map tag of a selected member. */
+export const ELEMENT_KIND_LABELS = Object.freeze({
+  aircraft: msg('Aircraft'),
+  military: msg('Military aircraft'),
+  vessels: msg('Vessel'),
+  satellites: msg('Satellite'),
+  fires: msg('Fire detection'),
+  events: msg('Conflict event'),
+  gnss: msg('Low-accuracy cell'),
+  'power-plants': msg('Power plant'),
+  'lng-terminals': msg('LNG terminal'),
+  airports: msg('Airport'),
+  ports: msg('Port'),
+  'military-areas': msg('Military area'),
+  datacenters: msg('Data centre'),
+  dams: msg('Dam'),
+  landings: msg('Cable landing'),
+  cameras: msg('Camera'),
+});
+
+/**
+ * The two-line tag on a selected member: its title, and "kind · subtype".
+ * A hub's member is labelled by the site's own feed kind.
+ * @returns {{title: string, detail: string}}
+ */
+export function elementMapLabel(kind, node) {
+  const target = elementTarget(kind, node);
+  const label = ELEMENT_KIND_LABELS[target.kind];
+  const sub = typeof node?.subtype === 'string' ? node.subtype.trim() : '';
+  const detail = [label ? t(label) : '', sub].filter(Boolean).join(' · ');
+  return { title: truncateLabel(elementTitle(target.kind, target.node)), detail: truncateLabel(detail) };
 }
 
 /** The id GEV's owning layer knows the element by. */
