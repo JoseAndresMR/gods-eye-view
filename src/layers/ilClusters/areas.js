@@ -38,19 +38,28 @@ export function validateAreaBox(box) {
 export const MAX_POLYGON_POINTS = 500;
 
 /**
- * Polygon-tool validator: 3+ distinct finite points that enclose something.
- * Returns the area fields (the bounding box the IL filters by, and the ring).
+ * Polygon-tool validator: 3+ points that enclose something. Longitudes may run past ±180°
+ * (170 → 190 for an area over Fiji) so an area over the dateline is one shape; the ring may
+ * span at most 360°. Returns the area fields: the bounding box the IL filters by (west > east
+ * when it crosses the dateline) and the ring.
  */
 export function validateAreaPolygon(points) {
   const ring = (points || []).filter((p) => Array.isArray(p) && finite(p[0]) && finite(p[1]));
   if (ring.length < 3) return { ok: false, reason: 'degenerate', message: msg('Click at least three points') };
   if (ring.length > MAX_POLYGON_POINTS) return { ok: false, reason: 'invalid', message: msg('Too many points') };
   const round = (v) => Number(v.toFixed(4));
-  const clean = ring.map(([lon, lat]) => [round(Math.max(-180, Math.min(180, lon))), round(Math.max(-90, Math.min(90, lat)))]);
+  const clean = ring.map(([lon, lat]) => [round(lon), round(Math.max(-90, Math.min(90, lat)))]);
   const lons = clean.map((p) => p[0]);
   const lats = clean.map((p) => p[1]);
-  const box = { west: Math.min(...lons), south: Math.min(...lats), east: Math.max(...lons), north: Math.max(...lats) };
-  if (box.east - box.west < MIN_SIDE_DEG || box.north - box.south < MIN_SIDE_DEG)
+  const lo = Math.min(...lons);
+  const hi = Math.max(...lons);
+  if (lo < -360 || hi > 360 || hi - lo > 360) return { ok: false, reason: 'invalid', message: msg('Too many points') };
+  const wrap = (lon) => round(((lon + 180) % 360 + 360) % 360 - 180);
+  const full = hi - lo >= 360;
+  const west = full ? -180 : lo < -180 || hi > 180 ? wrap(lo) : lo;
+  const east = full ? 180 : lo < -180 || hi > 180 ? wrap(hi) : hi;
+  const box = { west, south: Math.min(...lats), east, north: Math.max(...lats) };
+  if (hi - lo < MIN_SIDE_DEG || box.north - box.south < MIN_SIDE_DEG)
     return { ok: false, reason: 'degenerate', message: msg('Click at least three points') };
   return { ok: true, box: { ...box, polygon: clean } };
 }

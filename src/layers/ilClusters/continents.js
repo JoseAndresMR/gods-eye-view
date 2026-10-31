@@ -1,7 +1,8 @@
 // Coarse continent outlines ([lon, lat], clockwise) for the Areas of interest
 // dropdown. Hand-traced to ~100–300 km: good for "compute roughly here", not
 // borders. The Americas are split at the Panama–Colombia border; Europe ends
-// at the Urals and the Black Sea, Asia stops at the dateline.
+// at the Urals and the Black Sea. Asia and Oceania run past 180° (191 and 185), so Chukotka and Fiji
+// are one shape; the IL and the outlines take longitudes up to ±360°.
 import { msg } from '../../i18n/index.js';
 
 export const CONTINENTS = Object.freeze([
@@ -46,7 +47,7 @@ export const CONTINENTS = Object.freeze([
     id: 'asia',
     name: msg('Asia'),
     polygon: [
-      [60, 69], [70, 73], [100, 78], [140, 73], [180, 69], [180, 62], [163, 58], [157, 51],
+      [60, 69], [70, 73], [100, 78], [140, 73], [180, 71], [191, 67], [191, 65], [180, 64], [163, 58], [157, 51],
       [142, 54], [146, 45], [142, 35], [131, 31], [122, 25], [110, 20], [108, 12], [105, 9],
       [100, 3], [98, 8], [98, 16], [94, 17], [91, 22], [87, 21], [80, 15], [78, 8], [73, 16],
       [69, 22], [62, 25], [57, 26], [57, 22], [52, 16], [43, 12.5], [39, 22], [35, 28], [34, 31],
@@ -57,7 +58,7 @@ export const CONTINENTS = Object.freeze([
     id: 'oceania',
     name: msg('Oceania'),
     polygon: [
-      [95, 6], [119, 7], [130, 3], [155, -1], [180, -5], [180, -48], [165, -48], [150, -45],
+      [95, 6], [119, 7], [130, 3], [155, -1], [185, -5], [185, -48], [165, -48], [150, -45],
       [140, -40], [114, -36], [112, -22], [100, -8],
     ],
   },

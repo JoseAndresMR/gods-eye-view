@@ -62,18 +62,29 @@ export function initPolygonTool({
     return Number.isFinite(lon) && Number.isFinite(lat) ? [lon, lat] : null;
   };
 
+  // Keep longitudes continuous: a point across the dateline from the last one gets ±360°, so a
+  // ring over Fiji reads 170 → 190 and draws as one shape.
+  const unwrapped = ([lon, lat]) => {
+    const last = points[points.length - 1];
+    if (!last) return [lon, lat];
+    let x = lon;
+    while (x - last[0] > 180) x -= 360;
+    while (last[0] - x > 180) x += 360;
+    return [x, lat];
+  };
   const onClick = (event) => {
     if (!active) return;
     const p = worldAt(event.position);
     if (!p) return onCancel?.('sky', 'Click on the ground, not the sky');
-    points.push(p);
+    points.push(unwrapped(p));
     line.show = true;
     onChange?.(points.length);
     requestRender();
   };
   const onMove = (event) => {
     if (!active || !points.length) return;
-    cursor = worldAt(event.endPosition) || cursor;
+    const at = worldAt(event.endPosition);
+    if (at) cursor = unwrapped(at);
     requestRender();
   };
   function finish() {

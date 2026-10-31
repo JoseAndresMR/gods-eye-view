@@ -57,3 +57,24 @@ test('area polygons need three points that enclose something and carry their bou
     west: 0, south: 0, east: 10, north: 5, polygon: [[0, 0], [10, 0], [0, 5]],
   });
 });
+
+test('a polygon over the dateline keeps continuous longitudes and a wrapping box', async () => {
+  const { validateAreaPolygon } = await import('./areas.js');
+  const fiji = validateAreaPolygon([[170, -10], [190, -10], [190, 10], [170, 10]]);
+  assert.equal(fiji.ok, true);
+  assert.deepEqual([fiji.box.west, fiji.box.east, fiji.box.south, fiji.box.north], [170, -170, -10, 10]);
+  assert.deepEqual(fiji.box.polygon[1], [190, -10]);
+  const world = validateAreaPolygon([[-180, -60], [180, -60], [180, -90], [-180, -90]]);
+  assert.deepEqual([world.box.west, world.box.east], [-180, 180]);
+  assert.equal(validateAreaPolygon([[-100, 0], [262, 0], [0, 10]]).ok, false);
+});
+
+test('the continent presets are valid and Asia and Oceania cross the dateline', async () => {
+  const { validateAreaPolygon } = await import('./areas.js');
+  const { CONTINENTS } = await import('./continents.js');
+  for (const c of CONTINENTS) assert.equal(validateAreaPolygon(c.polygon).ok, true, c.id);
+  for (const id of ['asia', 'oceania']) {
+    const box = validateAreaPolygon(CONTINENTS.find((c) => c.id === id).polygon).box;
+    assert.ok(box.west > box.east, id);
+  }
+});
