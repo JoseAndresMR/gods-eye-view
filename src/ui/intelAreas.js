@@ -1,15 +1,15 @@
 /**
  * Areas of interest in the INTELLIGENCE panel: where the intelligence layer
- * computes. "Whole world" and each saved box can be turned on or off; "Draw
- * area" drags a new box on the map (the imagery box tool, without its size
- * limit). Saved to the IL, which picks the change up on each tracker's next
+ * computes. "Whole world" and each saved area can be turned on or off; "Draw
+ * area" clicks out a polygon on the map, and the continent dropdown adds a
+ * coarse continent outline. Saved to the IL, which picks the change up on each tracker's next
  * tick; with nothing on, the trackers idle. While the panel is open the boxes
  * are outlined on the map.
  */
 import * as Cesium from 'cesium';
 import { formatNumber, msg, t } from '../i18n/index.js';
 import { governorRequestRender } from '../renderGovernor.js';
-import { initImageryBoxTool } from './imageryBoxTool.js';
+import { initPolygonTool } from './polygonTool.js';
 import {
   DEFAULT_AREAS,
   MAX_AREAS,
@@ -18,8 +18,9 @@ import {
   removeArea,
   saveAreas,
   updateArea,
-  validateAreaBox,
+  validateAreaPolygon,
 } from '../layers/ilClusters/areas.js';
+import { CONTINENTS } from '../layers/ilClusters/continents.js';
 import { densifyRing } from '../layers/ilClusters/model.js';
 
 const RENDER_ID = 'il-areas';
@@ -44,19 +45,22 @@ export function mountIntelAreas({ container, panel, viewer, fetchImpl = globalTh
   const outlines = viewer?.scene?.primitives?.add(new Cesium.PolylineCollection()) || null;
 
   const tool = viewer
-    ? initImageryBoxTool({
+    ? initPolygonTool({
         viewer,
-        validate: validateAreaBox,
         ownerId: 'il-area-box',
         onActive: (active) => {
           drawing = active;
-          status = active ? t('Drag a box on the map · Esc cancels') : status;
+          status = active ? t('Click corners on the map · double-click or Enter finishes · Esc cancels') : status;
           render();
         },
-        onBox: (box) => {
-          const next = addArea(state, box, t('Area {n}', { n: formatNumber(state.areas.length + 1) }));
-          if (!next) status = t('At most {max} areas', { max: formatNumber(MAX_AREAS) });
-          else commit(next);
+        onPolygon: (points) => {
+          const result = validateAreaPolygon(points);
+          if (!result.ok) {
+            status = result.message;
+            render();
+            return;
+          }
+          add(result.box, t('Area {n}', { n: formatNumber(state.areas.length + 1) }));
         },
         onCancel: (_reason, message) => {
           status = message || '';
@@ -64,6 +68,12 @@ export function mountIntelAreas({ container, panel, viewer, fetchImpl = globalTh
         },
       })
     : null;
+
+  function add(box, name) {
+    const next = addArea(state, box, name);
+    if (!next) status = t('At most {max} areas', { max: formatNumber(MAX_AREAS) });
+    else commit(next);
+  }
 
   async function commit(next) {
     const previous = state;
@@ -85,7 +95,7 @@ export function mountIntelAreas({ container, panel, viewer, fetchImpl = globalTh
     outlines.show = Boolean(panel && !panel.classList.contains('collapsed'));
     for (const a of state.areas) {
       const ring = densifyRing(
-        [[a.west, a.south], [a.east, a.south], [a.east, a.north], [a.west, a.north]],
+        a.polygon || [[a.west, a.south], [a.east, a.south], [a.east, a.north], [a.west, a.north]],
         25,
       );
       outlines.add({
@@ -151,6 +161,20 @@ export function mountIntelAreas({ container, panel, viewer, fetchImpl = globalTh
         toggleButton(a.enabled, t('Compute in this area'), () => commit(updateArea(state, a.id, { enabled: !a.enabled }))),
       ));
     }
+
+    const pick = doc.createElement('select');
+    pick.className = 'gev-field intel-area-continent';
+    pick.setAttribute('aria-label', t('Add a continent'));
+    pick.add(new Option(t('Add a continent…'), ''));
+    for (const c of CONTINENTS) pick.add(new Option(t(c.name), c.id));
+    pick.addEventListener('change', () => {
+      const c = CONTINENTS.find((x) => x.id === pick.value);
+      if (!c) return;
+      const result = validateAreaPolygon(c.polygon);
+      if (result.ok) add(result.box, t(c.name));
+      pick.value = '';
+    });
+    container.appendChild(pick);
 
     const draw = doc.createElement('button');
     draw.type = 'button';

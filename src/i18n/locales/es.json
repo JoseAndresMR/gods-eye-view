@@ -3506,5 +3506,16 @@
   "Data centre": "Centro de datos",
   "Dam": "Presa",
   "Cable landing": "Amarre de cable",
-  "Camera": "Cámara"
+  "Camera": "Cámara",
+  "Click corners on the map · double-click or Enter finishes · Esc cancels": "Haz clic en las esquinas del mapa · doble clic o Intro termina · Esc cancela",
+  "Click at least three points": "Haz clic en al menos tres puntos",
+  "Too many points": "Demasiados puntos",
+  "Add a continent": "Añadir un continente",
+  "Add a continent…": "Añadir un continente…",
+  "South America": "Sudamérica",
+  "Europe": "Europa",
+  "Africa": "África",
+  "Oceania": "Oceanía",
+  "Antarctica": "Antártida",
+  "Asia": "Asia"
 }

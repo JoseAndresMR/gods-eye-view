@@ -48,3 +48,12 @@ test('loads and saves through the GEV route, surfacing refusals', async () => {
     ['/api/il/areas', 'GET'], ['/api/il/areas', 'PUT'], ['/api/il/areas', 'PUT'],
   ]);
 });
+
+test('area polygons need three points that enclose something and carry their bounding box', async () => {
+  const { validateAreaPolygon } = await import('./areas.js');
+  assert.equal(validateAreaPolygon([[0, 0], [1, 1]]).ok, false);
+  assert.equal(validateAreaPolygon([[0, 0], [1, 0], [2, 0]]).reason, 'degenerate');
+  assert.deepEqual(validateAreaPolygon([[0, 0], [10, 0], [0, 5]]).box, {
+    west: 0, south: 0, east: 10, north: 5, polygon: [[0, 0], [10, 0], [0, 5]],
+  });
+});

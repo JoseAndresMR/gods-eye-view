@@ -542,3 +542,7 @@ body.mobile-shell[data-mobile-sheet='context'] #right-context-rail > #intel-pane
   margin: 0;
   transform: none;
 }
+.intel-area-continent {
+  align-self: flex-start;
+  max-width: 100%;
+}
