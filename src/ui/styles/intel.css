@@ -409,3 +409,136 @@ input.intel-area-name {
   color: var(--text-primary);
   overflow-wrap: anywhere;
 }
+
+/* ── INTELLIGENCE LAYERS: left-rail panel (toggles, areas, settings) ─────────
+   Placed in the left stack like Data Layers and laid out by the same rail
+   engine; the cluster cards stay in the right INTELLIGENCE panel above. */
+#intel-layers-panel {
+  --panel-expanded-width: 280px;
+  width: var(--panel-expanded-width);
+}
+#intel-layers-panel .panel-glow {
+  position: absolute;
+  inset: -20px;
+  background: radial-gradient(ellipse at center, var(--accent-dim) 0%, transparent 60%);
+  filter: blur(20px);
+  opacity: 0.25;
+  pointer-events: none;
+}
+#intel-layers-count {
+  color: var(--text-secondary);
+  font: 9px var(--font-mono);
+  letter-spacing: 1px;
+  white-space: nowrap;
+}
+#intel-layers-body {
+  min-height: 0;
+  overscroll-behavior: contain;
+}
+#left-panel-stack > #intel-layers-panel {
+  position: relative;
+  top: auto;
+  right: auto;
+  bottom: auto;
+  left: auto;
+  z-index: auto;
+  max-height: none;
+  flex: 0 0 auto;
+  min-height: 0;
+  pointer-events: auto;
+  order: 1;
+}
+/* Data Layers is order 1 too; the DOM order puts this panel right after it. */
+#left-panel-stack > #intel-layers-panel:not(.collapsed) {
+  box-sizing: border-box;
+  flex: 0 1 var(--left-panel-allocated-height, auto);
+  height: var(--left-panel-allocated-height, auto);
+  max-height: var(--left-panel-allocated-height, 100%);
+}
+#left-panel-stack.layout-tail > #intel-layers-panel:not(.collapsed) {
+  flex: 0 0 var(--left-panel-allocated-height);
+  height: var(--left-panel-allocated-height);
+  max-height: var(--left-panel-allocated-height);
+}
+#left-panel-stack > #intel-layers-panel:not(.collapsed) .intel-layers-inner {
+  height: 100%;
+  max-height: 100%;
+  overflow: hidden;
+}
+#left-panel-stack > #intel-layers-panel:not(.collapsed) #intel-layers-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 212, 255, 0.46) transparent;
+}
+#intel-layers-panel.collapsed {
+  width: var(--left-collapsed-width);
+}
+#intel-layers-panel.collapsed #intel-layers-body,
+#intel-layers-panel.collapsed #intel-layers-count {
+  display: none !important;
+}
+#intel-layers-panel.collapsed .panel-title {
+  font-size: 8px;
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+}
+#intel-layers-panel .panel-collapse-btn {
+  flex: 0 0 auto;
+}
+#intel-layers-panel.collapsed .intel-layers-inner {
+  padding-bottom: 10px;
+}
+#intel-layers-panel.collapsed .panel-header {
+  margin-bottom: 2px;
+}
+:root[data-ui-theme='cyber'] #left-panel-stack > #intel-layers-panel {
+  --panel-expanded-width: var(--cyber-panel-width);
+}
+:root[data-ui-theme='cyber'] #left-panel-stack > #intel-layers-panel.collapsed {
+  width: var(--cyber-panel-collapsed-width);
+}
+:root[data-ui-theme='cyber'] #left-panel-stack > #intel-layers-panel.collapsed .intel-layers-inner {
+  box-sizing: border-box;
+  height: 50px;
+  min-height: 50px;
+  overflow: hidden;
+}
+:root[data-ui-theme='cyber'] body:not(.cockpit-mode) #intel-layers-panel .panel-collapse-btn {
+  width: var(--cyber-panel-control-size);
+  min-width: var(--cyber-panel-control-size);
+  height: var(--cyber-panel-control-size);
+}
+@media (min-width: 761px) {
+  :root[data-ui-theme='cyber']
+    body:not(.cockpit-mode)
+    #left-panel-stack:has(> [data-panel-id]:not(.collapsed))
+    > #intel-layers-panel:not(.collapsed) {
+    flex: 1 1 auto;
+    height: auto;
+    max-height: none;
+  }
+}
+@media (max-width: 720px) {
+  #left-panel-stack > #intel-layers-panel,
+  #left-panel-stack > #intel-layers-panel.collapsed {
+    position: relative;
+    top: auto;
+    right: auto;
+    bottom: auto;
+    left: auto;
+    width: 100%;
+  }
+}
+/* Phone shell: shown in the Layers sheet like Scenes, and the cluster cards
+   (right INTELLIGENCE panel) in the Context sheet. */
+body.mobile-shell[data-mobile-sheet='layers'] #left-panel-stack > #intel-layers-panel,
+body.mobile-shell[data-mobile-sheet='context'] #right-context-rail > #intel-panel:not([hidden]) {
+  position: relative;
+  inset: auto;
+  display: block;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  transform: none;
+}
