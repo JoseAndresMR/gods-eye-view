@@ -3142,7 +3142,6 @@
   "INTELLIGENCE": "АНАЛИТИКА",
   "Clusters listed": "Показано групп",
   "{clusters} zones · grey circles are the {regions} regions the intelligence layer watches": "Зон: {clusters} · серые круги — {regions} регионов, за которыми следит слой аналитики",
-  "Drag a box on the map · Esc cancels": "Выделите прямоугольник на карте · Esc — отмена",
   "Area {n}": "Зона {n}",
   "At most {max} areas": "Не более {max} зон",
   "Could not save areas: {error}": "Не удалось сохранить зоны: {error}",

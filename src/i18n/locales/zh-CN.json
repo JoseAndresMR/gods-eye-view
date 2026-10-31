@@ -2914,7 +2914,6 @@
   "INTELLIGENCE": "情报",
   "Clusters listed": "已列出的集群",
   "{clusters} zones · grey circles are the {regions} regions the intelligence layer watches": "{clusters} 个区域 · 灰色圆圈为情报层监视的 {regions} 个地区",
-  "Drag a box on the map · Esc cancels": "在地图上拖出一个方框 · 按 Esc 取消",
   "Area {n}": "区域 {n}",
   "At most {max} areas": "最多 {max} 个区域",
   "Could not save areas: {error}": "无法保存区域：{error}",

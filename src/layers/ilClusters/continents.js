@@ -2,10 +2,12 @@
 // dropdown. Hand-traced to ~100–300 km: good for "compute roughly here", not
 // borders. The Americas are split at the Panama–Colombia border; Europe ends
 // at the Urals and the Black Sea, Asia stops at the dateline.
+import { msg } from '../../i18n/index.js';
+
 export const CONTINENTS = Object.freeze([
   {
     id: 'north-america',
-    name: 'North America',
+    name: msg('North America'),
     polygon: [
       [-168, 68], [-135, 70], [-110, 72], [-95, 70], [-80, 63], [-65, 60], [-60, 56], [-56, 52],
       [-60, 46], [-66, 44], [-70, 41], [-76, 35], [-81, 31], [-80, 25], [-82, 27], [-90, 29],
@@ -15,7 +17,7 @@ export const CONTINENTS = Object.freeze([
   },
   {
     id: 'south-america',
-    name: 'South America',
+    name: msg('South America'),
     polygon: [
       [-77.3, 8.5], [-72, 12], [-62, 11], [-52, 5], [-35, -5], [-39, -15], [-48, -26], [-58, -38],
       [-65, -42], [-68, -52], [-70, -55], [-75, -50], [-73, -37], [-71, -18], [-81, -5], [-80, 0],
@@ -24,7 +26,7 @@ export const CONTINENTS = Object.freeze([
   },
   {
     id: 'europe',
-    name: 'Europe',
+    name: msg('Europe'),
     polygon: [
       [-10, 36], [-10, 44], [-5, 48], [-10, 54], [-6, 58], [5, 62], [15, 70], [28, 72], [40, 68],
       [60, 69], [60, 51], [53, 47], [48, 44], [38, 46], [30, 45], [29, 41], [26, 40], [23, 36],
@@ -33,7 +35,7 @@ export const CONTINENTS = Object.freeze([
   },
   {
     id: 'africa',
-    name: 'Africa',
+    name: msg('Africa'),
     polygon: [
       [-6, 36], [10, 37], [11, 33], [20, 31], [32, 31], [34, 28], [43, 12.5], [51, 12], [51, 2],
       [40, -3], [40, -15], [35, -24], [33, -28], [20, -35], [17, -30], [12, -17], [13, -6], [9, 4],
@@ -42,7 +44,7 @@ export const CONTINENTS = Object.freeze([
   },
   {
     id: 'asia',
-    name: 'Asia',
+    name: msg('Asia'),
     polygon: [
       [60, 69], [70, 73], [100, 78], [140, 73], [180, 69], [180, 62], [163, 58], [157, 51],
       [142, 54], [146, 45], [142, 35], [131, 31], [122, 25], [110, 20], [108, 12], [105, 9],
@@ -53,7 +55,7 @@ export const CONTINENTS = Object.freeze([
   },
   {
     id: 'oceania',
-    name: 'Oceania',
+    name: msg('Oceania'),
     polygon: [
       [95, 6], [119, 7], [130, 3], [155, -1], [180, -5], [180, -48], [165, -48], [150, -45],
       [140, -40], [114, -36], [112, -22], [100, -8],
@@ -61,7 +63,7 @@ export const CONTINENTS = Object.freeze([
   },
   {
     id: 'antarctica',
-    name: 'Antarctica',
+    name: msg('Antarctica'),
     polygon: [[-180, -60], [-90, -60], [0, -60], [90, -60], [180, -60], [180, -90], [-180, -90]],
   },
 ]);

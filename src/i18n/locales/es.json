@@ -3066,7 +3066,6 @@
   "INTELLIGENCE": "INTELIGENCIA",
   "Clusters listed": "Grupos listados",
   "{clusters} zones · grey circles are the {regions} regions the intelligence layer watches": "{clusters} zonas · los círculos grises son las {regions} regiones que vigila la capa de inteligencia",
-  "Drag a box on the map · Esc cancels": "Arrastra un recuadro en el mapa · Esc cancela",
   "Area {n}": "Zona {n}",
   "At most {max} areas": "Como máximo {max} zonas",
   "Could not save areas: {error}": "No se pudieron guardar las zonas: {error}",
