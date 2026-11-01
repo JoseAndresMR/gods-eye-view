@@ -27,9 +27,11 @@ import {
   IL_SAT_WEATHER_ID,
   boxCovers,
   clusterLabelEntry,
+  clustersIndexUrl,
   distanceLabel,
   elevationDeg,
   observationUrl,
+  pickDistance,
   requestBox,
   satelliteEcf,
   satellitePosition,
@@ -180,6 +182,7 @@ export function createIlSatelliteRelationLayer({
   tagAll = true,
   selectedHeading = msg('Selected satellite'),
   hubLayer = null,
+  partsOfSelection = true,
   surface = null,
   fetchImpl = globalThis.fetch,
 }) {
@@ -229,22 +232,54 @@ export function createIlSatelliteRelationLayer({
     return Number.isFinite(h) ? h : 0;
   }
 
-  /** Target layers that are on, with their current distance. */
-  function currentLanes() {
-    return targets
-      .filter((layer) => layer.isEnabled?.())
-      .map((layer) => ({ layer, kind: layer.kind, km: layer.getParams?.().distanceKm }))
-      .filter((lane) => Number.isFinite(lane.km));
+  // `partsOfSelection`: target kind -> default distance of its feed, for layers that are off.
+  const _partsKm = new Map();
+  const _partsAsked = new Set();
+  let _partsTimer = null;
+
+  /** Learn the distance an off target layer would open at, so the selection's parts can still be read. */
+  function learnPartsKm() {
+    for (const layer of targets) {
+      if (layer.isEnabled?.() || _partsAsked.has(layer.kind)) continue;
+      _partsAsked.add(layer.kind);
+      fetchImpl(clustersIndexUrl(layer.kind), { cache: 'no-store' })
+        .then((res) => res.json())
+        .then((index) => {
+          const km = pickDistance(index?.distances_km, null, index?.default_km);
+          if (km === null) return;
+          _partsKm.set(layer.kind, km);
+          clearTimeout(_partsTimer);
+          _partsTimer = setTimeout(() => _enabled && onTargetsChanged(), 150);
+        })
+        .catch(() => _partsAsked.delete(layer.kind));
+    }
   }
 
-  const lanesSignature = (lanes) => lanes.map(({ kind, km }) => `${kind}:${distanceLabel(km)}`).join(',');
+  /**
+   * Target layers that are on, with their current distance. While something is selected, layers that
+   * are off follow as `hidden` lanes: read, but only the selection's edges and their ends are drawn.
+   */
+  function currentLanes() {
+    const withHidden = partsOfSelection && Boolean(getSelection());
+    if (withHidden) learnPartsKm();
+    return targets
+      .map((layer) => {
+        const on = Boolean(layer.isEnabled?.());
+        return { layer, kind: layer.kind, km: on ? layer.getParams?.().distanceKm : _partsKm.get(layer.kind), hidden: !on };
+      })
+      .filter((lane) => Number.isFinite(lane.km) && (!lane.hidden || withHidden));
+  }
 
-  /** Each lane's places: [{layer, kind, km, clusterId, place}]. */
-  function placesInView() {
+  const lanesSignature = (lanes) => lanes.map(({ kind, km, hidden }) => `${kind}:${distanceLabel(km)}${hidden ? '~' : ''}`).join(',');
+  const shownLanes = () => _lanes.filter((lane) => !lane.hidden);
+
+  /** Each lane's places: [{layer, kind, km, clusterId, place}]; hidden lanes only when asked for. */
+  function placesInView(withHidden = false) {
     const out = [];
-    for (const { layer, kind, km } of _lanes) {
+    for (const { layer, kind, km, hidden } of _lanes) {
+      if (hidden && !withHidden) continue;
       const lane = _doc?.targets?.[kind]?.[distanceLabel(km)] || {};
-      for (const [clusterId, place] of Object.entries(lane)) out.push({ layer, kind, km, clusterId, place });
+      for (const [clusterId, place] of Object.entries(lane)) out.push({ layer, kind, km, clusterId, place, hidden });
     }
     return out;
   }
@@ -274,12 +309,15 @@ export function createIlSatelliteRelationLayer({
     return [HUB_EXPOSURE[relation]([...observers.values()], _doc.satellites || {})].flat().filter(Boolean);
   }
 
+  /** An edge of the selected cluster: as a target, and as an observer (an aircraft or hub cluster). */
+  const ofSelectedCluster = (selection, layer, clusterId, sat) => selection?.type === 'cluster'
+    && ((selection.layerId === layer.id && selection.clusterId === clusterId)
+      || (sat?.layer === selection.layerId && sat?.cluster === selection.clusterId));
+
   /** Is this edge drawn now: the selection's edges, else those of the kinds switched on. */
-  function wanted(selection, layer, clusterId, satId, sat) {
-    // A selected cluster: its edges as a target, and as an observer (an aircraft cluster).
-    if (selection?.type === 'cluster')
-      return (selection.layerId === layer.id && selection.clusterId === clusterId)
-        || (sat?.layer === selection.layerId && sat?.cluster === selection.clusterId);
+  function wanted(selection, layer, clusterId, satId, sat, hidden = false) {
+    if (hidden) return ofSelectedCluster(selection, layer, clusterId, sat) || (selection?.type === 'satellite' && selection.satId === satId);
+    if (selection?.type === 'cluster') return ofSelectedCluster(selection, layer, clusterId, sat);
     if (selection?.type === 'satellite') return selection.satId === satId;
     return (sat?.kinds || []).some((k) => edgeOn.has(k));
   }
@@ -300,7 +338,9 @@ export function createIlSatelliteRelationLayer({
     const selection = getSelection();
     const overhead = new Map();
     const edges = [];
-    for (const { layer, kind, km, clusterId, place } of placesInView()) {
+    for (const { layer, kind, km, clusterId, place, hidden } of placesInView(true)) {
+      // A hidden lane (its layer is off) shows only the edges of the selection.
+      if (hidden && !selection) continue;
       // Narrow kinds: observing at the last computation, or due next; keep those inside their window now.
       const candidates = new Set(place.now.map(([satId]) => satId).filter((satId) => isLive(sats[satId])));
       for (const next of Object.values(place.next || {})) if (isLive(sats[next.sat])) candidates.add(next.sat);
@@ -310,13 +350,13 @@ export function createIlSatelliteRelationLayer({
         const elev = elevationDeg(where(satId), place.lat, place.lon);
         if (elev === null || elev < sat.elev_min || elev > sat.elev_max) continue;
         seen.push({ name: sat.name, kinds: sat.kinds });
-        if (wanted(selection, layer, clusterId, satId, sat)) edges.push({ satId, layer, clusterId, place, at: null });
+        if (wanted(selection, layer, clusterId, satId, sat, hidden)) edges.push({ satId, layer, clusterId, place, at: null });
       }
       if (seen.length) overhead.set(laneKey(kind, distanceLabel(km), clusterId), seen.sort((a, b) => a.name.localeCompare(b.name)));
       // Wide kinds: the feed's edges as computed.
       for (const [satId, value] of place.now) {
         const sat = sats[satId];
-        if (!isLive(sat) && wanted(selection, layer, clusterId, satId, sat))
+        if (!isLive(sat) && wanted(selection, layer, clusterId, satId, sat, hidden))
           edges.push({ satId, layer, clusterId, place, at: edgeTime ? edgeTime(value, _doc.meta || {}) : null });
       }
     }
@@ -582,6 +622,7 @@ export function createIlSatelliteRelationLayer({
     if (!_enabled) return;
     _forceDraw = true;
     tick();
+    if (lanesSignature(currentLanes()) !== lanesSignature(_lanes)) refresh();
   }
 
   function onMoveEnd() {
@@ -682,7 +723,7 @@ export function createIlSatelliteRelationLayer({
 
     getRowControls() {
       let info = null;
-      if (_lastUpdate && !_lanes.length) info = offHint();
+      if (_lastUpdate && !shownLanes().length) info = offHint();
       else if (_lastUpdate && _doc?.meta?.idle) info = t('Paused · no area of interest is enabled');
       else if (_lastUpdate && _doc) info = infoOf({ rows: placesInView(), overhead: _overhead.size, meta: _doc.meta || {} });
       return {
